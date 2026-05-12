@@ -1,0 +1,11 @@
+import { clsx } from "clsx";
+import type { HTMLAttributes } from "react";
+
+export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={clsx("rounded-ui border border-surface-600 bg-surface-800 p-4 shadow-subtle", className)}
+      {...props}
+    />
+  );
+}

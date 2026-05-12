@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+
+# SQLite local database
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

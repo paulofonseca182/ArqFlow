@@ -1,0 +1,41 @@
+import { AlertTriangle } from "lucide-react";
+import { Button } from "./Button";
+import { Modal } from "./Modal";
+
+type DeleteModalProps = {
+  open: boolean;
+  itemName: string;
+  impact?: string;
+  onClose: () => void;
+  onConfirm: () => void;
+};
+
+export function DeleteModal({ impact, itemName, onClose, onConfirm, open }: DeleteModalProps) {
+  return (
+    <Modal
+      footer={
+        <>
+          <Button onClick={onClose} type="button" variant="secondary">
+            Cancelar
+          </Button>
+          <Button className="bg-status-danger hover:bg-status-danger/80" onClick={onConfirm} type="button">
+            Excluir
+          </Button>
+        </>
+      }
+      onClose={onClose}
+      open={open}
+      title="Confirmar exclusao"
+    >
+      <div className="flex gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
+        <div className="space-y-2">
+          <p>
+            Confirme a exclusao permanente de <span className="font-medium text-text-primary">{itemName}</span>.
+          </p>
+          {impact ? <p className="text-text-muted">{impact}</p> : null}
+        </div>
+      </div>
+    </Modal>
+  );
+}

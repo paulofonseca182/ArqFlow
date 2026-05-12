@@ -1,0 +1,22 @@
+{
+  "name": "arqflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sistema local de gestao para escritorios de arquitetura.",
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter @arqflow/backend --filter @arqflow/frontend dev",
+    "build": "corepack pnpm -r build",
+    "typecheck": "corepack pnpm -r typecheck",
+    "test": "corepack pnpm -r test",
+    "lint": "corepack pnpm -r lint",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  },
+  "packageManager": "pnpm@8.15.9",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
