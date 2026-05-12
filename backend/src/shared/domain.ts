@@ -62,3 +62,12 @@ export const projectTypeLabels: Record<ProjectType, string> = {
   COMMERCIAL: "Comercial",
   OTHER: "Outro"
 };
+
+export const stepStatusLabels: Record<StepStatus, string> = {
+  PENDING: "Pendente",
+  IN_PROGRESS: "Em andamento",
+  WAITING_CLIENT: "Aguardando cliente",
+  IN_REVIEW: "Em revisao",
+  COMPLETED: "Concluida",
+  CANCELLED: "Cancelada"
+};

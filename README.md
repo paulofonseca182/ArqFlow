@@ -47,6 +47,21 @@ O modulo de Projetos ja possui uma primeira fatia vertical:
 - Progresso exibido a partir das etapas existentes.
 - Exclusao protegida por impacto de vinculos.
 
+## Etapas de Projeto
+
+O modulo de Etapas de Projeto ja esta integrado ao fluxo de Projetos:
+
+- API REST em `/project-steps`.
+- Geracao de etapas padrao conforme o tipo do projeto.
+- Template padrao: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final.
+- Protecao contra duplicacao de etapas ja geradas.
+- Listagem de etapas ordenadas por projeto.
+- Conclusao e reabertura de etapas com `completedAt` controlado pelo backend.
+- Validacao backend para bloquear datas anteriores ao inicio do projeto.
+- Progresso real calculado por etapas concluidas sobre total.
+- Modal de etapas na tela `/projects`, com acao para gerar, concluir e reabrir etapas.
+- Testes de schema, templates, validacao de datas e calculo de progresso.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos

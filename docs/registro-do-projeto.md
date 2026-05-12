@@ -221,7 +221,8 @@ Base Express criada com:
 - rota inicial `GET /dashboard`;
 - rota inicial `GET /clients/meta`;
 - modulo de Clientes em `/clients`;
-- modulo inicial de Projetos em `/projects`.
+- modulo inicial de Projetos em `/projects`;
+- modulo de Etapas de Projeto em `/project-steps`.
 
 Arquivos compartilhados importantes:
 
@@ -388,10 +389,92 @@ Ainda falta:
 
 - testes de frontend para formulario e filtros;
 - tela de detalhe do projeto;
-- geracao de etapas padrao por tipo de projeto;
-- edicao e conclusao de etapas;
-- regras de progresso ligadas ao modulo de etapas;
 - integracao futura com orcamentos, financeiro, tarefas, visitas e documentos.
+
+## Modulo de Etapas de Projeto - estado atual
+
+O modulo de Etapas de Projeto foi implementado como continuidade direta de Projetos.
+
+Banco:
+
+- o modelo `ProjectStep` ja existia no Prisma;
+- cada etapa pertence obrigatoriamente a um `Project`;
+- `ProjectStep -> Project` usa `onDelete: Cascade`;
+- existe indice por `projectId` e `status`;
+- existe unicidade por `projectId + sortOrder`;
+- nao foi necessario criar migration nesta fatia.
+
+Backend:
+
+```txt
+backend/src/modules/projectSteps/
+  projectSteps.routes.ts
+  projectSteps.controller.ts
+  projectSteps.service.ts
+  projectSteps.schema.ts
+  projectSteps.schema.test.ts
+  projectSteps.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/services/projectSteps.ts
+frontend/src/types/projectStep.ts
+frontend/src/pages/Projects/ProjectsPage.tsx
+```
+
+Implementado no backend:
+
+- `GET /project-steps/meta`;
+- `GET /project-steps?projectId=:projectId`;
+- `POST /project-steps/generate-defaults`;
+- `PATCH /project-steps/:id`;
+- `PATCH /project-steps/:id/complete`;
+- `PATCH /project-steps/:id/reopen`;
+- metadados de status oficiais de etapas;
+- templates de etapas padrao por tipo de projeto;
+- template padrao enxuto: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
+- geracao de etapas com `sortOrder` sequencial;
+- bloqueio de geracao duplicada quando o projeto ja possui etapas;
+- listagem ordenada por `sortOrder`;
+- conclusao de etapa com `status = COMPLETED` e `completedAt` definido pelo backend;
+- reabertura de etapa com `status = PENDING` e `completedAt = null`;
+- validacao para bloquear `startsAt` ou `dueDate` anteriores ao inicio do projeto;
+- validacao para bloquear `dueDate` anterior a `startsAt`;
+- progresso calculado no backend por etapas concluidas sobre total.
+
+Implementado no frontend:
+
+- botao de etapas na tabela de Projetos;
+- carregamento de metadados de etapas junto com os metadados de Projetos;
+- service Axios para consumir `/project-steps`;
+- tipos TypeScript para etapa, status e resposta de progresso;
+- modal de etapas dentro da tela `/projects`;
+- estado vazio com acao para gerar etapas padrao;
+- lista de etapas com ordem, nome, status, datas e progresso real;
+- acao para concluir etapa;
+- acao para reabrir etapa concluida ou cancelada;
+- recarregamento da lista de projetos apos mutacoes para atualizar o progresso exibido.
+
+Regras consideradas:
+
+- etapa pertence a projeto;
+- etapas padrao devem respeitar o tipo do projeto;
+- geracao padrao nao deve duplicar etapas existentes;
+- progresso real vem do backend;
+- frontend nao envia `completedAt`;
+- backend decide a data de conclusao;
+- reabrir etapa limpa `completedAt`;
+- datas de etapa nao podem quebrar a data de inicio do projeto;
+- exclusao de projeto com etapas continua bloqueada pelo fluxo de Projetos.
+
+Ainda falta:
+
+- criacao manual de etapa fora dos templates;
+- edicao visual de datas, status e notas da etapa;
+- reordenacao manual de etapas;
+- testes de frontend do modal de etapas.
 
 ## Frontend
 
@@ -440,9 +523,10 @@ Rotas iniciais:
 
 Observacao:
 
-- As telas alem de Dashboard, Clientes e Projetos ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos e Etapas de Projeto ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos e a segunda fatia operacional e depende de Cliente como vinculo obrigatorio.
+- Etapas de Projeto e a terceira fatia operacional e alimenta o progresso real de Projetos.
 
 ### Frontend - Clientes
 
@@ -544,6 +628,48 @@ Regras consideradas:
 - exclusao critica exige confirmacao;
 - exclusao de projeto com vinculos deve ser bloqueada.
 
+### Frontend - Etapas de Projeto
+
+Objetivo:
+
+- permitir gerar etapas padrao por tipo de projeto, acompanhar status das etapas e alimentar o progresso real do projeto.
+
+Usuario beneficiado:
+
+- escritorio de arquitetura que precisa transformar um projeto cadastrado em um roteiro operacional de trabalho.
+
+Fluxo implementado:
+
+1. Usuario acessa `/projects`.
+2. Usuario clica no botao de etapas de um projeto.
+3. A tela carrega etapas via `/project-steps?projectId=:projectId`.
+4. Se o projeto nao tiver etapas, o modal mostra acao para gerar etapas padrao.
+5. A geracao chama `POST /project-steps/generate-defaults`.
+6. As etapas aparecem ordenadas por `sortOrder`.
+7. Usuario pode concluir uma etapa.
+8. A conclusao chama `PATCH /project-steps/:id/complete`.
+9. Usuario pode reabrir uma etapa concluida ou cancelada.
+10. A reabertura chama `PATCH /project-steps/:id/reopen`.
+11. A lista de projetos e recarregada para refletir o progresso atualizado.
+
+Campos exibidos:
+
+- ordem;
+- nome da etapa;
+- status;
+- data de inicio;
+- prazo;
+- data de conclusao;
+- progresso real do projeto.
+
+Regras consideradas:
+
+- frontend nao calcula progresso critico;
+- frontend nao envia `completedAt`;
+- backend e fonte da verdade para conclusao, reabertura e progresso;
+- geracao padrao so aparece como acao util quando nao ha etapas carregadas;
+- erros de duplicacao ou validacao aparecem dentro do modal.
+
 ## Regras de negocio ja implementadas
 
 Arquivo:
@@ -561,6 +687,11 @@ Regras:
 - progresso do projeto e calculado por etapas concluidas sobre total;
 - progresso nao aceita valores negativos;
 - etapas concluidas nao podem ultrapassar total de etapas;
+- etapa nao pode iniciar antes do inicio do projeto;
+- etapa nao pode ter prazo anterior ao inicio do projeto;
+- etapa nao pode ter prazo anterior ao proprio inicio;
+- conclusao de etapa preenche `completedAt` no backend;
+- reabertura de etapa limpa `completedAt` no backend;
 - pagamento atrasado e calculado dinamicamente;
 - pagamento pago ou cancelado nao e considerado atrasado;
 - documento deve ter cliente e/ou projeto.
@@ -575,6 +706,8 @@ backend/src/modules/clients/clients.schema.test.ts
 backend/src/modules/clients/clients.service.test.ts
 backend/src/modules/projects/projects.schema.test.ts
 backend/src/modules/projects/projects.service.test.ts
+backend/src/modules/projectSteps/projectSteps.schema.test.ts
+backend/src/modules/projectSteps/projectSteps.service.test.ts
 ```
 
 Cobertura atual:
@@ -596,15 +729,22 @@ Cobertura atual:
 - valor contratado zero ou negativo bloqueado;
 - metadados de status e tipos de Projetos;
 - montagem de filtros de busca, cliente, status e tipo de Projetos.
+- schema inicial de Etapas;
+- projeto obrigatorio para listar e gerar etapas;
+- status oficial de etapa;
+- data prevista anterior ao inicio da etapa bloqueada;
+- metadados e templates de Etapas;
+- calculo de progresso por etapas concluidas;
+- datas de etapa anteriores ao inicio do projeto bloqueadas.
 
 Validacoes ja executadas no estado atual:
 
 - `npm run typecheck` passou;
 - `npm run test` passou;
+- `npm run lint` passou;
 
 No ultimo fechamento da Fase 0.1 tambem passaram:
 
-- `npm run lint` passou;
 - `prisma validate` passou;
 - `prisma migrate status` indicou banco atualizado;
 - Prisma Client foi regenerado.
@@ -690,6 +830,12 @@ GET /projects/:id/delete-impact
 POST /projects
 PATCH /projects/:id
 DELETE /projects/:id
+GET /project-steps/meta
+GET /project-steps?projectId=:projectId
+POST /project-steps/generate-defaults
+PATCH /project-steps/:id
+PATCH /project-steps/:id/complete
+PATCH /project-steps/:id/reopen
 ```
 
 Frontend local:
@@ -721,20 +867,20 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar a tela de Projetos no navegador e iniciar a proxima fatia de Etapas de Projeto.
+Validar o fluxo de Etapas de Projeto no navegador e iniciar a proxima fatia recomendada: Orcamentos.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
 2. Abrir `http://localhost:5173/projects`.
-3. Validar listagem e filtros com dados do seed.
-4. Criar um projeto temporario vinculado a cliente existente.
-5. Tentar criar projeto sem cliente e confirmar bloqueio.
-6. Tentar entrega anterior ao inicio e confirmar bloqueio.
-7. Editar esse projeto.
-8. Excluir esse projeto sem vinculos.
-9. Tentar excluir projeto com etapas ou pagamentos e confirmar bloqueio.
-10. Depois iniciar Etapas de Projeto.
+3. Abrir o modal de etapas de um projeto sem etapas.
+4. Gerar etapas padrao e confirmar que a lista aparece ordenada.
+5. Tentar gerar novamente e confirmar bloqueio contra duplicacao.
+6. Concluir uma etapa e confirmar aumento do progresso.
+7. Reabrir a etapa e confirmar reducao do progresso.
+8. Confirmar que a barra de progresso da tabela de Projetos reflete a API.
+9. Tentar excluir projeto com etapas e confirmar bloqueio.
+10. Depois iniciar Orcamentos com cliente obrigatorio e possivel vinculo a projeto.
 
 ## Pontos de atencao para Clientes
 
@@ -750,10 +896,23 @@ Ao implementar Clientes, lembrar:
 - frontend deve mostrar modal de confirmacao/impacto antes de exclusao;
 - backend continua sendo a fonte da verdade.
 
+## Pontos de atencao para Etapas de Projeto
+
+Ao evoluir Etapas, lembrar:
+
+- etapa sempre deve pertencer a projeto;
+- projeto deve existir antes de listar, gerar ou alterar etapas;
+- `sortOrder` deve continuar unico por projeto;
+- geracao padrao nao deve duplicar etapas existentes;
+- progresso deve continuar derivado de `status = COMPLETED`;
+- `completedAt` deve ser gerenciado pelo backend;
+- datas devem ser validadas no backend contra o inicio do projeto;
+- frontend pode melhorar UX, mas nao deve substituir a regra do backend.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(projects): implement initial projects module
+feat(project-steps): implement project step workflow
 ```
 
 Resumo sugerido:
@@ -769,6 +928,8 @@ Resumo sugerido:
 - Implement Clients frontend list, form, filters and protected delete flow
 - Implement Projects backend CRUD with required client relation
 - Implement Projects frontend list, form, filters and protected delete flow
+- Implement Project Steps backend API with default generation and progress rules
+- Implement Project Steps frontend modal for generation, completion and reopening
 - Update project registry and README
 ```
 

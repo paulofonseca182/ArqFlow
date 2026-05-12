@@ -31,8 +31,11 @@ async function main() {
       steps: {
         create: [
           { name: "Briefing", sortOrder: 1, status: "COMPLETED", completedAt: new Date("2026-05-03T00:00:00.000Z") },
-          { name: "Estudo preliminar", sortOrder: 2, status: "IN_PROGRESS" },
-          { name: "Projeto executivo", sortOrder: 3, status: "PENDING" }
+          { name: "Levantamento", sortOrder: 2, status: "IN_PROGRESS" },
+          { name: "Anteprojeto", sortOrder: 3, status: "PENDING" },
+          { name: "Projeto 3D", sortOrder: 4, status: "PENDING" },
+          { name: "Projeto executivo", sortOrder: 5, status: "PENDING" },
+          { name: "Entrega final", sortOrder: 6, status: "PENDING" }
         ]
       }
     }
