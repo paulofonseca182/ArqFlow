@@ -1,10 +1,10 @@
 import type { RequestHandler } from "express";
-import type { AnyZodObject, ZodTypeAny } from "zod";
+import type { ZodTypeAny } from "zod";
 
 type RequestSchemas = {
-  body?: AnyZodObject;
-  params?: AnyZodObject;
-  query?: AnyZodObject;
+  body?: ZodTypeAny;
+  params?: ZodTypeAny;
+  query?: ZodTypeAny;
 };
 
 export function validateRequest(schemas: RequestSchemas): RequestHandler {

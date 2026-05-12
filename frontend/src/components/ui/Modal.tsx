@@ -9,9 +9,15 @@ type ModalProps = {
   children: ReactNode;
   onClose: () => void;
   footer?: ReactNode;
+  size?: "md" | "lg";
 };
 
-export function Modal({ children, footer, onClose, open, title }: ModalProps) {
+const sizeClasses = {
+  md: "max-w-lg",
+  lg: "max-w-3xl"
+};
+
+export function Modal({ children, footer, onClose, open, size = "md", title }: ModalProps) {
   useEffect(() => {
     if (!open) {
       return;
@@ -35,7 +41,7 @@ export function Modal({ children, footer, onClose, open, title }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
       <div
         aria-modal="true"
-        className="w-full max-w-lg rounded-ui border border-surface-600 bg-surface-800 shadow-panel"
+        className={`w-full ${sizeClasses[size]} rounded-ui border border-surface-600 bg-surface-800 shadow-panel`}
         role="dialog"
       >
         <div className="flex items-center justify-between border-b border-surface-600 px-5 py-4">

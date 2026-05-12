@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { forwardRef } from "react";
 import type { InputHTMLAttributes } from "react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -6,7 +7,7 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
 };
 
-export function Input({ className, error, label, id, ...props }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ className, error, label, id, ...props }, ref) {
   const inputId = id ?? props.name;
   const errorId = error && inputId ? `${inputId}-error` : undefined;
 
@@ -17,6 +18,7 @@ export function Input({ className, error, label, id, ...props }: InputProps) {
         aria-describedby={errorId}
         aria-invalid={Boolean(error)}
         id={inputId}
+        ref={ref}
         className={clsx(
           "h-10 w-full rounded-ui border border-surface-600 bg-surface-900 px-3 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-bronze",
           error && "border-status-danger",
@@ -31,4 +33,4 @@ export function Input({ className, error, label, id, ...props }: InputProps) {
       ) : null}
     </label>
   );
-}
+});

@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { forwardRef } from "react";
 import type { TextareaHTMLAttributes } from "react";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
@@ -6,7 +7,7 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-export function Textarea({ className, error, label, ...props }: TextareaProps) {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({ className, error, label, ...props }, ref) {
   const errorId = error && props.name ? `${props.name}-error` : undefined;
 
   return (
@@ -15,6 +16,7 @@ export function Textarea({ className, error, label, ...props }: TextareaProps) {
       <textarea
         aria-describedby={errorId}
         aria-invalid={Boolean(error)}
+        ref={ref}
         className={clsx(
           "min-h-28 w-full rounded-ui border border-surface-600 bg-surface-900 px-3 py-2 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-bronze",
           error && "border-status-danger",
@@ -29,4 +31,4 @@ export function Textarea({ className, error, label, ...props }: TextareaProps) {
       ) : null}
     </label>
   );
-}
+});

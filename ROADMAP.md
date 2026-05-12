@@ -8,13 +8,27 @@
 - Criar design system dark premium.
 - Criar testes iniciais de regras criticas.
 
-## Proxima fase: Clientes
+## Clientes - Backend concluido
 
 - `GET /clients` com busca por nome, e-mail, telefone e WhatsApp.
 - `POST /clients` com Zod e e-mail unico.
 - `PATCH /clients/:id`.
 - `GET /clients/:id`.
+- `GET /clients/:id/delete-impact`.
 - `DELETE /clients/:id` com verificacao de vinculos.
-- Tela de listagem com filtros.
-- Formulario com React Hook Form e Zod.
-- Modal de exclusao.
+
+## Clientes - Frontend concluido
+
+- Tela de listagem com busca e filtro por status.
+- Formulario de criacao e edicao com React Hook Form e Zod.
+- Service frontend consumindo a API real de Clientes.
+- Modal de exclusao com consulta de impacto.
+- Bloqueio visual quando o cliente possui vinculos.
+- Estados de carregamento, vazio, erro e sucesso.
+
+## Proxima fase: Projetos
+
+- Criar projeto vinculado a cliente.
+- Validar cliente obrigatorio.
+- Acompanhar projetos por status.
+- Preparar geracao de etapas padrao por tipo de projeto.

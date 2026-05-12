@@ -6,20 +6,21 @@ type DeleteModalProps = {
   open: boolean;
   itemName: string;
   impact?: string;
+  confirming?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };
 
-export function DeleteModal({ impact, itemName, onClose, onConfirm, open }: DeleteModalProps) {
+export function DeleteModal({ confirming = false, impact, itemName, onClose, onConfirm, open }: DeleteModalProps) {
   return (
     <Modal
       footer={
         <>
-          <Button onClick={onClose} type="button" variant="secondary">
+          <Button disabled={confirming} onClick={onClose} type="button" variant="secondary">
             Cancelar
           </Button>
-          <Button className="bg-status-danger hover:bg-status-danger/80" onClick={onConfirm} type="button">
-            Excluir
+          <Button className="bg-status-danger hover:bg-status-danger/80" disabled={confirming} onClick={onConfirm} type="button">
+            {confirming ? "Excluindo..." : "Excluir"}
           </Button>
         </>
       }

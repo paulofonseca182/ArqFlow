@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import { ClientsPage } from "./pages/Clients/ClientsPage";
 import { DashboardPage } from "./pages/Dashboard/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 
@@ -9,7 +10,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: "clients", element: <PlaceholderPage title="Clientes" /> },
+      { path: "clients", element: <ClientsPage /> },
       { path: "projects", element: <PlaceholderPage title="Projetos" /> },
       { path: "budgets", element: <PlaceholderPage title="Orçamentos" /> },
       { path: "financial", element: <PlaceholderPage title="Financeiro" /> },

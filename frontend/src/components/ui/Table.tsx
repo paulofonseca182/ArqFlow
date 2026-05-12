@@ -7,7 +7,7 @@ type TableProps = {
 
 export function Table({ headers, children }: TableProps) {
   return (
-    <div className="overflow-hidden rounded-ui border border-surface-600">
+    <div className="overflow-x-auto rounded-ui border border-surface-600">
       <table className="w-full border-collapse text-left text-sm">
         <thead className="bg-surface-700 text-text-secondary">
           <tr>

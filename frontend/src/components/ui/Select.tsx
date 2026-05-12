@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { forwardRef } from "react";
 import type { SelectHTMLAttributes } from "react";
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
@@ -6,7 +7,7 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   error?: string;
 };
 
-export function Select({ className, error, label, children, ...props }: SelectProps) {
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select({ className, error, label, children, ...props }, ref) {
   const errorId = error && props.name ? `${props.name}-error` : undefined;
 
   return (
@@ -15,6 +16,7 @@ export function Select({ className, error, label, children, ...props }: SelectPr
       <select
         aria-describedby={errorId}
         aria-invalid={Boolean(error)}
+        ref={ref}
         className={clsx(
           "h-10 w-full rounded-ui border border-surface-600 bg-surface-900 px-3 text-sm text-text-primary outline-none transition focus:border-accent-bronze",
           error && "border-status-danger",
@@ -31,4 +33,4 @@ export function Select({ className, error, label, children, ...props }: SelectPr
       ) : null}
     </label>
   );
-}
+});

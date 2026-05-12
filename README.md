@@ -24,6 +24,17 @@ A Fase 0.1 alinha a base ao `AGENTS.md`:
 - Testes iniciais de regras criticas.
 - Documentacao tecnica minima.
 
+## Clientes
+
+O modulo de Clientes ja possui backend e frontend iniciais:
+
+- API REST com listagem, busca, filtro por status, cadastro, edicao e exclusao protegida.
+- Tela `/clients` conectada ao backend real.
+- Formulario com React Hook Form e Zod.
+- Validacao de nome, email, CPF/CNPJ e telefone ou WhatsApp.
+- Consulta de impacto antes da exclusao.
+- Estados de carregamento, vazio, erro, sucesso e paginacao simples.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos
@@ -33,6 +44,15 @@ corepack pnpm install
 npm run dev
 npm run typecheck
 npm run test
+npm run lint
 ```
 
 > Em ambientes sem shim global do pnpm, use `corepack pnpm`.
+
+## URLs locais
+
+```txt
+Frontend: http://localhost:5173
+Backend: http://localhost:3333
+Clientes: http://localhost:5173/clients
+```

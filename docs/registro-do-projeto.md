@@ -180,6 +180,7 @@ Migrations criadas:
 
 - `20260511150000_init`
 - `20260511162000_phase_0_1_alignment`
+- `20260512100000_protect_payments_cascade_steps`
 
 Decisoes importantes:
 
@@ -240,9 +241,9 @@ Tratamento de erros:
 
 ## Modulo de Clientes - estado atual
 
-O modulo de Clientes ainda nao tem CRUD completo.
+O modulo de Clientes ja possui backend completo e frontend inicial conectado a API real.
 
-Ja existe a base:
+Backend:
 
 ```txt
 backend/src/modules/clients/
@@ -253,21 +254,25 @@ backend/src/modules/clients/
   clients.schema.test.ts
 ```
 
-Implementado ate agora:
+Frontend:
+
+```txt
+frontend/src/pages/Clients/
+  ClientsPage.tsx
+  ClientFormModal.tsx
+  client-form.ts
+
+frontend/src/services/clients.ts
+frontend/src/types/client.ts
+frontend/src/types/api.ts
+```
+
+Implementado no backend:
 
 - `GET /clients/meta`;
-- schemas Zod iniciais;
-- testes de schema;
-- status de clientes centralizados;
-- validacao de e-mail;
-- normalizacao de e-mail vazio;
-- validacao de CPF/CNPJ;
-- exigencia de telefone ou WhatsApp na criacao.
-
-Ainda falta:
-
 - `GET /clients`;
 - `GET /clients/:id`;
+- `GET /clients/:id/delete-impact`;
 - `POST /clients`;
 - `PATCH /clients/:id`;
 - `DELETE /clients/:id`;
@@ -275,7 +280,38 @@ Ainda falta:
 - paginacao;
 - filtro por status;
 - exclusao protegida com contagem de vinculos;
-- testes de service de Clientes.
+- schemas Zod iniciais;
+- testes de schema;
+- testes de service;
+- status de clientes centralizados;
+- validacao de e-mail;
+- normalizacao de e-mail vazio;
+- validacao de CPF/CNPJ;
+- exigencia de telefone ou WhatsApp na criacao.
+
+Implementado no frontend:
+
+- rota `/clients` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/clients`;
+- tipos TypeScript para contratos de API, paginacao, cliente, status e impacto de exclusao;
+- listagem com busca por nome, e-mail, telefone ou WhatsApp;
+- filtro por status consumindo `GET /clients/meta`;
+- paginacao simples usando `meta.page`, `meta.total` e `meta.totalPages`;
+- formulario de criacao e edicao em modal;
+- React Hook Form com validacao Zod manual, sem dependencia nova;
+- validacao de nome, e-mail, CPF/CNPJ, telefone e WhatsApp;
+- normalizacao de telefone, WhatsApp e CPF/CNPJ para digitos antes de enviar;
+- exclusao em duas etapas com `GET /clients/:id/delete-impact`;
+- bloqueio visual quando houver projetos, orcamentos, pagamentos, visitas, documentos ou briefings vinculados;
+- modal de confirmacao quando a exclusao for permitida;
+- estados de carregamento, vazio, erro e sucesso.
+
+Ainda falta:
+
+- testes de frontend para formulario, filtros e fluxo de exclusao;
+- refinamento visual apos uso real;
+- mascaras visuais para telefone, WhatsApp e CPF/CNPJ;
+- detalhe individual do cliente, se necessario na proxima fase.
 
 ## Frontend
 
@@ -311,7 +347,7 @@ Componentes UI:
 Rotas iniciais:
 
 - Dashboard
-- Clientes
+- Clientes, ja conectada a tela real
 - Projetos
 - Orcamentos
 - Financeiro
@@ -324,8 +360,56 @@ Rotas iniciais:
 
 Observacao:
 
-- As telas alem do Dashboard ainda sao placeholders.
-- O proximo grande passo de frontend sera a tela de Clientes.
+- As telas alem de Dashboard e Clientes ainda sao placeholders.
+- A tela de Clientes e a primeira tela operacional do MVP.
+
+### Frontend - Clientes
+
+Objetivo:
+
+- permitir cadastrar, listar, buscar, filtrar, editar e excluir clientes com confirmacao.
+
+Usuario beneficiado:
+
+- escritorio de arquitetura que precisa organizar leads, clientes ativos, clientes recorrentes e contatos em fase de orcamento.
+
+Fluxo implementado:
+
+1. Usuario acessa `/clients`.
+2. A tela carrega status via `/clients/meta`.
+3. A tela lista clientes via `/clients`.
+4. Usuario pode buscar por nome, e-mail, telefone ou WhatsApp.
+5. Usuario pode filtrar por status.
+6. Usuario pode abrir o modal de novo cliente.
+7. Usuario pode editar um cliente existente.
+8. Antes de excluir, a tela consulta `/clients/:id/delete-impact`.
+9. Se houver vinculos, a exclusao e bloqueada visualmente.
+10. Se nao houver vinculos, a tela abre modal de confirmacao e chama `DELETE /clients/:id`.
+
+Campos principais do formulario:
+
+- nome;
+- status;
+- telefone;
+- WhatsApp;
+- e-mail;
+- CPF/CNPJ;
+- cidade;
+- UF;
+- origem;
+- endereco;
+- observacoes.
+
+Regras consideradas:
+
+- cliente deve ter nome;
+- cliente deve ter telefone ou WhatsApp;
+- e-mail e opcional, mas deve ser valido quando preenchido;
+- CPF/CNPJ e opcional, mas deve ser valido quando preenchido;
+- frontend valida para UX;
+- backend continua sendo a fonte da verdade;
+- exclusao critica exige confirmacao;
+- exclusao de cliente com vinculos deve ser bloqueada.
 
 ## Regras de negocio ja implementadas
 
@@ -355,6 +439,7 @@ Testes criados:
 ```txt
 backend/src/shared/business-rules.test.ts
 backend/src/modules/clients/clients.schema.test.ts
+backend/src/modules/clients/clients.service.test.ts
 ```
 
 Cobertura atual:
@@ -368,10 +453,15 @@ Cobertura atual:
 - e-mail invalido;
 - CPF/CNPJ invalido;
 - update parcial.
+- metadados de status de Clientes;
+- montagem de filtros de busca e status.
 
-No ultimo fechamento da Fase 0.1:
+Validacoes ja executadas no estado atual:
 
 - `npm run typecheck` passou;
+
+No ultimo fechamento da Fase 0.1 tambem passaram:
+
 - `npm run test` passou;
 - `npm run lint` passou;
 - `prisma validate` passou;
@@ -446,6 +536,12 @@ Endpoints:
 GET /health
 GET /dashboard
 GET /clients/meta
+GET /clients
+GET /clients/:id
+GET /clients/:id/delete-impact
+POST /clients
+PATCH /clients/:id
+DELETE /clients/:id
 ```
 
 Frontend local:
@@ -477,17 +573,18 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Iniciar o modulo de Clientes pelo backend.
+Validar a tela de Clientes no navegador e iniciar a proxima fatia do modulo Clientes.
 
 Ordem sugerida:
 
-1. Implementar `GET /clients` com paginacao, busca e filtro por status.
-2. Implementar `GET /clients/:id`.
-3. Implementar `POST /clients`.
-4. Implementar `PATCH /clients/:id`.
-5. Implementar `DELETE /clients/:id` com exclusao protegida.
-6. Criar testes de service de Clientes.
-7. Depois iniciar a tela de Clientes no frontend.
+1. Rodar `npm run test` e `npm run lint` apos a implementacao do frontend.
+2. Abrir `http://localhost:5173/clients`.
+3. Validar listagem e filtros com dados do seed.
+4. Criar um cliente temporario.
+5. Editar esse cliente.
+6. Excluir esse cliente sem vinculos.
+7. Tentar excluir um cliente com vinculos e confirmar o bloqueio.
+8. Depois iniciar Projetos, respeitando vinculo obrigatorio com Cliente.
 
 ## Pontos de atencao para Clientes
 
@@ -506,7 +603,7 @@ Ao implementar Clientes, lembrar:
 ## Sugestao de commit para o estado atual
 
 ```txt
-chore: setup ArqFlow foundation and phase 0.1 alignment
+feat(clients): implement clients backend and frontend
 ```
 
 Resumo sugerido:
@@ -518,7 +615,9 @@ Resumo sugerido:
 - Add dark premium frontend shell and reusable UI components
 - Add initial business rules and tests
 - Add technical documentation for setup, API, database, design system and roadmap
-- Prepare Clients module foundation
+- Implement Clients backend CRUD
+- Implement Clients frontend list, form, filters and protected delete flow
+- Update project registry and README
 ```
 
 ## Como retomar se algo der errado
