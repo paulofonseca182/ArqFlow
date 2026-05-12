@@ -54,3 +54,11 @@ export const projectStatusLabels: Record<ProjectStatus, string> = {
   FINISHED: "Finalizado",
   CANCELLED: "Cancelado"
 };
+
+export const projectTypeLabels: Record<ProjectType, string> = {
+  RESIDENTIAL: "Residencial",
+  INTERIORS: "Interiores",
+  RENOVATION: "Reforma",
+  COMMERCIAL: "Comercial",
+  OTHER: "Outro"
+};

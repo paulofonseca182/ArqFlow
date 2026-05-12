@@ -219,7 +219,9 @@ Base Express criada com:
 - middleware de erro;
 - rota `GET /health`;
 - rota inicial `GET /dashboard`;
-- rota inicial `GET /clients/meta`.
+- rota inicial `GET /clients/meta`;
+- modulo de Clientes em `/clients`;
+- modulo inicial de Projetos em `/projects`.
 
 Arquivos compartilhados importantes:
 
@@ -313,6 +315,84 @@ Ainda falta:
 - mascaras visuais para telefone, WhatsApp e CPF/CNPJ;
 - detalhe individual do cliente, se necessario na proxima fase.
 
+## Modulo de Projetos - estado atual
+
+O modulo de Projetos possui backend inicial e frontend inicial conectados a API real.
+
+Banco:
+
+- o modelo `Project` ja existia no Prisma;
+- `clientId` e obrigatorio;
+- `Project -> Client` usa `onDelete: Restrict`;
+- nao foi necessario criar migration para esta primeira fatia.
+
+Backend:
+
+```txt
+backend/src/modules/projects/
+  projects.routes.ts
+  projects.controller.ts
+  projects.service.ts
+  projects.schema.ts
+  projects.schema.test.ts
+  projects.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Projects/
+  ProjectsPage.tsx
+  ProjectFormModal.tsx
+  project-form.ts
+
+frontend/src/services/projects.ts
+frontend/src/types/project.ts
+```
+
+Implementado no backend:
+
+- `GET /projects/meta`;
+- `GET /projects`;
+- `GET /projects/:id`;
+- `GET /projects/:id/delete-impact`;
+- `POST /projects`;
+- `PATCH /projects/:id`;
+- `DELETE /projects/:id`;
+- busca por nome do projeto, descricao, endereco da obra e nome do cliente;
+- filtros por status, tipo e cliente;
+- paginacao;
+- validacao Zod de `clientId`, nome, tipo, status, datas e valores positivos;
+- verificacao de cliente existente antes de criar ou trocar o cliente do projeto;
+- bloqueio de data de entrega anterior a data de inicio;
+- progresso calculado no backend a partir das etapas existentes;
+- exclusao protegida com contagem de vinculos;
+- testes de schema e service.
+
+Implementado no frontend:
+
+- rota `/projects` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/projects`;
+- tipos TypeScript para Projeto, status, tipos e impacto de exclusao;
+- listagem com busca, filtros por status, tipo e cliente;
+- formulario de criacao e edicao em modal;
+- select de cliente consumindo dados reais de `/clients`;
+- React Hook Form com validacao Zod manual, sem dependencia nova;
+- validacao de cliente obrigatorio, nome, tipo, status, datas e valores positivos;
+- barra de progresso por projeto;
+- exclusao em duas etapas com `GET /projects/:id/delete-impact`;
+- bloqueio visual quando houver etapas, orcamentos, pagamentos, tarefas, visitas, documentos ou briefings vinculados;
+- estados de carregamento, vazio, erro e sucesso.
+
+Ainda falta:
+
+- testes de frontend para formulario e filtros;
+- tela de detalhe do projeto;
+- geracao de etapas padrao por tipo de projeto;
+- edicao e conclusao de etapas;
+- regras de progresso ligadas ao modulo de etapas;
+- integracao futura com orcamentos, financeiro, tarefas, visitas e documentos.
+
 ## Frontend
 
 O frontend foi estruturado com React, Vite, TypeScript e Tailwind.
@@ -348,7 +428,7 @@ Rotas iniciais:
 
 - Dashboard
 - Clientes, ja conectada a tela real
-- Projetos
+- Projetos, ja conectada a tela real inicial
 - Orcamentos
 - Financeiro
 - Tarefas
@@ -360,8 +440,9 @@ Rotas iniciais:
 
 Observacao:
 
-- As telas alem de Dashboard e Clientes ainda sao placeholders.
-- A tela de Clientes e a primeira tela operacional do MVP.
+- As telas alem de Dashboard, Clientes e Projetos ainda sao placeholders.
+- Clientes foi a primeira tela operacional do MVP.
+- Projetos e a segunda fatia operacional e depende de Cliente como vinculo obrigatorio.
 
 ### Frontend - Clientes
 
@@ -411,6 +492,58 @@ Regras consideradas:
 - exclusao critica exige confirmacao;
 - exclusao de cliente com vinculos deve ser bloqueada.
 
+### Frontend - Projetos
+
+Objetivo:
+
+- permitir cadastrar, listar, buscar, filtrar, editar e excluir projetos com confirmacao, sempre vinculados a um cliente existente.
+
+Usuario beneficiado:
+
+- escritorio de arquitetura que precisa acompanhar projetos por cliente, tipo, status e prazo.
+
+Fluxo implementado:
+
+1. Usuario acessa `/projects`.
+2. A tela carrega status e tipos via `/projects/meta`.
+3. A tela carrega clientes via `/clients`.
+4. A tela lista projetos via `/projects`.
+5. Usuario pode buscar por projeto, cliente ou endereco.
+6. Usuario pode filtrar por status, tipo e cliente.
+7. Usuario pode abrir o modal de novo projeto.
+8. Usuario seleciona um cliente obrigatorio.
+9. Usuario pode editar um projeto existente.
+10. Antes de excluir, a tela consulta `/projects/:id/delete-impact`.
+11. Se houver vinculos, a exclusao e bloqueada visualmente.
+12. Se nao houver vinculos, a tela abre modal de confirmacao e chama `DELETE /projects/:id`.
+
+Campos principais do formulario:
+
+- cliente;
+- nome do projeto;
+- tipo;
+- status;
+- data de inicio;
+- data prevista de entrega;
+- valor contratado;
+- area;
+- endereco da obra;
+- descricao;
+- observacoes.
+
+Regras consideradas:
+
+- projeto deve ter cliente;
+- cliente deve existir no backend;
+- projeto deve ter nome;
+- projeto deve ter tipo;
+- data de entrega nao pode ser anterior a data de inicio;
+- valor contratado e area sao opcionais, mas se preenchidos devem ser maiores que zero;
+- frontend valida para UX;
+- backend continua sendo a fonte da verdade;
+- exclusao critica exige confirmacao;
+- exclusao de projeto com vinculos deve ser bloqueada.
+
 ## Regras de negocio ja implementadas
 
 Arquivo:
@@ -440,6 +573,8 @@ Testes criados:
 backend/src/shared/business-rules.test.ts
 backend/src/modules/clients/clients.schema.test.ts
 backend/src/modules/clients/clients.service.test.ts
+backend/src/modules/projects/projects.schema.test.ts
+backend/src/modules/projects/projects.service.test.ts
 ```
 
 Cobertura atual:
@@ -455,14 +590,20 @@ Cobertura atual:
 - update parcial.
 - metadados de status de Clientes;
 - montagem de filtros de busca e status.
+- schema inicial de Projetos;
+- cliente obrigatorio em Projetos;
+- data de entrega anterior ao inicio bloqueada;
+- valor contratado zero ou negativo bloqueado;
+- metadados de status e tipos de Projetos;
+- montagem de filtros de busca, cliente, status e tipo de Projetos.
 
 Validacoes ja executadas no estado atual:
 
 - `npm run typecheck` passou;
+- `npm run test` passou;
 
 No ultimo fechamento da Fase 0.1 tambem passaram:
 
-- `npm run test` passou;
 - `npm run lint` passou;
 - `prisma validate` passou;
 - `prisma migrate status` indicou banco atualizado;
@@ -542,6 +683,13 @@ GET /clients/:id/delete-impact
 POST /clients
 PATCH /clients/:id
 DELETE /clients/:id
+GET /projects/meta
+GET /projects
+GET /projects/:id
+GET /projects/:id/delete-impact
+POST /projects
+PATCH /projects/:id
+DELETE /projects/:id
 ```
 
 Frontend local:
@@ -573,18 +721,20 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar a tela de Clientes no navegador e iniciar a proxima fatia do modulo Clientes.
+Validar a tela de Projetos no navegador e iniciar a proxima fatia de Etapas de Projeto.
 
 Ordem sugerida:
 
-1. Rodar `npm run test` e `npm run lint` apos a implementacao do frontend.
-2. Abrir `http://localhost:5173/clients`.
+1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
+2. Abrir `http://localhost:5173/projects`.
 3. Validar listagem e filtros com dados do seed.
-4. Criar um cliente temporario.
-5. Editar esse cliente.
-6. Excluir esse cliente sem vinculos.
-7. Tentar excluir um cliente com vinculos e confirmar o bloqueio.
-8. Depois iniciar Projetos, respeitando vinculo obrigatorio com Cliente.
+4. Criar um projeto temporario vinculado a cliente existente.
+5. Tentar criar projeto sem cliente e confirmar bloqueio.
+6. Tentar entrega anterior ao inicio e confirmar bloqueio.
+7. Editar esse projeto.
+8. Excluir esse projeto sem vinculos.
+9. Tentar excluir projeto com etapas ou pagamentos e confirmar bloqueio.
+10. Depois iniciar Etapas de Projeto.
 
 ## Pontos de atencao para Clientes
 
@@ -603,7 +753,7 @@ Ao implementar Clientes, lembrar:
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(clients): implement clients backend and frontend
+feat(projects): implement initial projects module
 ```
 
 Resumo sugerido:
@@ -617,6 +767,8 @@ Resumo sugerido:
 - Add technical documentation for setup, API, database, design system and roadmap
 - Implement Clients backend CRUD
 - Implement Clients frontend list, form, filters and protected delete flow
+- Implement Projects backend CRUD with required client relation
+- Implement Projects frontend list, form, filters and protected delete flow
 - Update project registry and README
 ```
 

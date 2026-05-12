@@ -26,9 +26,18 @@
 - Bloqueio visual quando o cliente possui vinculos.
 - Estados de carregamento, vazio, erro e sucesso.
 
-## Proxima fase: Projetos
+## Projetos - Backend e Frontend inicial concluido
 
 - Criar projeto vinculado a cliente.
 - Validar cliente obrigatorio.
 - Acompanhar projetos por status.
+- Listar projetos com busca e filtros por status, tipo e cliente.
+- Criar e editar projeto com React Hook Form e Zod.
+- Exibir progresso calculado a partir das etapas existentes.
+- Bloquear exclusao quando houver vinculos.
+
+## Proxima fase: Etapas de Projeto
+
 - Preparar geracao de etapas padrao por tipo de projeto.
+- Marcar etapas como concluidas.
+- Calcular progresso do projeto como regra de backend.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 - Projetos inicial
+
+- Modulo backend de Projetos adicionado no padrao `routes/controller/service/schema`.
+- Endpoints `/projects` e `/projects/meta` adicionados.
+- Listagem de projetos com busca e filtros por status, tipo e cliente adicionada.
+- Criacao e edicao de projeto com cliente obrigatorio adicionadas.
+- Validacoes backend de cliente existente, datas e valores positivos adicionadas.
+- Exclusao protegida de projetos com consulta de impacto adicionada.
+- Tipos e service frontend de Projetos adicionados.
+- Tela `/projects` com listagem, filtros, formulario e exclusao protegida adicionada.
+- README, API, Roadmap e registro do projeto atualizados.
+
 ## 0.3.0 - Clientes frontend
 
 - Tipos frontend para contratos de API, Cliente, paginacao e impacto de exclusao adicionados.

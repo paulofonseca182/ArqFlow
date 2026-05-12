@@ -32,6 +32,7 @@ type ApiError = {
 - `GET /health`
 - `GET /dashboard`
 - `GET /clients/meta`
+- `GET /projects/meta`
 
 ## Clientes
 
@@ -52,6 +53,30 @@ type ApiError = {
 - `DELETE /clients/:id`
   - Exclui apenas clientes sem vinculos.
   - Retorna `CLIENT_HAS_RELATIONS` com detalhes de impacto quando houver registros vinculados.
+
+## Projetos
+
+- `GET /projects/meta`
+  - Retorna status e tipos oficiais de projeto.
+- `GET /projects`
+  - Lista projetos com `page`, `pageSize`, `search`, `status`, `type` e `clientId`.
+  - Busca por nome do projeto, descricao, endereco da obra e nome do cliente.
+- `GET /projects/:id`
+  - Retorna dados do projeto com resumo do cliente, contadores de impacto e progresso.
+- `GET /projects/:id/delete-impact`
+  - Retorna se o projeto existe e quantos registros vinculados impedem exclusao.
+- `POST /projects`
+  - Cria projeto com validacao Zod.
+  - Exige `clientId`, nome e tipo.
+  - Valida cliente existente.
+  - Bloqueia data de entrega anterior a data de inicio.
+  - Bloqueia valores `area` e `contractedAmount` menores ou iguais a zero.
+- `PATCH /projects/:id`
+  - Atualiza projeto parcialmente.
+  - Mantem cliente obrigatorio e valida datas considerando os dados atuais.
+- `DELETE /projects/:id`
+  - Exclui apenas projetos sem vinculos.
+  - Retorna `PROJECT_HAS_RELATIONS` com detalhes de impacto quando houver registros vinculados.
 
 ## Padrao de modulo backend
 

@@ -3,6 +3,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ClientsPage } from "./pages/Clients/ClientsPage";
 import { DashboardPage } from "./pages/Dashboard/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { ProjectsPage } from "./pages/Projects/ProjectsPage";
 
 export const router = createBrowserRouter([
   {
@@ -11,7 +12,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "clients", element: <ClientsPage /> },
-      { path: "projects", element: <PlaceholderPage title="Projetos" /> },
+      { path: "projects", element: <ProjectsPage /> },
       { path: "budgets", element: <PlaceholderPage title="Orçamentos" /> },
       { path: "financial", element: <PlaceholderPage title="Financeiro" /> },
       { path: "tasks", element: <PlaceholderPage title="Tarefas" /> },

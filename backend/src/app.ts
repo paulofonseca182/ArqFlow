@@ -4,6 +4,7 @@ import { errorMiddleware, notFoundMiddleware } from "./shared/errors.js";
 import { clientsRouter } from "./modules/clients/clients.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { projectsRouter } from "./modules/projects/projects.routes.js";
 
 export function createApp() {
   const app = express();
@@ -14,6 +15,7 @@ export function createApp() {
   app.use("/health", healthRouter);
   app.use("/dashboard", dashboardRouter);
   app.use("/clients", clientsRouter);
+  app.use("/projects", projectsRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

@@ -35,6 +35,18 @@ O modulo de Clientes ja possui backend e frontend iniciais:
 - Consulta de impacto antes da exclusao.
 - Estados de carregamento, vazio, erro, sucesso e paginacao simples.
 
+## Projetos
+
+O modulo de Projetos ja possui uma primeira fatia vertical:
+
+- API REST com listagem, busca, filtro por status, tipo e cliente.
+- Criacao e edicao de projeto com cliente obrigatorio.
+- Validacao backend de cliente existente, datas e valores positivos.
+- Tela `/projects` conectada ao backend real.
+- Formulario com React Hook Form e Zod.
+- Progresso exibido a partir das etapas existentes.
+- Exclusao protegida por impacto de vinculos.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos
@@ -55,4 +67,5 @@ npm run lint
 Frontend: http://localhost:5173
 Backend: http://localhost:3333
 Clientes: http://localhost:5173/clients
+Projetos: http://localhost:5173/projects
 ```
