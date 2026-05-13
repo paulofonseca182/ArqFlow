@@ -1,6 +1,6 @@
 import { api } from "./api";
 import type { ApiSuccess, PaginatedResponse } from "../types/api";
-import type { Budget, BudgetOption, BudgetStatus, BudgetWriteInput } from "../types/budget";
+import type { Budget, BudgetApprovalResult, BudgetApproveInput, BudgetOption, BudgetStatus, BudgetWriteInput } from "../types/budget";
 
 type BudgetsMeta = {
   statuses: BudgetOption<BudgetStatus>[];
@@ -50,6 +50,12 @@ export async function updateBudget(id: string, payload: BudgetWriteInput) {
 
 export async function sendBudget(id: string) {
   const response = await api.patch<ApiSuccess<Budget>>(`/budgets/${id}/send`);
+
+  return response.data.data;
+}
+
+export async function approveBudget(id: string, payload: BudgetApproveInput) {
+  const response = await api.patch<ApiSuccess<BudgetApprovalResult>>(`/budgets/${id}/approve`, payload);
 
   return response.data.data;
 }

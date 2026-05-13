@@ -1,3 +1,5 @@
+import type { ProjectStatus, ProjectType } from "./project";
+
 export const budgetStatusValues = ["DRAFT", "SENT", "NEGOTIATION", "APPROVED", "REFUSED", "EXPIRED", "CANCELLED"] as const;
 
 export type BudgetStatus = (typeof budgetStatusValues)[number];
@@ -18,7 +20,7 @@ export type BudgetClientSummary = {
 export type BudgetProjectSummary = {
   id: string;
   name: string;
-  status: string;
+  status: ProjectStatus;
 };
 
 export type BudgetItem = {
@@ -67,4 +69,35 @@ export type BudgetWriteInput = {
   expiresAt?: string;
   status: BudgetStatus;
   items: BudgetWriteItemInput[];
+};
+
+export type BudgetApproveInput = {
+  name?: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  workAddress?: string;
+  area?: number;
+  startsAt?: string;
+  expectedDeliveryDate?: string;
+  description?: string;
+  notes?: string;
+  internalNotes?: string;
+};
+
+export type BudgetApprovalProject = {
+  id: string;
+  clientId: string;
+  name: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  contractedAmount: string | null;
+  startsAt: string | null;
+  expectedDeliveryDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BudgetApprovalResult = {
+  budget: Budget;
+  project: BudgetApprovalProject;
 };

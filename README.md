@@ -75,6 +75,8 @@ O módulo de Orçamentos já possui uma primeira fatia vertical:
 - Cálculo de `totalAmount`, `finalAmount` e total de cada item sempre no backend.
 - Validação backend de valores positivos, desconto não negativo e pelo menos 1 item.
 - Envio de orçamento em rascunho ou negociação via `PATCH /budgets/:id/send`.
+- Aprovação/conversão de orçamento em projeto via `PATCH /budgets/:id/approve`, usando `$transaction`.
+- Projeto criado a partir do orçamento aprovado recebe `contractedAmount` com o valor final calculado pelo backend.
 - Exclusão com confirmação, preservando bloqueio para orçamento aprovado.
 - Tela `/budgets` conectada ao backend real.
 - Formulário com React Hook Form, Zod e itens dinâmicos.

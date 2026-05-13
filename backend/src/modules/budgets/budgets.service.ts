@@ -4,12 +4,19 @@ import { calculateBudgetFinalAmount } from "../../shared/business-rules.js";
 import { budgetStatusLabels, budgetStatuses } from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
 import { getPaginationMeta } from "../../shared/pagination.js";
-import type { CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
+import type { ApproveBudgetInput, CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
 
 type BudgetItemInput = {
   description: string;
   quantity: number;
   unitAmount: number;
+};
+
+type BudgetConversionSnapshot = {
+  clientId: string;
+  title: string;
+  description: string | null;
+  finalAmount: { toString(): string } | number | string;
 };
 
 const budgetSelect = {
@@ -57,6 +64,21 @@ const budgetSelect = {
 } satisfies Prisma.BudgetSelect;
 
 type BudgetRecord = Prisma.BudgetGetPayload<{ select: typeof budgetSelect }>;
+
+const convertedProjectSelect = {
+  id: true,
+  clientId: true,
+  name: true,
+  type: true,
+  status: true,
+  contractedAmount: true,
+  startsAt: true,
+  expectedDeliveryDate: true,
+  createdAt: true,
+  updatedAt: true
+} satisfies Prisma.ProjectSelect;
+
+type ConvertedProjectRecord = Prisma.ProjectGetPayload<{ select: typeof convertedProjectSelect }>;
 
 export function getBudgetsMeta() {
   return {
@@ -232,6 +254,57 @@ export async function sendBudget(id: string) {
   return mapBudget(updatedBudget);
 }
 
+export async function approveBudget(id: string, input: ApproveBudgetInput) {
+  return prisma.$transaction(async (transaction) => {
+    const budget = await transaction.budget.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        clientId: true,
+        projectId: true,
+        title: true,
+        description: true,
+        finalAmount: true,
+        status: true,
+        _count: {
+          select: {
+            items: true
+          }
+        }
+      }
+    });
+
+    if (!budget) {
+      throw new AppError("BUDGET_NOT_FOUND", "Orçamento não encontrado.", 404);
+    }
+
+    assertBudgetCanBeConverted({
+      itemCount: budget._count.items,
+      projectId: budget.projectId,
+      status: budget.status
+    });
+
+    const project = await transaction.project.create({
+      data: buildConvertedProjectData(budget, input),
+      select: convertedProjectSelect
+    });
+
+    const updatedBudget = await transaction.budget.update({
+      where: { id },
+      data: {
+        projectId: project.id,
+        status: "APPROVED"
+      },
+      select: budgetSelect
+    });
+
+    return {
+      budget: mapBudget(updatedBudget),
+      project: mapConvertedProject(project)
+    };
+  });
+}
+
 export async function deleteBudget(id: string) {
   const budget = await prisma.budget.findUnique({
     where: { id },
@@ -303,6 +376,45 @@ export function prepareBudgetAmounts(items: BudgetItemInput[], discount = 0) {
   };
 }
 
+export function assertBudgetCanBeConverted({
+  itemCount,
+  projectId,
+  status
+}: {
+  itemCount: number;
+  projectId?: string | null;
+  status: string;
+}) {
+  if (projectId) {
+    throw new AppError("BUDGET_ALREADY_CONVERTED", "Orçamento já está vinculado a um projeto.", 409);
+  }
+
+  if (itemCount <= 0) {
+    throw new AppError("BUDGET_ITEMS_REQUIRED", "Orçamento aprovado exige pelo menos 1 item.", 422);
+  }
+
+  if (["REFUSED", "EXPIRED", "CANCELLED"].includes(status)) {
+    throw new AppError("BUDGET_CANNOT_BE_APPROVED", "Orçamento recusado, vencido ou cancelado não pode virar projeto.", 409);
+  }
+}
+
+export function buildConvertedProjectData(budget: BudgetConversionSnapshot, input: ApproveBudgetInput) {
+  return {
+    clientId: budget.clientId,
+    name: input.name?.trim() || budget.title,
+    type: input.type,
+    status: input.status,
+    workAddress: input.workAddress,
+    area: input.area,
+    contractedAmount: Number(budget.finalAmount),
+    startsAt: input.startsAt,
+    expectedDeliveryDate: input.expectedDeliveryDate,
+    description: input.description ?? budget.description ?? `Projeto convertido do orçamento ${budget.title}.`,
+    notes: input.notes,
+    internalNotes: input.internalNotes
+  };
+}
+
 function mapBudget(budget: BudgetRecord) {
   return {
     id: budget.id,
@@ -329,6 +441,21 @@ function mapBudget(budget: BudgetRecord) {
       unitAmount: item.unitAmount.toString(),
       totalAmount: item.totalAmount.toString()
     }))
+  };
+}
+
+function mapConvertedProject(project: ConvertedProjectRecord) {
+  return {
+    id: project.id,
+    clientId: project.clientId,
+    name: project.name,
+    type: project.type,
+    status: project.status,
+    contractedAmount: project.contractedAmount?.toString() ?? null,
+    startsAt: project.startsAt?.toISOString() ?? null,
+    expectedDeliveryDate: project.expectedDeliveryDate?.toISOString() ?? null,
+    createdAt: project.createdAt.toISOString(),
+    updatedAt: project.updatedAt.toISOString()
   };
 }
 

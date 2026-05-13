@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBudgetSchema, updateBudgetSchema } from "./budgets.schema.js";
+import { approveBudgetSchema, createBudgetSchema, updateBudgetSchema } from "./budgets.schema.js";
 
 const validClientId = "clw0000000000000000000000";
 
@@ -54,5 +54,17 @@ describe("budgets schema", () => {
   it("permite update parcial com pelo menos um campo", () => {
     expect(updateBudgetSchema.safeParse({}).success).toBe(false);
     expect(updateBudgetSchema.safeParse({ status: "NEGOTIATION" }).success).toBe(true);
+  });
+
+  it("valida dados para aprovar e converter em projeto", () => {
+    expect(approveBudgetSchema.safeParse({ type: "INTERIORS" }).success).toBe(true);
+    expect(approveBudgetSchema.safeParse({ type: "INTERIORS", area: 0 }).success).toBe(false);
+    expect(
+      approveBudgetSchema.safeParse({
+        type: "INTERIORS",
+        startsAt: "2026-08-10",
+        expectedDeliveryDate: "2026-08-01"
+      }).success
+    ).toBe(false);
   });
 });

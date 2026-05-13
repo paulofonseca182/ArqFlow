@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { ok } from "../../shared/http.js";
 import {
+  approveBudget,
   createBudget,
   deleteBudget,
   getBudgetById,
@@ -9,7 +10,7 @@ import {
   sendBudget,
   updateBudget
 } from "./budgets.service.js";
-import type { CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
+import type { ApproveBudgetInput, CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
 
 export const getBudgetsMetaController: RequestHandler = (_request, response) => {
   response.json(ok(getBudgetsMeta()));
@@ -43,6 +44,12 @@ export const sendBudgetController: RequestHandler = async (request, response) =>
   const budget = await sendBudget(request.params.id);
 
   response.json(ok(budget));
+};
+
+export const approveBudgetController: RequestHandler = async (request, response) => {
+  const result = await approveBudget(request.params.id, request.body as ApproveBudgetInput);
+
+  response.json(ok(result));
 };
 
 export const deleteBudgetController: RequestHandler = async (request, response) => {

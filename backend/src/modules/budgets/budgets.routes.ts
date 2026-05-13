@@ -2,6 +2,7 @@ import { Router } from "express";
 import { validateRequest } from "../../middleware/validateRequest.js";
 import { asyncHandler } from "../../shared/async-handler.js";
 import {
+  approveBudgetController,
   createBudgetController,
   deleteBudgetController,
   getBudgetByIdController,
@@ -10,7 +11,13 @@ import {
   sendBudgetController,
   updateBudgetController
 } from "./budgets.controller.js";
-import { budgetIdParamsSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetSchema } from "./budgets.schema.js";
+import {
+  approveBudgetSchema,
+  budgetIdParamsSchema,
+  createBudgetSchema,
+  listBudgetsQuerySchema,
+  updateBudgetSchema
+} from "./budgets.schema.js";
 
 export const budgetsRouter = Router();
 
@@ -24,4 +31,9 @@ budgetsRouter.patch(
   asyncHandler(updateBudgetController)
 );
 budgetsRouter.patch("/:id/send", validateRequest({ params: budgetIdParamsSchema }), asyncHandler(sendBudgetController));
+budgetsRouter.patch(
+  "/:id/approve",
+  validateRequest({ params: budgetIdParamsSchema, body: approveBudgetSchema }),
+  asyncHandler(approveBudgetController)
+);
 budgetsRouter.delete("/:id", validateRequest({ params: budgetIdParamsSchema }), asyncHandler(deleteBudgetController));

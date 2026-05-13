@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildBudgetWhere, getBudgetsMeta, prepareBudgetAmounts } from "./budgets.service.js";
+import {
+  assertBudgetCanBeConverted,
+  buildBudgetWhere,
+  buildConvertedProjectData,
+  getBudgetsMeta,
+  prepareBudgetAmounts
+} from "./budgets.service.js";
 
 describe("budgets service", () => {
   it("retorna metadados de status de orçamentos", () => {
@@ -64,5 +70,42 @@ describe("budgets service", () => {
         { description: "Etapa 2", quantity: 1, unitAmount: 500, totalAmount: 500 }
       ]
     });
+  });
+
+  it("prepara dados de projeto a partir de orçamento aprovado", () => {
+    expect(
+      buildConvertedProjectData(
+        {
+          clientId: "clw0000000000000000000000",
+          description: "Escopo aprovado",
+          finalAmount: "3250",
+          title: "Projeto de interiores"
+        },
+        {
+          status: "CONTRACT_SIGNED",
+          type: "INTERIORS"
+        }
+      )
+    ).toEqual({
+      area: undefined,
+      clientId: "clw0000000000000000000000",
+      contractedAmount: 3250,
+      description: "Escopo aprovado",
+      expectedDeliveryDate: undefined,
+      internalNotes: undefined,
+      name: "Projeto de interiores",
+      notes: undefined,
+      startsAt: undefined,
+      status: "CONTRACT_SIGNED",
+      type: "INTERIORS",
+      workAddress: undefined
+    });
+  });
+
+  it("bloqueia conversão incoerente de orçamento em projeto", () => {
+    expect(() => assertBudgetCanBeConverted({ itemCount: 1, status: "SENT" })).not.toThrow();
+    expect(() => assertBudgetCanBeConverted({ itemCount: 0, status: "SENT" })).toThrow("pelo menos 1 item");
+    expect(() => assertBudgetCanBeConverted({ itemCount: 1, projectId: "project-1", status: "SENT" })).toThrow("vinculado");
+    expect(() => assertBudgetCanBeConverted({ itemCount: 1, status: "CANCELLED" })).toThrow("não pode virar projeto");
   });
 });

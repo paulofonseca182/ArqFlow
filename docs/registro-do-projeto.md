@@ -523,6 +523,7 @@ Implementado no backend:
 - `POST /budgets`;
 - `PATCH /budgets/:id`;
 - `PATCH /budgets/:id/send`;
+- `PATCH /budgets/:id/approve`;
 - `DELETE /budgets/:id`;
 - busca por título, tipo de serviço, descrição, cliente, projeto e descrição dos itens;
 - filtros por status, cliente e projeto;
@@ -535,6 +536,9 @@ Implementado no backend:
 - transação para criar orçamento com itens;
 - transação para substituir itens ao editar orçamento;
 - bloqueio de envio quando o orçamento não está em rascunho ou negociação;
+- aprovação/conversão de orçamento em projeto usando `$transaction`;
+- criação de projeto com `contractedAmount` derivado de `Budget.finalAmount`;
+- vinculação do orçamento aprovado ao projeto criado via `projectId`;
 - bloqueio de exclusão de orçamento aprovado;
 - testes de schema e service.
 
@@ -551,6 +555,8 @@ Implementado no frontend:
 - validação de cliente obrigatório, título, tipo de serviço, desconto, validade e itens;
 - exibição de valores calculados pela API;
 - ação para enviar orçamento;
+- ação para aprovar orçamento e converter em projeto;
+- modal de conversão com tipo, status inicial, datas, área, endereço e descrição do projeto;
 - exclusão com modal de confirmação;
 - estados de carregamento, vazio, erro e sucesso.
 
@@ -565,11 +571,12 @@ Regras consideradas:
 - valor final é calculado no backend;
 - frontend valida para UX, mas não substitui regras críticas;
 - orçamento aprovado não pode ser excluído nesta fatia.
+- orçamento convertido não pode gerar outro projeto.
 
 Ainda falta:
 
 - vincular orçamento a projeto pela interface;
-- converter orçamento aprovado em projeto usando transação;
+- gerar parcelas a partir de orçamento aprovado;
 - gerar parcelas a partir de orçamento aprovado;
 - testes de frontend para formulário, filtros, envio e exclusão;
 - refinamento de impressão/exportação de proposta.
@@ -816,7 +823,10 @@ Fluxo implementado:
 10. O backend calcula total bruto, desconto, total final e total de cada item.
 11. Usuário pode editar um orçamento existente.
 12. Usuário pode enviar um orçamento em rascunho ou negociação.
-13. Usuário pode excluir orçamento com modal de confirmação.
+13. Usuário pode aprovar e converter um orçamento em projeto.
+14. A conversão abre modal para definir dados iniciais do projeto.
+15. O backend cria o projeto e atualiza o orçamento aprovado dentro de uma `$transaction`.
+16. Usuário pode excluir orçamento com modal de confirmação.
 
 Campos principais do formulário:
 
@@ -828,7 +838,9 @@ Campos principais do formulário:
 - validade;
 - forma de pagamento;
 - descrição;
-- itens com descrição, quantidade e valor unitário.
+- itens com descrição, quantidade e valor unitário;
+- tipo e status inicial do projeto na conversão;
+- datas, área, endereço e observações do projeto na conversão.
 
 Regras consideradas:
 
@@ -839,6 +851,9 @@ Regras consideradas:
 - frontend não calcula valores críticos;
 - backend continua sendo a fonte da verdade;
 - orçamento enviado exige pelo menos 1 item;
+- orçamento aprovado vira projeto usando `$transaction`;
+- projeto convertido recebe `contractedAmount` a partir do valor final do orçamento;
+- orçamento já vinculado a projeto não pode ser convertido novamente;
 - orçamento aprovado não pode ser excluído.
 
 ## Regras de negócio ja implementadas
@@ -857,6 +872,8 @@ Regras:
 - total de cada item de orçamento e calculado no backend;
 - desconto não pode deixar valor final menor ou igual a zero;
 - desconto de orçamento não pode ser negativo;
+- orçamento aprovado vira projeto usando `$transaction`;
+- projeto criado a partir de orçamento aprovado recebe valor contratado igual ao valor final do orçamento;
 - progresso do projeto e calculado por etapas concluídas sobre total;
 - progresso não aceita valores negativos;
 - etapas concluídas não podem ultrapassar total de etapas;
@@ -919,6 +936,9 @@ Cobertura atual:
 - metadados de status de Orçamentos;
 - montagem de filtros de busca, cliente, projeto e status de Orçamentos;
 - cálculo de totais de orçamento no backend.
+- validação de dados para aprovação/conversão de orçamento;
+- preparação dos dados de projeto a partir de orçamento aprovado;
+- bloqueios contra conversão de orçamento sem item, cancelado ou já convertido.
 
 Validações ja executadas no estado atual:
 
@@ -1012,6 +1032,7 @@ GET /budgets/:id
 POST /budgets
 PATCH /budgets/:id
 PATCH /budgets/:id/send
+PATCH /budgets/:id/approve
 DELETE /budgets/:id
 GET /projects/meta
 GET /projects
@@ -1057,7 +1078,7 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar o fluxo de Orçamentos no navegador e iniciar a próxima fatia recomendada: conversão de orçamento aprovado em projeto.
+Validar o fluxo de conversão de Orçamentos no navegador e iniciar a próxima fatia recomendada: Financeiro e parcelas.
 
 Ordem sugerida:
 
@@ -1067,8 +1088,10 @@ Ordem sugerida:
 4. Confirmar que os valores exibidos vêm calculados pela API.
 5. Editar itens e desconto e confirmar recálculo no backend.
 6. Enviar orçamento em rascunho ou negociação.
-7. Tentar excluir orçamento aprovado e confirmar bloqueio no backend.
-8. Depois implementar aprovação/conversão de orçamento em projeto usando `$transaction`.
+7. Aprovar e converter orçamento em projeto.
+8. Confirmar que o orçamento fica aprovado e vinculado ao projeto criado.
+9. Confirmar que o projeto aparece em `/projects` com valor contratado igual ao valor final do orçamento.
+10. Depois iniciar Financeiro com parcelas/pagamentos vinculados ao projeto.
 
 ## Pontos de atencao para Clientes
 
@@ -1107,13 +1130,15 @@ Ao evoluir Orçamentos, lembrar:
 - total bruto, total final e total de item devem continuar calculados no backend;
 - desconto não pode ser negativo nem zerar o valor final;
 - conversão de orçamento aprovado em projeto deve usar `$transaction`;
+- orçamento já convertido não deve criar projeto duplicado;
+- projeto criado deve herdar cliente e valor final do orçamento;
 - valores financeiros não devem ser confiados apenas pelo frontend;
 - exclusões críticas devem continuar passando por confirmação.
 
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(budgets): implement budget workflow
+feat(budgets): convert approved budget into project
 ```
 
 Resumo sugerido:
@@ -1133,6 +1158,8 @@ Resumo sugerido:
 - Implement Project Steps frontend modal for generation, completion and reopening
 - Implement Budgets backend API with item totals and send action
 - Implement Budgets frontend list, form, filters and delete confirmation
+- Add transactional budget approval and project conversion
+- Add frontend approval modal for creating projects from budgets
 - Update project registry and README
 ```
 

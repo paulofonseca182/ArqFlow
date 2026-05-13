@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { budgetStatuses } from "../../shared/domain.js";
+import { budgetStatuses, projectStatuses, projectTypes } from "../../shared/domain.js";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
@@ -12,6 +12,10 @@ const optionalProjectId = z
   .or(z.literal("").transform(() => null));
 
 const positiveNumber = z.preprocess(parseNumberInput, z.number().positive("valor deve ser maior que zero"));
+const optionalPositiveNumber = z.preprocess(
+  parseOptionalNumberInput,
+  z.number().positive("valor deve ser maior que zero").optional()
+);
 const createDiscountNumber = z.preprocess(parseDiscountInputForCreate, z.number().min(0, "desconto não pode ser negativo"));
 const updateDiscountNumber = z.preprocess(
   parseDiscountInputForUpdate,
@@ -60,9 +64,25 @@ export const updateBudgetSchema = budgetBaseSchema
     message: "informe pelo menos um campo para atualizar"
   });
 
+export const approveBudgetSchema = z
+  .object({
+    name: optionalText,
+    type: z.enum(projectTypes),
+    status: z.enum(projectStatuses).default("CONTRACT_SIGNED"),
+    workAddress: optionalText,
+    area: optionalPositiveNumber,
+    startsAt: optionalDate,
+    expectedDeliveryDate: optionalDate,
+    description: optionalText,
+    notes: optionalText,
+    internalNotes: optionalText
+  })
+  .superRefine(validateProjectDateRange);
+
 export type ListBudgetsQuery = z.infer<typeof listBudgetsQuerySchema>;
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
+export type ApproveBudgetInput = z.infer<typeof approveBudgetSchema>;
 
 function parseNumberInput(value: unknown) {
   if (typeof value === "string") {
@@ -70,6 +90,14 @@ function parseNumberInput(value: unknown) {
   }
 
   return value;
+}
+
+function parseOptionalNumberInput(value: unknown) {
+  if (value === "" || value === null || value === undefined) {
+    return undefined;
+  }
+
+  return parseNumberInput(value);
 }
 
 function parseDiscountInputForCreate(value: unknown) {
@@ -86,4 +114,14 @@ function parseDiscountInputForUpdate(value: unknown) {
   }
 
   return parseNumberInput(value);
+}
+
+function validateProjectDateRange(data: { startsAt?: Date; expectedDeliveryDate?: Date }, context: z.RefinementCtx) {
+  if (data.startsAt && data.expectedDeliveryDate && data.expectedDeliveryDate < data.startsAt) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["expectedDeliveryDate"],
+      message: "data de entrega não pode ser anterior à data de início"
+    });
+  }
 }

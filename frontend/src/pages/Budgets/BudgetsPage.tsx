@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from "lucide-react";
 import { ActionIconButton } from "../../components/ui/ActionIconButton";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -13,18 +13,24 @@ import { Select } from "../../components/ui/Select";
 import { Table } from "../../components/ui/Table";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
-import { createBudget, deleteBudget, getBudgetsMeta, listBudgets, sendBudget, updateBudget } from "../../services/budgets";
+import { approveBudget, createBudget, deleteBudget, getBudgetsMeta, listBudgets, sendBudget, updateBudget } from "../../services/budgets";
 import { listClients } from "../../services/clients";
+import { getProjectsMeta } from "../../services/projects";
 import type { PaginationMeta } from "../../types/api";
-import type { Budget, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
+import type { Budget, BudgetApproveInput, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
 import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
+import type { ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
+import { projectStatusValues, projectTypeValues } from "../../types/project";
+import { ApproveBudgetModal } from "./ApproveBudgetModal";
 import { BudgetFormModal } from "./BudgetFormModal";
 
 const pageSize = 20;
 const actionIconClassName = "h-4 w-4 shrink-0";
 const actionIconStrokeWidth = 1.75;
 const fallbackStatuses: BudgetOption<BudgetStatus>[] = budgetStatusValues.map((value) => ({ value, label: value }));
+const fallbackProjectTypes: ProjectOption<ProjectType>[] = projectTypeValues.map((value) => ({ value, label: value }));
+const fallbackProjectStatuses: ProjectOption<ProjectStatus>[] = projectStatusValues.map((value) => ({ value, label: value }));
 const emptyPagination: PaginationMeta = {
   page: 1,
   pageSize,
@@ -37,6 +43,8 @@ export function BudgetsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [statuses, setStatuses] = useState<BudgetOption<BudgetStatus>[]>(fallbackStatuses);
+  const [projectTypes, setProjectTypes] = useState<ProjectOption<ProjectType>[]>(fallbackProjectTypes);
+  const [projectStatuses, setProjectStatuses] = useState<ProjectOption<ProjectStatus>[]>(fallbackProjectStatuses);
   const [page, setPage] = useState(1);
   const [draftSearch, setDraftSearch] = useState("");
   const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">("");
@@ -58,6 +66,9 @@ export function BudgetsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sendLoadingId, setSendLoadingId] = useState<string | null>(null);
+  const [approvalTarget, setApprovalTarget] = useState<Budget | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
 
@@ -90,11 +101,17 @@ export function BudgetsPage() {
       setMetaLoading(true);
 
       try {
-        const [budgetsMeta, clientsResult] = await Promise.all([getBudgetsMeta(), listClients({ page: 1, pageSize: 100 })]);
+        const [budgetsMeta, clientsResult, projectsMeta] = await Promise.all([
+          getBudgetsMeta(),
+          listClients({ page: 1, pageSize: 100 }),
+          getProjectsMeta()
+        ]);
 
         if (active) {
           setStatuses(budgetsMeta.statuses);
           setClients(clientsResult.data);
+          setProjectTypes(projectsMeta.types);
+          setProjectStatuses(projectsMeta.statuses);
         }
       } catch (requestError) {
         if (active) {
@@ -187,6 +204,32 @@ export function BudgetsPage() {
       setError(getErrorMessage(requestError));
     } finally {
       setSendLoadingId(null);
+    }
+  }
+
+  function handleOpenApprove(budget: Budget) {
+    setApprovalTarget(budget);
+    setApprovalError(null);
+  }
+
+  async function handleApproveBudget(payload: BudgetApproveInput) {
+    if (!approvalTarget) {
+      return;
+    }
+
+    setApproving(true);
+    setApprovalError(null);
+    setNotice(null);
+
+    try {
+      const result = await approveBudget(approvalTarget.id, payload);
+      setNotice(`Orçamento aprovado e projeto "${result.project.name}" criado.`);
+      setApprovalTarget(null);
+      await loadBudgets();
+    } catch (requestError) {
+      setApprovalError(getErrorMessage(requestError));
+    } finally {
+      setApproving(false);
     }
   }
 
@@ -335,6 +378,15 @@ export function BudgetsPage() {
                         )}
                       </ActionIconButton>
                     ) : null}
+                    {canApproveBudget(budget) ? (
+                      <ActionIconButton
+                        ariaLabel={`Aprovar e converter ${budget.title}`}
+                        label="Aprovar e converter"
+                        onClick={() => handleOpenApprove(budget)}
+                      >
+                        <CheckCircle2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                      </ActionIconButton>
+                    ) : null}
                     <ActionIconButton
                       ariaLabel={`Excluir ${budget.title}`}
                       destructive
@@ -391,6 +443,21 @@ export function BudgetsPage() {
         statuses={statuses}
       />
 
+      <ApproveBudgetModal
+        apiError={approvalError}
+        approving={approving}
+        budget={approvalTarget}
+        onClose={() => {
+          if (!approving) {
+            setApprovalTarget(null);
+          }
+        }}
+        onSubmit={handleApproveBudget}
+        open={Boolean(approvalTarget)}
+        statuses={projectStatuses}
+        types={projectTypes}
+      />
+
       <DeleteModal
         confirming={deleting}
         impact={`${deleteTarget?.items.length ?? 0} item${deleteTarget?.items.length === 1 ? "" : "s"} serão excluídos junto com o orçamento.`}
@@ -405,6 +472,10 @@ export function BudgetsPage() {
 
 function canSendBudget(budget: Budget) {
   return budget.status === "DRAFT" || budget.status === "NEGOTIATION";
+}
+
+function canApproveBudget(budget: Budget) {
+  return !budget.projectId && ["DRAFT", "SENT", "NEGOTIATION", "APPROVED"].includes(budget.status);
 }
 
 function getBudgetStatusTone(status: BudgetStatus) {
