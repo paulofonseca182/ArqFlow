@@ -224,6 +224,7 @@ Base Express criada com:
 - modulo inicial de Projetos em `/projects`;
 - modulo de Etapas de Projeto em `/project-steps`.
 - modulo inicial de Orçamentos em `/budgets`.
+- modulo inicial de Financeiro em `/financial`.
 
 Arquivos compartilhados importantes:
 
@@ -577,9 +578,116 @@ Ainda falta:
 
 - vincular orçamento a projeto pela interface;
 - gerar parcelas a partir de orçamento aprovado;
-- gerar parcelas a partir de orçamento aprovado;
 - testes de frontend para formulário, filtros, envio e exclusão;
 - refinamento de impressão/exportação de proposta.
+
+## Modulo Financeiro e Parcelas - estado atual
+
+O modulo Financeiro foi iniciado como continuidade do fluxo Orçamento aprovado -> Projeto -> Parcelas.
+
+Banco:
+
+- o modelo `Payment` ja existia no Prisma;
+- cada parcela/pagamento exige `projectId` e `clientId`;
+- `Payment -> Project` e `Payment -> Client` usam `onDelete: Restrict`;
+- não foi necessário criar migration nesta fatia;
+- o cliente da parcela e derivado do projeto no backend, evitando divergência enviada pelo frontend.
+
+Backend:
+
+```txt
+backend/src/modules/financial/
+  financial.routes.ts
+  financial.controller.ts
+  financial.service.ts
+  financial.schema.ts
+  financial.schema.test.ts
+  financial.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Financial/
+  FinancialPage.tsx
+  PaymentFormModal.tsx
+  GenerateInstallmentsModal.tsx
+  RegisterPaymentModal.tsx
+  payment-form.ts
+
+frontend/src/services/financial.ts
+frontend/src/types/financial.ts
+```
+
+Implementado no backend:
+
+- `GET /financial/meta`;
+- `GET /financial/summary`;
+- `GET /financial/payments`;
+- `POST /financial/payments`;
+- `PATCH /financial/payments/:id`;
+- `PATCH /financial/payments/:id/pay`;
+- `PATCH /financial/payments/:id/cancel`;
+- `POST /financial/installments`;
+- metadados de status e formas de pagamento;
+- listagem paginada de parcelas com busca por descrição, projeto e cliente;
+- filtros por status, projeto, cliente e vencimento;
+- criação manual de parcela sempre vinculada a projeto;
+- edição de dados operacionais da parcela;
+- geração de parcelas a partir do `contractedAmount` do projeto;
+- parcelamento limitado a à vista, 2x ou 3x;
+- divisão do valor contratado sem perda de centavos;
+- bloqueio de geração quando o projeto ja possui parcelas ativas;
+- registro de pagamento total ou parcial;
+- preenchimento automático de `paidAt` ao registrar pagamento;
+- bloqueio de data de pagamento futura;
+- bloqueio de valor pago maior que o valor da parcela;
+- cancelamento de parcela ainda não paga;
+- status atrasado calculado dinamicamente pelo backend;
+- resumo financeiro com receita do mês, receita do ano, recebido, a receber, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio;
+- alerta quando a soma das parcelas ultrapassa o valor contratado do projeto;
+- testes de schema e service para regras financeiras.
+
+Implementado no frontend:
+
+- rota `/financial` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/financial`;
+- tipos TypeScript para parcela, status, formas de pagamento, resumo e alertas;
+- cards de indicadores financeiros no topo da tela;
+- listagem com busca e filtros por status, projeto e cliente;
+- tabela de parcelas com projeto, cliente, valor, valor pago, vencimento, status, forma de pagamento e ações;
+- modal para criação e edição de parcela;
+- modal para gerar parcelas a partir de um projeto;
+- modal para registrar pagamento total ou parcial;
+- modal de cancelamento de parcela;
+- React Hook Form com validação Zod manual;
+- estados de carregamento, vazio, erro e sucesso;
+- badges de status financeiros;
+- tooltips nos botões de ação seguindo o padrão das outras telas.
+
+Regras consideradas:
+
+- pagamento deve estar vinculado a projeto;
+- cliente da parcela vem do projeto no backend;
+- valores financeiros devem ser maiores que zero;
+- valor pago não pode ultrapassar o valor da parcela;
+- data de pagamento não pode ser futura;
+- pagamento atrasado e calculado dinamicamente;
+- pagamento pago ou cancelado não entra como atrasado;
+- ao registrar pagamento sem data, o backend preenche `paidAt`;
+- pagamento parcial recebe status `PARTIALLY_PAID`;
+- pagamento total recebe status `PAID`;
+- parcelas canceladas deixam de alimentar indicadores de recebimento e atraso;
+- geração padrão de parcelas usa o valor contratado do projeto convertido do orçamento;
+- frontend valida para UX, mas backend continua sendo a fonte da verdade.
+
+Ainda falta:
+
+- testes de frontend para formulários e ações financeiras;
+- refinamento visual após teste no navegador;
+- integração do Dashboard principal com os indicadores reais;
+- geração automática opcional de parcelas imediatamente após converter orçamento em projeto;
+- relatório financeiro por projeto.
 
 ## Ajuste de UI e português - Projetos e Clientes
 
@@ -641,7 +749,7 @@ Rotas iniciais:
 - Clientes, ja conectada a tela real
 - Projetos, ja conectada a tela real inicial
 - Orçamentos, ja conectada a tela real inicial
-- Financeiro
+- Financeiro, ja conectado a tela real inicial
 - Tarefas
 - Visitas
 - Documentos
@@ -656,6 +764,7 @@ Observação:
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
 - Orçamentos é a quarta fatia operacional e inicia o fluxo comercial/financeiro.
+- Financeiro é a quinta fatia operacional e registra parcelas, pagamentos e indicadores.
 
 ### Frontend - Clientes
 
@@ -856,6 +965,59 @@ Regras consideradas:
 - orçamento já vinculado a projeto não pode ser convertido novamente;
 - orçamento aprovado não pode ser excluído.
 
+### Frontend - Financeiro
+
+Objetivo:
+
+- permitir gerar parcelas a partir de um projeto, registrar pagamentos e acompanhar indicadores financeiros reais.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa acompanhar valores contratados, recebidos, pendentes, vencendo e atrasados por projeto.
+
+Fluxo implementado:
+
+1. Usuário acessa `/financial`.
+2. A tela carrega metadados via `/financial/meta`.
+3. A tela carrega indicadores via `/financial/summary`.
+4. A tela lista parcelas via `/financial/payments`.
+5. Usuário pode buscar por parcela, projeto ou cliente.
+6. Usuário pode filtrar por status, projeto e cliente.
+7. Usuário pode gerar parcelas de um projeto com valor contratado.
+8. O backend cria 1, 2 ou 3 parcelas a partir do `contractedAmount`.
+9. Usuário pode criar uma parcela manual.
+10. Usuário pode editar uma parcela ainda não cancelada.
+11. Usuário pode registrar pagamento total ou parcial.
+12. O backend define `paidAt` automaticamente quando a data não e informada.
+13. Usuário pode cancelar parcela ainda não paga.
+14. A tela recarrega indicadores e lista após cada mutação.
+
+Campos principais:
+
+- projeto;
+- descrição da parcela;
+- valor;
+- número da parcela;
+- vencimento;
+- forma de pagamento;
+- observações;
+- valor pago;
+- data de pagamento;
+- quantidade de parcelas para geração.
+
+Regras consideradas:
+
+- parcela deve ter projeto;
+- projeto deve existir;
+- cliente da parcela e derivado do projeto;
+- projeto precisa ter valor contratado para geração automática;
+- parcelamento permitido: à vista, 2x ou 3x;
+- data de pagamento não pode ser futura;
+- valor pago deve ser maior que zero;
+- valor pago não pode ser maior que a parcela;
+- status atrasado vem calculado da API;
+- frontend não calcula regra crítica.
+
 ## Regras de negócio ja implementadas
 
 Arquivo:
@@ -884,6 +1046,15 @@ Regras:
 - reabertura de etapa limpa `completedAt` no backend;
 - pagamento atrasado e calculado dinamicamente;
 - pagamento pago ou cancelado não e considerado atrasado;
+- pagamento deve estar vinculado a projeto;
+- cliente do pagamento e derivado do projeto;
+- valor de parcela e valor pago devem ser maiores que zero;
+- pagamento total preenche `paidAt` e status `PAID`;
+- pagamento parcial preenche `paidAt` e status `PARTIALLY_PAID`;
+- data de pagamento futura e bloqueada;
+- valor pago acima da parcela e bloqueado;
+- parcelamento automático usa `contractedAmount` do projeto em 1x, 2x ou 3x;
+- soma de parcelas acima do contratado gera alerta;
 - documento deve ter cliente e/ou projeto.
 
 ## Testes
@@ -900,6 +1071,8 @@ backend/src/modules/projectSteps/projectSteps.schema.test.ts
 backend/src/modules/projectSteps/projectSteps.service.test.ts
 backend/src/modules/budgets/budgets.schema.test.ts
 backend/src/modules/budgets/budgets.service.test.ts
+backend/src/modules/financial/financial.schema.test.ts
+backend/src/modules/financial/financial.service.test.ts
 ```
 
 Cobertura atual:
@@ -939,6 +1112,13 @@ Cobertura atual:
 - validação de dados para aprovação/conversão de orçamento;
 - preparação dos dados de projeto a partir de orçamento aprovado;
 - bloqueios contra conversão de orçamento sem item, cancelado ou já convertido.
+- schema de parcelas e geração financeira;
+- parcelamento limitado a 1x, 2x ou 3x;
+- divisão de parcelas com centavos preservados;
+- status atrasado calculado dinamicamente;
+- bloqueio de data de pagamento futura;
+- bloqueio de valor pago acima da parcela;
+- resumo financeiro por projeto e alerta acima do contratado.
 
 Validações ja executadas no estado atual:
 
@@ -1034,6 +1214,14 @@ PATCH /budgets/:id
 PATCH /budgets/:id/send
 PATCH /budgets/:id/approve
 DELETE /budgets/:id
+GET /financial/meta
+GET /financial/summary
+GET /financial/payments
+POST /financial/payments
+PATCH /financial/payments/:id
+PATCH /financial/payments/:id/pay
+PATCH /financial/payments/:id/cancel
+POST /financial/installments
 GET /projects/meta
 GET /projects
 GET /projects/:id
@@ -1078,20 +1266,20 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar o fluxo de conversão de Orçamentos no navegador e iniciar a próxima fatia recomendada: Financeiro e parcelas.
+Validar o fluxo financeiro no navegador e iniciar a próxima fatia recomendada: integração do Dashboard principal com indicadores reais, depois Tarefas.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Abrir `http://localhost:5173/budgets`.
-3. Criar um orçamento com cliente obrigatório e pelo menos um item.
-4. Confirmar que os valores exibidos vêm calculados pela API.
-5. Editar itens e desconto e confirmar recálculo no backend.
-6. Enviar orçamento em rascunho ou negociação.
-7. Aprovar e converter orçamento em projeto.
-8. Confirmar que o orçamento fica aprovado e vinculado ao projeto criado.
-9. Confirmar que o projeto aparece em `/projects` com valor contratado igual ao valor final do orçamento.
-10. Depois iniciar Financeiro com parcelas/pagamentos vinculados ao projeto.
+2. Abrir `http://localhost:5173/financial`.
+3. Selecionar um projeto convertido de orçamento e com valor contratado.
+4. Gerar parcelas em 1x, 2x ou 3x.
+5. Confirmar que as parcelas aparecem na tabela.
+6. Registrar pagamento total de uma parcela.
+7. Registrar pagamento parcial de outra parcela.
+8. Confirmar que indicadores de recebido, a receber, atrasado e vencendo atualizam.
+9. Testar filtro por status, projeto e cliente.
+10. Depois integrar o Dashboard principal com os indicadores reais.
 
 ## Pontos de atencao para Clientes
 
@@ -1135,10 +1323,25 @@ Ao evoluir Orçamentos, lembrar:
 - valores financeiros não devem ser confiados apenas pelo frontend;
 - exclusões críticas devem continuar passando por confirmação.
 
+## Pontos de atencao para Financeiro
+
+Ao evoluir Financeiro, lembrar:
+
+- pagamento sempre deve pertencer a projeto;
+- cliente do pagamento deve continuar derivado do projeto no backend;
+- status atrasado deve continuar dinâmico;
+- não gravar atraso como única fonte da verdade;
+- data de pagamento futura deve continuar bloqueada;
+- valor pago acima da parcela deve continuar bloqueado;
+- geração automática deve continuar usando valor contratado do projeto;
+- soma de parcelas acima do contratado deve gerar alerta;
+- indicadores financeiros devem ser calculados no backend;
+- frontend deve melhorar UX, mas não substituir regras críticas.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(budgets): convert approved budget into project
+feat(financial): add installments and payment tracking
 ```
 
 Resumo sugerido:
@@ -1160,6 +1363,8 @@ Resumo sugerido:
 - Implement Budgets frontend list, form, filters and delete confirmation
 - Add transactional budget approval and project conversion
 - Add frontend approval modal for creating projects from budgets
+- Add financial API for installments, payment registration and summary
+- Add financial frontend page with indicators, filters and payment actions
 - Update project registry and README
 ```
 

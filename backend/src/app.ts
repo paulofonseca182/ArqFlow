@@ -4,6 +4,7 @@ import { errorMiddleware, notFoundMiddleware } from "./shared/errors.js";
 import { budgetsRouter } from "./modules/budgets/budgets.routes.js";
 import { clientsRouter } from "./modules/clients/clients.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
+import { financialRouter } from "./modules/financial/financial.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { projectStepsRouter } from "./modules/projectSteps/projectSteps.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
@@ -18,6 +19,7 @@ export function createApp() {
   app.use("/dashboard", dashboardRouter);
   app.use("/budgets", budgetsRouter);
   app.use("/clients", clientsRouter);
+  app.use("/financial", financialRouter);
   app.use("/projects", projectsRouter);
   app.use("/project-steps", projectStepsRouter);
 

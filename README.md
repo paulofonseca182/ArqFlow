@@ -82,6 +82,22 @@ O módulo de Orçamentos já possui uma primeira fatia vertical:
 - Formulário com React Hook Form, Zod e itens dinâmicos.
 - Status oficiais de orçamento com badges visuais.
 
+## Financeiro e Parcelas
+
+O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
+
+- API REST em `/financial` com metadados, resumo, listagem, criação, edição, pagamento e cancelamento de parcelas.
+- Geração de parcelas a partir de projeto com `contractedAmount`, usando 1x, 2x ou 3x.
+- Cliente da parcela derivado do projeto no backend.
+- Status atrasado calculado dinamicamente pelo backend.
+- Registro de pagamento total ou parcial via `PATCH /financial/payments/:id/pay`.
+- Data de pagamento preenchida automaticamente quando não informada.
+- Bloqueio de data de pagamento futura e de valor pago maior que a parcela.
+- Indicadores financeiros: receita do mês, receita do ano, valor a receber, recebido, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio.
+- Tela `/financial` conectada ao backend real.
+- Formulários com React Hook Form e Zod para parcela manual, geração de parcelas e registro de pagamento.
+- Alertas quando a soma das parcelas ultrapassa o valor contratado do projeto.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos
@@ -104,4 +120,5 @@ Backend: http://localhost:3333
 Clientes: http://localhost:5173/clients
 Projetos: http://localhost:5173/projects
 Orçamentos: http://localhost:5173/budgets
+Financeiro: http://localhost:5173/financial
 ```

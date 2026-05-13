@@ -83,3 +83,21 @@ export const budgetStatusLabels: Record<BudgetStatus, string> = {
   EXPIRED: "Vencido",
   CANCELLED: "Cancelado"
 };
+
+export const paymentStatusLabels: Record<PaymentStatus, string> = {
+  RECEIVABLE: "A receber",
+  PAID: "Pago",
+  PARTIALLY_PAID: "Parcialmente pago",
+  OVERDUE: "Atrasado",
+  CANCELLED: "Cancelado"
+};
+
+export const paymentMethodLabels: Record<PaymentMethod, string> = {
+  CASH: "Dinheiro",
+  PIX: "Pix",
+  BANK_TRANSFER: "Transferência bancária",
+  CREDIT_CARD: "Cartão de crédito",
+  DEBIT_CARD: "Cartão de débito",
+  BOLETO: "Boleto",
+  OTHER: "Outro"
+};

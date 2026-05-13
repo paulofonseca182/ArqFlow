@@ -3,6 +3,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { BudgetsPage } from "./pages/Budgets/BudgetsPage";
 import { ClientsPage } from "./pages/Clients/ClientsPage";
 import { DashboardPage } from "./pages/Dashboard/DashboardPage";
+import { FinancialPage } from "./pages/Financial/FinancialPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { ProjectsPage } from "./pages/Projects/ProjectsPage";
 
@@ -15,7 +16,7 @@ export const router = createBrowserRouter([
       { path: "clients", element: <ClientsPage /> },
       { path: "projects", element: <ProjectsPage /> },
       { path: "budgets", element: <BudgetsPage /> },
-      { path: "financial", element: <PlaceholderPage title="Financeiro" /> },
+      { path: "financial", element: <FinancialPage /> },
       { path: "tasks", element: <PlaceholderPage title="Tarefas" /> },
       { path: "visits", element: <PlaceholderPage title="Visitas" /> },
       { path: "documents", element: <PlaceholderPage title="Documentos" /> },
