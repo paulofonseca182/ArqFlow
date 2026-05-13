@@ -5,7 +5,7 @@ import { paginationQuerySchema } from "../../shared/pagination.js";
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalEmail = z.string().trim().email().optional().or(z.literal("").transform(() => undefined));
 const optionalCpfCnpj = optionalText.refine((value) => !value || isValidCpfCnpj(value), {
-  message: "CPF/CNPJ invalido"
+  message: "CPF/CNPJ inválido"
 });
 
 export const clientIdParamsSchema = z.object({

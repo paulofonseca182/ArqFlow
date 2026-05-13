@@ -126,15 +126,15 @@ export function ProjectFormModal({
               </option>
             ))}
           </Select>
-          <Input error={errors.startsAt?.message} label="Inicio" type="date" {...form.register("startsAt")} />
+          <Input error={errors.startsAt?.message} label="Início" type="date" {...form.register("startsAt")} />
           <Input error={errors.expectedDeliveryDate?.message} label="Entrega prevista" type="date" {...form.register("expectedDeliveryDate")} />
           <Input error={errors.contractedAmount?.message} label="Valor contratado" placeholder="42000,00" {...form.register("contractedAmount")} />
-          <Input error={errors.area?.message} label="Area" placeholder="80" {...form.register("area")} />
-          <Input className="md:col-span-2" error={errors.workAddress?.message} label="Endereco da obra" placeholder="Endereco principal da obra" {...form.register("workAddress")} />
+          <Input error={errors.area?.message} label="Área" placeholder="80" {...form.register("area")} />
+          <Input className="md:col-span-2" error={errors.workAddress?.message} label="Endereço da obra" placeholder="Endereço principal da obra" {...form.register("workAddress")} />
         </div>
 
-        <Textarea error={errors.description?.message} label="Descricao" placeholder="Escopo resumido do projeto" rows={3} {...form.register("description")} />
-        <Textarea error={errors.notes?.message} label="Observacoes" placeholder="Notas visiveis para acompanhamento" rows={3} {...form.register("notes")} />
+        <Textarea error={errors.description?.message} label="Descrição" placeholder="Escopo resumido do projeto" rows={3} {...form.register("description")} />
+        <Textarea error={errors.notes?.message} label="Observações" placeholder="Notas visíveis para acompanhamento" rows={3} {...form.register("notes")} />
       </form>
     </Modal>
   );

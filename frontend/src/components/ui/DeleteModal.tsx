@@ -26,13 +26,13 @@ export function DeleteModal({ confirming = false, impact, itemName, onClose, onC
       }
       onClose={onClose}
       open={open}
-      title="Confirmar exclusao"
+      title="Confirmar exclusão"
     >
       <div className="flex gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
         <div className="space-y-2">
           <p>
-            Confirme a exclusao permanente de <span className="font-medium text-text-primary">{itemName}</span>.
+            Confirme a exclusão permanente de <span className="font-medium text-text-primary">{itemName}</span>.
           </p>
           {impact ? <p className="text-text-muted">{impact}</p> : null}
         </div>

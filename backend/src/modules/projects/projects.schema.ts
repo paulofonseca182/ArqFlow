@@ -28,7 +28,7 @@ export const listProjectsQuerySchema = paginationQuerySchema.extend({
 });
 
 const projectBaseSchema = z.object({
-  clientId: z.string().cuid("cliente invalido"),
+  clientId: z.string().cuid("cliente inválido"),
   name: z.string().trim().min(2, "nome deve ter pelo menos 2 caracteres"),
   type: z.enum(projectTypes),
   status: z.enum(projectStatuses).default("CONTRACT_IN_PROGRESS"),
@@ -61,7 +61,7 @@ function validateProjectDateRange(data: { startsAt?: Date; expectedDeliveryDate?
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["expectedDeliveryDate"],
-      message: "data de entrega nao pode ser anterior a data de inicio"
+      message: "data de entrega não pode ser anterior à data de início"
     });
   }
 }

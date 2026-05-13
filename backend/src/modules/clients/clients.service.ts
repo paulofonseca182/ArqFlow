@@ -93,7 +93,7 @@ export async function getClientById(id: string) {
   });
 
   if (!client) {
-    throw new AppError("CLIENT_NOT_FOUND", "Cliente nao encontrado.", 404);
+    throw new AppError("CLIENT_NOT_FOUND", "Cliente não encontrado.", 404);
   }
 
   return client;
@@ -113,7 +113,7 @@ export async function updateClient(id: string, input: UpdateClientInput) {
   });
 
   if (!currentClient) {
-    throw new AppError("CLIENT_NOT_FOUND", "Cliente nao encontrado.", 404);
+    throw new AppError("CLIENT_NOT_FOUND", "Cliente não encontrado.", 404);
   }
 
   const nextPhone = "phone" in input ? input.phone : currentClient.phone;
@@ -134,11 +134,11 @@ export async function deleteClient(id: string) {
   const impact = await getClientDeleteImpact(id);
 
   if (!impact.exists) {
-    throw new AppError("CLIENT_NOT_FOUND", "Cliente nao encontrado.", 404);
+    throw new AppError("CLIENT_NOT_FOUND", "Cliente não encontrado.", 404);
   }
 
   if (impact.hasRelations) {
-    throw new AppError("CLIENT_HAS_RELATIONS", "Cliente possui registros vinculados e nao pode ser excluido.", 409, {
+    throw new AppError("CLIENT_HAS_RELATIONS", "Cliente possui registros vinculados e não pode ser excluído.", 409, {
       impact: impact.counts
     });
   }

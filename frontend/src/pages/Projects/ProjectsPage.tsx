@@ -14,6 +14,7 @@ import {
   Trash2,
   XCircle
 } from "lucide-react";
+import { ActionIconButton } from "../../components/ui/ActionIconButton";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -60,6 +61,8 @@ import type { ProjectStep, ProjectStepStatus } from "../../types/projectStep";
 import { ProjectFormModal } from "./ProjectFormModal";
 
 const pageSize = 20;
+const actionIconClassName = "h-4 w-4 shrink-0";
+const actionIconStrokeWidth = 1.75;
 const emptyPagination: PaginationMeta = {
   page: 1,
   pageSize,
@@ -248,7 +251,7 @@ export function ProjectsPage() {
       const impact = await getProjectDeleteImpact(project.id);
 
       if (!impact.exists) {
-        setError("Projeto nao encontrado.");
+        setError("Projeto não encontrado.");
         await loadProjects();
         return;
       }
@@ -273,7 +276,7 @@ export function ProjectsPage() {
 
     try {
       await deleteProject(deleteTarget.id);
-      setNotice("Projeto excluido.");
+      setNotice("Projeto excluído.");
       closeDeleteFlow();
       await loadProjects();
     } catch (requestError) {
@@ -330,7 +333,7 @@ export function ProjectsPage() {
       const result = await generateDefaultProjectSteps(stepsProject.id);
       setSteps(result.data);
       setStepsProgress(result.progress);
-      setNotice("Etapas padrao geradas.");
+      setNotice("Etapas padrão geradas.");
       await loadProjects();
     } catch (requestError) {
       setStepsError(getErrorMessage(requestError));
@@ -348,7 +351,7 @@ export function ProjectsPage() {
       await completeProjectStep(step.id);
       await loadSteps(step.projectId);
       await loadProjects();
-      setNotice("Etapa concluida.");
+      setNotice("Etapa concluída.");
     } catch (requestError) {
       setStepsError(getErrorMessage(requestError));
     } finally {
@@ -390,12 +393,12 @@ export function ProjectsPage() {
           Novo projeto
         </Button>
       }
-      description="Projetos vinculados aos clientes do escritorio."
+      description="Projetos vinculados aos clientes do escritório."
       title="Projetos"
     >
       <Card>
         <form className="grid gap-3 xl:grid-cols-[1fr_190px_170px_220px_auto]" onSubmit={handleFilterSubmit}>
-          <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Projeto, cliente ou endereco" value={draftSearch} />
+          <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Projeto, cliente ou endereço" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as ProjectStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
             {statuses.map((status) => (
@@ -421,16 +424,16 @@ export function ProjectsPage() {
             ))}
           </Select>
           <div className="flex items-end gap-2">
-            <Button className="min-w-28" type="submit">
-              <Search className="h-4 w-4" />
+            <Button className="min-w-28" title="Buscar projetos" type="submit">
+              <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
             </Button>
-            <Button aria-label="Limpar filtros" className="h-10 w-10 px-0" onClick={handleClearFilters} type="button" variant="secondary">
-              <XCircle className="h-4 w-4" />
-            </Button>
-            <Button aria-label="Atualizar lista" className="h-10 w-10 px-0" onClick={() => void loadProjects()} type="button" variant="ghost">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            <ActionIconButton ariaLabel="Limpar filtros" label="Limpar filtros" onClick={handleClearFilters} size="control" variant="secondary">
+              <XCircle className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
+            <ActionIconButton ariaLabel="Atualizar lista" label="Atualizar lista" onClick={() => void loadProjects()} size="control">
+              <RefreshCw className={`${actionIconClassName} ${loading ? "animate-spin" : ""}`} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
           </div>
         </form>
       </Card>
@@ -471,12 +474,12 @@ export function ProjectsPage() {
 
       {projects.length > 0 ? (
         <div className="space-y-3">
-          <Table headers={["Projeto", "Cliente", "Tipo", "Status", "Progresso", "Entrega", "Acoes"]}>
+          <Table headers={["Projeto", "Cliente", "Tipo", "Status", "Progresso", "Entrega", "Ações"]}>
             {projects.map((project) => (
               <tr className="min-w-[980px]" key={project.id}>
                 <td className="min-w-60 px-4 py-4 align-top">
                   <div className="font-medium text-text-primary">{project.name}</div>
-                  <div className="mt-1 text-xs text-text-muted">{project.workAddress ?? "Endereco nao informado"}</div>
+                  <div className="mt-1 text-xs text-text-muted">{project.workAddress ?? "Endereço não informado"}</div>
                 </td>
                 <td className="min-w-44 px-4 py-4 align-top text-text-secondary">{project.client.name}</td>
                 <td className="px-4 py-4 align-top text-text-secondary">{typeLabelByValue.get(project.type) ?? project.type}</td>
@@ -489,28 +492,29 @@ export function ProjectsPage() {
                 <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatDate(project.expectedDeliveryDate)}</td>
                 <td className="px-4 py-4 align-top">
                   <div className="flex items-center gap-2">
-                    <Button aria-label={`Editar ${project.name}`} className="h-9 w-9 px-0" onClick={() => handleOpenEdit(project)} type="button" variant="ghost">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      aria-label={`Etapas ${project.name}`}
-                      className="h-9 w-9 px-0"
+                    <ActionIconButton ariaLabel={`Editar ${project.name}`} label="Editar" onClick={() => handleOpenEdit(project)}>
+                      <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                    </ActionIconButton>
+                    <ActionIconButton
+                      ariaLabel={`Etapas ${project.name}`}
+                      label="Etapas"
                       onClick={() => void handleOpenSteps(project)}
-                      type="button"
-                      variant="ghost"
                     >
-                      <ListChecks className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      aria-label={`Excluir ${project.name}`}
-                      className="h-9 w-9 px-0 text-status-danger hover:text-status-danger"
+                      <ListChecks className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                    </ActionIconButton>
+                    <ActionIconButton
+                      ariaLabel={`Excluir ${project.name}`}
+                      destructive
                       disabled={deleteLoadingId === project.id}
+                      label="Excluir"
                       onClick={() => void handleRequestDelete(project)}
-                      type="button"
-                      variant="ghost"
                     >
-                      {deleteLoadingId === project.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </Button>
+                      {deleteLoadingId === project.id ? (
+                        <RefreshCw className={`${actionIconClassName} animate-spin`} strokeWidth={actionIconStrokeWidth} />
+                      ) : (
+                        <Trash2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                      )}
+                    </ActionIconButton>
                   </div>
                 </td>
               </tr>
@@ -535,7 +539,7 @@ export function ProjectsPage() {
                 type="button"
                 variant="secondary"
               >
-                Proxima
+                Próxima
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -562,7 +566,7 @@ export function ProjectsPage() {
 
       <DeleteModal
         confirming={deleting}
-        impact="Esta acao nao pode ser desfeita."
+        impact="Esta ação não pode ser desfeita."
         itemName={deleteTarget?.name ?? ""}
         onClose={closeDeleteFlow}
         onConfirm={() => void handleConfirmDelete()}
@@ -606,11 +610,11 @@ export function ProjectsPage() {
               <EmptyState
                 action={
                   <Button disabled={stepsGenerating} onClick={() => void handleGenerateSteps()} type="button">
-                    {stepsGenerating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
+                    {stepsGenerating ? <RefreshCw className="h-5 w-5 animate-spin" /> : <ListChecks className="h-5 w-5" />}
                     Gerar etapas
                   </Button>
                 }
-                description="Este projeto ainda nao possui etapas. Gere o roteiro padrao pelo tipo do projeto."
+                description="Este projeto ainda não possui etapas. Gere o roteiro padrão pelo tipo do projeto."
                 title="Nenhuma etapa gerada"
               />
             ) : null}
@@ -638,9 +642,9 @@ export function ProjectsPage() {
                         </div>
                         {step.description ? <p className="mt-1 text-sm text-text-muted">{step.description}</p> : null}
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted">
-                          <span>Inicio: {formatDate(step.startsAt)}</span>
+                          <span>Início: {formatDate(step.startsAt)}</span>
                           <span>Prazo: {formatDate(step.dueDate)}</span>
-                          <span>Conclusao: {formatDate(step.completedAt)}</span>
+                          <span>Conclusão: {formatDate(step.completedAt)}</span>
                         </div>
                       </div>
                       <div className="flex sm:justify-end">
@@ -652,7 +656,7 @@ export function ProjectsPage() {
                             type="button"
                             variant="secondary"
                           >
-                            {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                            {actionLoading ? <RefreshCw className="h-5 w-5 animate-spin" /> : <RotateCcw className="h-5 w-5" />}
                             Reabrir
                           </Button>
                         ) : (
@@ -662,7 +666,7 @@ export function ProjectsPage() {
                             onClick={() => void handleCompleteStep(step)}
                             type="button"
                           >
-                            {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                            {actionLoading ? <RefreshCw className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
                             Concluir
                           </Button>
                         )}
@@ -684,7 +688,7 @@ export function ProjectsPage() {
         }
         onClose={closeDeleteFlow}
         open={Boolean(deleteTarget && deleteImpact && deleteBlocked)}
-        title="Exclusao bloqueada"
+        title="Exclusão bloqueada"
       >
         <div className="flex gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
@@ -705,7 +709,7 @@ function getProjectStatusTone(status: ProjectStatus) {
     return "success";
   }
 
-  if (status === "WAITING_CLIENT_APPROVAL" || status === "FINAL_DELIVERY") {
+  if (status === "WAITING_CLIENT_APPROVAL" || status === "DESIGN_3D_IN_DEVELOPMENT" || status === "FINAL_DELIVERY") {
     return "warning";
   }
 
@@ -734,7 +738,7 @@ function getProjectStepStatusTone(status: ProjectStepStatus) {
 
 function formatDate(value?: string | null) {
   if (!value) {
-    return "Nao informada";
+    return "Não informada";
   }
 
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
@@ -743,7 +747,7 @@ function formatDate(value?: string | null) {
 function formatImpact(counts: ProjectRelationCounts) {
   const labels: Record<keyof ProjectRelationCounts, string> = {
     steps: "etapas",
-    budgets: "orcamentos",
+    budgets: "orçamentos",
     payments: "pagamentos",
     tasks: "tarefas",
     visits: "visitas",
@@ -755,7 +759,7 @@ function formatImpact(counts: ProjectRelationCounts) {
     .filter(([, count]) => count > 0)
     .map(([key, count]) => `${count} ${labels[key as keyof ProjectRelationCounts]}`);
 
-  return parts.length > 0 ? parts.join(", ") : "Nenhum vinculo encontrado.";
+  return parts.length > 0 ? parts.join(", ") : "Nenhum vínculo encontrado.";
 }
 
 function getErrorMessage(error: unknown) {
@@ -763,5 +767,5 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Nao foi possivel concluir a acao.";
+  return "Não foi possível concluir a ação.";
 }

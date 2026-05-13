@@ -114,15 +114,15 @@ export function ClientFormModal({
           </Select>
           <Input error={errors.phone?.message} label="Telefone" placeholder="(00) 0000-0000" {...form.register("phone")} />
           <Input error={errors.whatsapp?.message} label="WhatsApp" placeholder="(00) 00000-0000" {...form.register("whatsapp")} />
-          <Input error={errors.email?.message} label="Email" placeholder="cliente@email.com" type="email" {...form.register("email")} />
+          <Input error={errors.email?.message} label="E-mail" placeholder="cliente@email.com" type="email" {...form.register("email")} />
           <Input error={errors.cpfCnpj?.message} label="CPF/CNPJ" placeholder="Somente se houver" {...form.register("cpfCnpj")} />
           <Input error={errors.city?.message} label="Cidade" placeholder="Cidade" {...form.register("city")} />
           <Input error={errors.state?.message} label="UF" maxLength={2} placeholder="UF" {...form.register("state")} />
-          <Input error={errors.source?.message} label="Origem" placeholder="Indicacao, site, Instagram" {...form.register("source")} />
-          <Input error={errors.address?.message} label="Endereco" placeholder="Endereco principal" {...form.register("address")} />
+          <Input error={errors.source?.message} label="Origem" placeholder="Indicação, site, Instagram" {...form.register("source")} />
+          <Input error={errors.address?.message} label="Endereço" placeholder="Endereço principal" {...form.register("address")} />
         </div>
 
-        <Textarea error={errors.notes?.message} label="Observacoes" placeholder="Notas internas sobre o cliente" rows={4} {...form.register("notes")} />
+        <Textarea error={errors.notes?.message} label="Observações" placeholder="Notas internas sobre o cliente" rows={4} {...form.register("notes")} />
       </form>
     </Modal>
   );

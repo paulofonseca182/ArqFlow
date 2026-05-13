@@ -69,7 +69,7 @@ export const stepStatusLabels: Record<StepStatus, string> = {
   PENDING: "Pendente",
   IN_PROGRESS: "Em andamento",
   WAITING_CLIENT: "Aguardando cliente",
-  IN_REVIEW: "Em revisao",
-  COMPLETED: "Concluida",
+  IN_REVIEW: "Em revisão",
+  COMPLETED: "Concluída",
   CANCELLED: "Cancelada"
 };

@@ -14,7 +14,7 @@ export class AppError extends Error {
 }
 
 export const notFoundMiddleware: RequestHandler = (request, _response, next) => {
-  next(new AppError("NOT_FOUND", `Rota ${request.method} ${request.path} nao encontrada.`, 404));
+  next(new AppError("NOT_FOUND", `Rota ${request.method} ${request.path} não encontrada.`, 404));
 };
 
 export const errorMiddleware: ErrorRequestHandler = (error, _request, response, _next) => {
@@ -22,7 +22,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _request, response, 
     return response.status(422).json({
       error: {
         code: "VALIDATION_ERROR",
-        message: "Dados invalidos.",
+        message: "Dados inválidos.",
         details: error.flatten()
       }
     });
@@ -53,7 +53,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _request, response, 
       return response.status(404).json({
         error: {
           code: "RECORD_NOT_FOUND",
-          message: "Registro nao encontrado.",
+          message: "Registro não encontrado.",
           details: error.meta
         }
       });
@@ -63,7 +63,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _request, response, 
       return response.status(409).json({
         error: {
           code: "FOREIGN_KEY_CONSTRAINT",
-          message: "Operacao bloqueada por registros vinculados.",
+          message: "Operação bloqueada por registros vinculados.",
           details: error.meta
         }
       });

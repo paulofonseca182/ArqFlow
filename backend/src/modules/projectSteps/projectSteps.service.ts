@@ -91,11 +91,11 @@ export async function generateDefaultProjectSteps(projectId: string) {
   });
 
   if (!project) {
-    throw new AppError("PROJECT_NOT_FOUND", "Projeto nao encontrado.", 404);
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
   }
 
   if (project._count.steps > 0) {
-    throw new AppError("PROJECT_STEPS_ALREADY_EXIST", "Projeto ja possui etapas geradas.", 409);
+    throw new AppError("PROJECT_STEPS_ALREADY_EXIST", "Projeto já possui etapas geradas.", 409);
   }
 
   const templates = defaultProjectStepTemplates[project.type as ProjectType] ?? defaultProjectStepTemplates.OTHER;
@@ -200,7 +200,7 @@ async function ensureProjectExists(projectId: string) {
   });
 
   if (!project) {
-    throw new AppError("PROJECT_NOT_FOUND", "Projeto nao encontrado.", 404);
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
   }
 }
 
@@ -221,7 +221,7 @@ async function getProjectStepForUpdate(id: string) {
   });
 
   if (!step) {
-    throw new AppError("PROJECT_STEP_NOT_FOUND", "Etapa nao encontrada.", 404);
+    throw new AppError("PROJECT_STEP_NOT_FOUND", "Etapa não encontrada.", 404);
   }
 
   return step;
@@ -229,15 +229,15 @@ async function getProjectStepForUpdate(id: string) {
 
 export function assertStepDates(projectStartsAt?: Date | null, startsAt?: Date | null, dueDate?: Date | null) {
   if (projectStartsAt && startsAt && startsAt < projectStartsAt) {
-    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data de inicio da etapa nao pode ser anterior ao inicio do projeto.", 422);
+    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data de início da etapa não pode ser anterior ao início do projeto.", 422);
   }
 
   if (projectStartsAt && dueDate && dueDate < projectStartsAt) {
-    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data prevista da etapa nao pode ser anterior ao inicio do projeto.", 422);
+    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data prevista da etapa não pode ser anterior ao início do projeto.", 422);
   }
 
   if (startsAt && dueDate && dueDate < startsAt) {
-    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data prevista nao pode ser anterior ao inicio da etapa.", 422);
+    throw new AppError("PROJECT_STEP_INVALID_DATES", "Data prevista não pode ser anterior ao início da etapa.", 422);
   }
 }
 

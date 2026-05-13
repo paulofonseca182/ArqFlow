@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Search, Trash2, XCircle } from "lucide-react";
+import { ActionIconButton } from "../../components/ui/ActionIconButton";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -27,6 +28,8 @@ import type { PaginationMeta } from "../../types/api";
 import { ClientFormModal } from "./ClientFormModal";
 
 const pageSize = 20;
+const actionIconClassName = "h-4 w-4 shrink-0";
+const actionIconStrokeWidth = 1.75;
 const fallbackStatuses: ClientStatusOption[] = clientStatusValues.map((value) => ({ value, label: value }));
 const emptyPagination: PaginationMeta = {
   page: 1,
@@ -175,7 +178,7 @@ export function ClientsPage() {
       const impact = await getClientDeleteImpact(client.id);
 
       if (!impact.exists) {
-        setError("Cliente nao encontrado.");
+        setError("Cliente não encontrado.");
         await loadClients();
         return;
       }
@@ -200,7 +203,7 @@ export function ClientsPage() {
 
     try {
       await deleteClient(deleteTarget.id);
-      setNotice("Cliente excluido.");
+      setNotice("Cliente excluído.");
       closeDeleteFlow();
       await loadClients();
     } catch (requestError) {
@@ -231,7 +234,7 @@ export function ClientsPage() {
           Novo cliente
         </Button>
       }
-      description="Cadastro e acompanhamento dos clientes do escritorio."
+      description="Cadastro e acompanhamento dos clientes do escritório."
       title="Clientes"
     >
       <Card>
@@ -239,7 +242,7 @@ export function ClientsPage() {
           <Input
             label="Busca"
             onChange={(event) => setDraftSearch(event.target.value)}
-            placeholder="Nome, email, telefone ou WhatsApp"
+            placeholder="Nome, e-mail, telefone ou WhatsApp"
             value={draftSearch}
           />
           <Select
@@ -255,16 +258,16 @@ export function ClientsPage() {
             ))}
           </Select>
           <div className="flex items-end gap-2">
-            <Button className="min-w-28" type="submit">
-              <Search className="h-4 w-4" />
+            <Button className="min-w-28" title="Buscar clientes" type="submit">
+              <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
             </Button>
-            <Button aria-label="Limpar filtros" className="h-10 w-10 px-0" onClick={handleClearFilters} type="button" variant="secondary">
-              <XCircle className="h-4 w-4" />
-            </Button>
-            <Button aria-label="Atualizar lista" className="h-10 w-10 px-0" onClick={() => void loadClients()} type="button" variant="ghost">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            <ActionIconButton ariaLabel="Limpar filtros" label="Limpar filtros" onClick={handleClearFilters} size="control" variant="secondary">
+              <XCircle className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
+            <ActionIconButton ariaLabel="Atualizar lista" label="Atualizar lista" onClick={() => void loadClients()} size="control">
+              <RefreshCw className={`${actionIconClassName} ${loading ? "animate-spin" : ""}`} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
           </div>
         </form>
       </Card>
@@ -305,37 +308,40 @@ export function ClientsPage() {
 
       {clients.length > 0 ? (
         <div className="space-y-3">
-          <Table headers={["Cliente", "Status", "Contato", "Local", "Vinculos", "Acoes"]}>
+          <Table headers={["Cliente", "Status", "Contato", "Local", "Vínculos", "Ações"]}>
             {clients.map((client) => (
               <tr className="min-w-[860px]" key={client.id}>
                 <td className="min-w-56 px-4 py-4 align-top">
                   <div className="font-medium text-text-primary">{client.name}</div>
-                  <div className="mt-1 text-xs text-text-muted">{client.email ?? "Sem email"}</div>
+                  <div className="mt-1 text-xs text-text-muted">{client.email ?? "Sem e-mail"}</div>
                 </td>
                 <td className="px-4 py-4 align-top">
                   <Badge tone={getClientStatusTone(client.status)}>{statusLabelByValue.get(client.status) ?? client.status}</Badge>
                 </td>
                 <td className="min-w-44 px-4 py-4 align-top text-text-secondary">
-                  <div>{client.whatsapp ? `WhatsApp ${client.whatsapp}` : "WhatsApp nao informado"}</div>
-                  <div className="mt-1 text-xs text-text-muted">{client.phone ? `Tel. ${client.phone}` : "Telefone nao informado"}</div>
+                  <div>{client.whatsapp ? `WhatsApp ${client.whatsapp}` : "WhatsApp não informado"}</div>
+                  <div className="mt-1 text-xs text-text-muted">{client.phone ? `Tel. ${client.phone}` : "Telefone não informado"}</div>
                 </td>
                 <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatLocation(client)}</td>
                 <td className="px-4 py-4 align-top text-text-secondary">{formatRelationCount(client._count)}</td>
                 <td className="px-4 py-4 align-top">
                   <div className="flex items-center gap-2">
-                    <Button aria-label={`Editar ${client.name}`} className="h-9 w-9 px-0" onClick={() => handleOpenEdit(client)} type="button" variant="ghost">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      aria-label={`Excluir ${client.name}`}
-                      className="h-9 w-9 px-0 text-status-danger hover:text-status-danger"
+                    <ActionIconButton ariaLabel={`Editar ${client.name}`} label="Editar" onClick={() => handleOpenEdit(client)}>
+                      <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                    </ActionIconButton>
+                    <ActionIconButton
+                      ariaLabel={`Excluir ${client.name}`}
+                      destructive
                       disabled={deleteLoadingId === client.id}
+                      label="Excluir"
                       onClick={() => void handleRequestDelete(client)}
-                      type="button"
-                      variant="ghost"
                     >
-                      {deleteLoadingId === client.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </Button>
+                      {deleteLoadingId === client.id ? (
+                        <RefreshCw className={`${actionIconClassName} animate-spin`} strokeWidth={actionIconStrokeWidth} />
+                      ) : (
+                        <Trash2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                      )}
+                    </ActionIconButton>
                   </div>
                 </td>
               </tr>
@@ -360,7 +366,7 @@ export function ClientsPage() {
                 type="button"
                 variant="secondary"
               >
-                Proxima
+                Próxima
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -385,7 +391,7 @@ export function ClientsPage() {
 
       <DeleteModal
         confirming={deleting}
-        impact="Esta acao nao pode ser desfeita."
+        impact="Esta ação não pode ser desfeita."
         itemName={deleteTarget?.name ?? ""}
         onClose={closeDeleteFlow}
         onConfirm={() => void handleConfirmDelete()}
@@ -400,7 +406,7 @@ export function ClientsPage() {
         }
         onClose={closeDeleteFlow}
         open={Boolean(deleteTarget && deleteImpact && deleteBlocked)}
-        title="Exclusao bloqueada"
+        title="Exclusão bloqueada"
       >
         <div className="flex gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
@@ -433,23 +439,23 @@ function formatLocation(client: Client) {
     return `${client.city}/${client.state}`;
   }
 
-  return client.city ?? client.state ?? "Nao informado";
+  return client.city ?? client.state ?? "Não informado";
 }
 
 function formatRelationCount(counts?: ClientRelationCounts) {
   if (!counts) {
-    return "0 vinculos";
+    return "0 vínculos";
   }
 
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
-  return `${total} vinculo${total === 1 ? "" : "s"}`;
+  return `${total} vínculo${total === 1 ? "" : "s"}`;
 }
 
 function formatImpact(counts: ClientRelationCounts) {
   const labels: Record<keyof ClientRelationCounts, string> = {
     projects: "projetos",
-    budgets: "orcamentos",
+    budgets: "orçamentos",
     payments: "pagamentos",
     visits: "visitas",
     documents: "documentos",
@@ -460,7 +466,7 @@ function formatImpact(counts: ClientRelationCounts) {
     .filter(([, count]) => count > 0)
     .map(([key, count]) => `${count} ${labels[key as keyof ClientRelationCounts]}`);
 
-  return parts.length > 0 ? parts.join(", ") : "Nenhum vinculo encontrado.";
+  return parts.length > 0 ? parts.join(", ") : "Nenhum vínculo encontrado.";
 }
 
 function getErrorMessage(error: unknown) {
@@ -468,5 +474,5 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Nao foi possivel concluir a acao.";
+  return "Não foi possível concluir a ação.";
 }

@@ -31,7 +31,7 @@ export const updateProjectStepSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["dueDate"],
-        message: "data prevista nao pode ser anterior ao inicio da etapa"
+        message: "data prevista não pode ser anterior ao início da etapa"
       });
     }
   })

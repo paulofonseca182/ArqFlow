@@ -18,10 +18,10 @@ export type ClientFormFields = {
 
 const optionalText = z.string().trim().transform((value) => value || undefined);
 const optionalEmail = optionalText.refine((value) => !value || z.string().email().safeParse(value).success, {
-  message: "Informe um email valido."
+  message: "Informe um e-mail válido."
 });
 const optionalCpfCnpj = optionalText.refine((value) => !value || isValidCpfCnpj(value), {
-  message: "Informe um CPF ou CNPJ valido."
+  message: "Informe um CPF ou CNPJ válido."
 });
 
 export const clientFormSchema = z
@@ -54,7 +54,7 @@ export const clientFormSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["phone"],
-        message: "Telefone invalido."
+        message: "Telefone inválido."
       });
     }
 
@@ -62,7 +62,7 @@ export const clientFormSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["whatsapp"],
-        message: "WhatsApp invalido."
+        message: "WhatsApp inválido."
       });
     }
   });

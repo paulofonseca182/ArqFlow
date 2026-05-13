@@ -24,7 +24,7 @@ describe("clients schema", () => {
     expect(result.email).toBeUndefined();
   });
 
-  it("bloqueia e-mail invalido", () => {
+  it("bloqueia e-mail inválido", () => {
     const result = createClientSchema.safeParse({
       name: "Ana Ribeiro",
       phone: "11999990000",

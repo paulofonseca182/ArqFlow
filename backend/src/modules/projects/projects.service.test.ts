@@ -45,7 +45,7 @@ describe("projects service", () => {
     });
   });
 
-  it("monta busca por nome, descricao, endereco e nome do cliente", () => {
+  it("monta busca por nome, descrição, endereço e nome do cliente", () => {
     expect(buildProjectWhere({ search: "vila" })).toEqual({
       OR: [
         { name: { contains: "vila" } },

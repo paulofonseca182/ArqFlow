@@ -1,38 +1,38 @@
-# Registro do Projeto ArqFlow
+﻿# Registro do Projeto ArqFlow
 
-Data de criacao: 2026-05-12
+Data de criação: 2026-05-12
 
-Este documento registra o que foi feito ate aqui no ArqFlow, as decisoes tecnicas tomadas, o estado atual do projeto e os proximos passos recomendados. A ideia e servir como ponto de consulta caso algo quebre, o contexto se perca ou seja necessario entender rapidamente por que a base foi montada dessa forma.
+Este documento registra o que foi feito até aqui no ArqFlow, as decisões técnicas tomadas, o estado atual do projeto e os próximos passos recomendados. A ideia é servir como ponto de consulta caso algo quebre, o contexto se perca ou seja necessário entender rapidamente por que a base foi montada dessa forma.
 
 ## Objetivo do projeto
 
-O ArqFlow e um sistema local de gestao para escritorios de arquitetura.
+O ArqFlow é um sistema local de gestão para escritórios de arquitetura.
 
 O MVP deve centralizar:
 
 - clientes;
 - projetos;
 - etapas;
-- orcamentos;
+- orçamentos;
 - financeiro;
 - tarefas;
-- visitas tecnicas;
+- visitas técnicas;
 - documentos;
 - briefings;
 - relatorios;
 - dashboard operacional.
 
-O modo inicial do sistema e local, rodando em `localhost`, com banco SQLite local. A evolucao futura pode incluir autenticacao, permissoes, backup, integracoes e versao cloud.
+O modo inicial do sistema é local, rodando em `localhost`, com banco SQLite local. A evolucao futura pode incluir autenticação, permissões, backup, integrações e versão cloud.
 
 ## Fontes de referencia
 
-As principais referencias usadas ate aqui foram:
+As principais referencias usadas até aqui foram:
 
 - PDF inicial do cronograma completo do ArqFlow.
 - `AGENTS.md`, que define stack, regras, agentes, padroes de codigo e identidade visual.
-- Decisoes tomadas durante a Fase 0 e Fase 0.1.
+- Decisões tomadas durante a Fase 0 e Fase 0.1.
 
-O `AGENTS.md` e a referencia principal para qualquer nova tarefa.
+O `AGENTS.md` é a referência principal para qualquer nova tarefa.
 
 Antes de alterar codigo, sempre:
 
@@ -40,7 +40,7 @@ Antes de alterar codigo, sempre:
 2. Entender o modulo afetado.
 3. Verificar impacto em frontend, backend, banco e validacoes.
 4. Fazer alteracoes pequenas, consistentes e testaveis.
-5. Manter regras criticas no backend.
+5. Manter regras críticas no backend.
 6. Manter TypeScript.
 7. Preservar a UI dark premium do ArqFlow.
 
@@ -69,21 +69,21 @@ Ferramentas:
 - pnpm 8+ via Corepack
 - Vitest 1+
 
-## Fases concluidas
+## Fases concluídas
 
-### Fase 0 - Fundacao tecnica
+### Fase 0 - Fundação técnica
 
 Foi criada a estrutura inicial do projeto:
 
 - monorepo com `frontend/` e `backend/`;
-- configuracao de workspace com `pnpm-workspace.yaml`;
+- configuração de workspace com `pnpm-workspace.yaml`;
 - scripts principais no `package.json` da raiz;
 - configuracoes TypeScript no frontend e backend;
 - estrutura inicial de backend Express;
 - estrutura inicial de frontend React/Vite;
 - schema Prisma inicial;
 - seed inicial;
-- documentacao tecnica base.
+- documentação técnica base.
 
 ### Fase 0.1 - Alinhamento com AGENTS.md
 
@@ -92,15 +92,15 @@ A Fase 0.1 ajustou a base para ficar coerente com o `AGENTS.md`.
 Foram feitos:
 
 - alinhamento visual para dark premium;
-- criacao de componentes UI obrigatorios;
-- criacao do padrao backend `routes/controller/service/schema`;
-- centralizacao de contratos de dominio e status;
-- criacao de regras de negocio puras;
-- criacao de testes iniciais;
+- criação de componentes UI obrigatórios;
+- criação do padrão backend `routes/controller/service/schema`;
+- centralização de contratos de domínio e status;
+- criação de regras de negócio puras;
+- criação de testes iniciais;
 - correcao do drift do banco local;
-- sincronizacao das migrations Prisma;
-- regeneracao do Prisma Client;
-- documentacao minima de setup, API, banco, design system, regras e roadmap.
+- sincronização das migrations Prisma;
+- regeneração do Prisma Client;
+- documentação mínima de setup, API, banco, design system, regras e roadmap.
 
 ## Estrutura atual do projeto
 
@@ -182,25 +182,25 @@ Migrations criadas:
 - `20260511162000_phase_0_1_alignment`
 - `20260512100000_protect_payments_cascade_steps`
 
-Decisoes importantes:
+Decisões importantes:
 
 - `Project` exige `clientId`.
 - `Budget` exige `clientId` e pode ter `projectId` nulo.
 - `Payment` exige `projectId` e `clientId`.
 - `Task` pode existir sem projeto.
 - `Visit` pode existir sem projeto, mas exige cliente.
-- `Document` pode ter cliente e/ou projeto, mas nao pode ficar sem dono.
+- `Document` pode ter cliente e/ou projeto, mas não pode ficar sem dono.
 - `Briefing` exige cliente e pode ter projeto nulo.
 - `BudgetItem` pertence a `Budget`.
 - `BriefingAnswer` pertence a `Briefing`.
 
-Regras tecnicas:
+Regras técnicas:
 
-- `PRAGMA foreign_keys = ON` e ativado na inicializacao do servidor e no seed.
+- `PRAGMA foreign_keys = ON` é ativado na inicialização do servidor e no seed.
 - Status e tipos ficam como `String` no SQLite.
 - Contratos de status/tipos ficam centralizados em `backend/src/shared/domain.ts`.
 - `Payment -> Project` usa `Restrict`, para evitar apagar pagamentos automaticamente ao excluir projeto.
-- `Document` possui protecao para nao ficar sem `clientId` nem `projectId`.
+- `Document` possui proteção para não ficar sem `clientId` nem `projectId`.
 
 Importante:
 
@@ -227,18 +227,18 @@ Base Express criada com:
 Arquivos compartilhados importantes:
 
 - `backend/src/shared/http.ts`: contrato de resposta.
-- `backend/src/shared/errors.ts`: erros da aplicacao e tratamento de erros.
+- `backend/src/shared/errors.ts`: erros da aplicação e tratamento de erros.
 - `backend/src/shared/async-handler.ts`: wrapper para controllers async.
-- `backend/src/shared/pagination.ts`: helper de paginacao.
+- `backend/src/shared/pagination.ts`: helper de paginação.
 - `backend/src/shared/domain.ts`: status e tipos oficiais.
 - `backend/src/shared/business-rules.ts`: regras puras testaveis.
-- `backend/src/middleware/validateRequest.ts`: validacao Zod de `body`, `params` e `query`.
+- `backend/src/middleware/validateRequest.ts`: validação Zod de `body`, `params` e `query`.
 
 Tratamento de erros:
 
-- Zod retorna erro de validacao.
+- Zod retorna erro de validação.
 - Prisma `P2002` retorna conflito de unicidade.
-- Prisma `P2025` retorna registro nao encontrado.
+- Prisma `P2025` retorna registro não encontrado.
 - Prisma `P2003` retorna bloqueio por chave estrangeira.
 - Erros inesperados retornam erro interno.
 
@@ -280,41 +280,41 @@ Implementado no backend:
 - `PATCH /clients/:id`;
 - `DELETE /clients/:id`;
 - busca por nome, e-mail, telefone e WhatsApp;
-- paginacao;
+- paginação;
 - filtro por status;
-- exclusao protegida com contagem de vinculos;
+- exclusão protegida com contagem de vínculos;
 - schemas Zod iniciais;
 - testes de schema;
 - testes de service;
 - status de clientes centralizados;
-- validacao de e-mail;
-- normalizacao de e-mail vazio;
-- validacao de CPF/CNPJ;
-- exigencia de telefone ou WhatsApp na criacao.
+- validação de e-mail;
+- normalização de e-mail vazio;
+- validação de CPF/CNPJ;
+- exigência de telefone ou WhatsApp na criação.
 
 Implementado no frontend:
 
 - rota `/clients` substituiu o placeholder por uma tela real;
 - service Axios para consumir `/clients`;
-- tipos TypeScript para contratos de API, paginacao, cliente, status e impacto de exclusao;
+- tipos TypeScript para contratos de API, paginação, cliente, status e impacto de exclusão;
 - listagem com busca por nome, e-mail, telefone ou WhatsApp;
 - filtro por status consumindo `GET /clients/meta`;
-- paginacao simples usando `meta.page`, `meta.total` e `meta.totalPages`;
-- formulario de criacao e edicao em modal;
-- React Hook Form com validacao Zod manual, sem dependencia nova;
-- validacao de nome, e-mail, CPF/CNPJ, telefone e WhatsApp;
-- normalizacao de telefone, WhatsApp e CPF/CNPJ para digitos antes de enviar;
-- exclusao em duas etapas com `GET /clients/:id/delete-impact`;
-- bloqueio visual quando houver projetos, orcamentos, pagamentos, visitas, documentos ou briefings vinculados;
-- modal de confirmacao quando a exclusao for permitida;
+- paginação simples usando `meta.page`, `meta.total` e `meta.totalPages`;
+- formulário de criação e edição em modal;
+- React Hook Form com validação Zod manual, sem dependência nova;
+- validação de nome, e-mail, CPF/CNPJ, telefone e WhatsApp;
+- normalização de telefone, WhatsApp e CPF/CNPJ para digitos antes de enviar;
+- exclusão em duas etapas com `GET /clients/:id/delete-impact`;
+- bloqueio visual quando houver projetos, orçamentos, pagamentos, visitas, documentos ou briefings vinculados;
+- modal de confirmação quando a exclusão for permitida;
 - estados de carregamento, vazio, erro e sucesso.
 
 Ainda falta:
 
-- testes de frontend para formulario, filtros e fluxo de exclusao;
-- refinamento visual apos uso real;
+- testes de frontend para formulário, filtros e fluxo de exclusão;
+- refinamento visual após uso real;
 - mascaras visuais para telefone, WhatsApp e CPF/CNPJ;
-- detalhe individual do cliente, se necessario na proxima fase.
+- detalhe individual do cliente, se necessário na próxima fase.
 
 ## Modulo de Projetos - estado atual
 
@@ -323,9 +323,9 @@ O modulo de Projetos possui backend inicial e frontend inicial conectados a API 
 Banco:
 
 - o modelo `Project` ja existia no Prisma;
-- `clientId` e obrigatorio;
+- `clientId` e obrigatório;
 - `Project -> Client` usa `onDelete: Restrict`;
-- nao foi necessario criar migration para esta primeira fatia.
+- não foi necessário criar migration para esta primeira fatia.
 
 Backend:
 
@@ -360,37 +360,37 @@ Implementado no backend:
 - `POST /projects`;
 - `PATCH /projects/:id`;
 - `DELETE /projects/:id`;
-- busca por nome do projeto, descricao, endereco da obra e nome do cliente;
+- busca por nome do projeto, descrição, endereço da obra e nome do cliente;
 - filtros por status, tipo e cliente;
-- paginacao;
-- validacao Zod de `clientId`, nome, tipo, status, datas e valores positivos;
-- status `Desenho 3D em desenvolvimento` disponivel logo apos `Aguardando aprovacao do cliente`;
-- verificacao de cliente existente antes de criar ou trocar o cliente do projeto;
-- bloqueio de data de entrega anterior a data de inicio;
+- paginação;
+- validação Zod de `clientId`, nome, tipo, status, datas e valores positivos;
+- status `Desenho 3D em desenvolvimento` disponível logo após `Aguardando aprovação do cliente`;
+- verificação de cliente existente antes de criar ou trocar o cliente do projeto;
+- bloqueio de data de entrega anterior a data de início;
 - progresso calculado no backend a partir das etapas existentes;
-- exclusao protegida com contagem de vinculos;
+- exclusão protegida com contagem de vínculos;
 - testes de schema e service.
 
 Implementado no frontend:
 
 - rota `/projects` substituiu o placeholder por uma tela real;
 - service Axios para consumir `/projects`;
-- tipos TypeScript para Projeto, status, tipos e impacto de exclusao;
+- tipos TypeScript para Projeto, status, tipos e impacto de exclusão;
 - listagem com busca, filtros por status, tipo e cliente;
-- formulario de criacao e edicao em modal;
+- formulário de criação e edição em modal;
 - select de cliente consumindo dados reais de `/clients`;
-- React Hook Form com validacao Zod manual, sem dependencia nova;
-- validacao de cliente obrigatorio, nome, tipo, status, datas e valores positivos;
+- React Hook Form com validação Zod manual, sem dependência nova;
+- validação de cliente obrigatório, nome, tipo, status, datas e valores positivos;
 - barra de progresso por projeto;
-- exclusao em duas etapas com `GET /projects/:id/delete-impact`;
-- bloqueio visual quando houver etapas, orcamentos, pagamentos, tarefas, visitas, documentos ou briefings vinculados;
+- exclusão em duas etapas com `GET /projects/:id/delete-impact`;
+- bloqueio visual quando houver etapas, orçamentos, pagamentos, tarefas, visitas, documentos ou briefings vinculados;
 - estados de carregamento, vazio, erro e sucesso.
 
 Ainda falta:
 
-- testes de frontend para formulario e filtros;
+- testes de frontend para formulário e filtros;
 - tela de detalhe do projeto;
-- integracao futura com orcamentos, financeiro, tarefas, visitas e documentos.
+- integração futura com orçamentos, financeiro, tarefas, visitas e documentos.
 
 ## Modulo de Etapas de Projeto - estado atual
 
@@ -403,7 +403,7 @@ Banco:
 - `ProjectStep -> Project` usa `onDelete: Cascade`;
 - existe indice por `projectId` e `status`;
 - existe unicidade por `projectId + sortOrder`;
-- nao foi necessario criar migration nesta fatia.
+- não foi necessário criar migration nesta fatia.
 
 Backend:
 
@@ -434,16 +434,16 @@ Implementado no backend:
 - `PATCH /project-steps/:id/complete`;
 - `PATCH /project-steps/:id/reopen`;
 - metadados de status oficiais de etapas;
-- templates de etapas padrao por tipo de projeto;
-- template padrao enxuto: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
-- geracao de etapas com `sortOrder` sequencial;
-- bloqueio de geracao duplicada quando o projeto ja possui etapas;
+- templates de etapas padrão por tipo de projeto;
+- template padrão enxuto: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
+- geração de etapas com `sortOrder` sequencial;
+- bloqueio de geração duplicada quando o projeto ja possui etapas;
 - listagem ordenada por `sortOrder`;
-- conclusao de etapa com `status = COMPLETED` e `completedAt` definido pelo backend;
+- conclusão de etapa com `status = COMPLETED` e `completedAt` definido pelo backend;
 - reabertura de etapa com `status = PENDING` e `completedAt = null`;
-- validacao para bloquear `startsAt` ou `dueDate` anteriores ao inicio do projeto;
-- validacao para bloquear `dueDate` anterior a `startsAt`;
-- progresso calculado no backend por etapas concluidas sobre total.
+- validação para bloquear `startsAt` ou `dueDate` anteriores ao início do projeto;
+- validação para bloquear `dueDate` anterior a `startsAt`;
+- progresso calculado no backend por etapas concluídas sobre total.
 
 Implementado no frontend:
 
@@ -452,30 +452,53 @@ Implementado no frontend:
 - service Axios para consumir `/project-steps`;
 - tipos TypeScript para etapa, status e resposta de progresso;
 - modal de etapas dentro da tela `/projects`;
-- estado vazio com acao para gerar etapas padrao;
+- estado vazio com ação para gerar etapas padrão;
 - lista de etapas com ordem, nome, status, datas e progresso real;
-- acao para concluir etapa;
-- acao para reabrir etapa concluida ou cancelada;
-- recarregamento da lista de projetos apos mutacoes para atualizar o progresso exibido.
+- ação para concluir etapa;
+- ação para reabrir etapa concluída ou cancelada;
+- recarregamento da lista de projetos após mutacoes para atualizar o progresso exibido.
 
 Regras consideradas:
 
 - etapa pertence a projeto;
-- etapas padrao devem respeitar o tipo do projeto;
-- geracao padrao nao deve duplicar etapas existentes;
+- etapas padrão devem respeitar o tipo do projeto;
+- geração padrão não deve duplicar etapas existentes;
 - progresso real vem do backend;
-- frontend nao envia `completedAt`;
-- backend decide a data de conclusao;
+- frontend não envia `completedAt`;
+- backend decide a data de conclusão;
 - reabrir etapa limpa `completedAt`;
-- datas de etapa nao podem quebrar a data de inicio do projeto;
-- exclusao de projeto com etapas continua bloqueada pelo fluxo de Projetos.
+- datas de etapa não podem quebrar a data de início do projeto;
+- exclusão de projeto com etapas continua bloqueada pelo fluxo de Projetos.
 
 Ainda falta:
 
-- criacao manual de etapa fora dos templates;
-- edicao visual de datas, status e notas da etapa;
-- reordenacao manual de etapas;
+- criação manual de etapa fora dos templates;
+- edição visual de datas, status e notas da etapa;
+- reordenação manual de etapas;
 - testes de frontend do modal de etapas.
+
+## Ajuste de UI e português - Projetos e Clientes
+
+Foi feito um passe de qualidade visual e textual nas telas operacionais já entregues.
+
+Frontend:
+
+- os botões das ações de tabela em Clientes e Projetos foram refinados para `h-6 w-6`, com ícones `h-4 w-4`, traço fino `1.75` e tooltip de ação ao passar o mouse;
+- os ícones dos controles de busca, limpar filtros e atualizar lista em Clientes e Projetos foram padronizados com `h-4 w-4`, traço `1.75` e tooltip/descrição ao passar o mouse;
+- o tamanho dos botões de ação foi preservado;
+- cabeçalhos, mensagens vazias, avisos, modais e rótulos de formulário receberam acentuação correta;
+- textos como `Ações`, `Endereço`, `Não`, `Próxima`, `Conclusão`, `Exclusão`, `vínculos` e `orçamentos` foram corrigidos nas telas visíveis.
+
+Backend:
+
+- mensagens de erro de Clientes, Projetos, Etapas, validações e tratamento global receberam acentuação correta;
+- labels oficiais de etapas foram corrigidas para `Em revisão` e `Concluída`;
+- mensagens que podem aparecer no frontend agora retornam português revisado pela API.
+
+Documentação:
+
+- `README.md` foi atualizado com o ajuste visual dos ícones e a revisão textual;
+- este registro foi atualizado para documentar a mudança e facilitar auditoria futura.
 
 ## Frontend
 
@@ -513,46 +536,46 @@ Rotas iniciais:
 - Dashboard
 - Clientes, ja conectada a tela real
 - Projetos, ja conectada a tela real inicial
-- Orcamentos
+- Orçamentos
 - Financeiro
 - Tarefas
 - Visitas
 - Documentos
 - Briefings
-- Relatorios
-- Configuracoes
+- Relatórios
+- Configurações
 
-Observacao:
+Observação:
 
 - As telas alem de Dashboard, Clientes, Projetos e Etapas de Projeto ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
-- Projetos e a segunda fatia operacional e depende de Cliente como vinculo obrigatorio.
-- Etapas de Projeto e a terceira fatia operacional e alimenta o progresso real de Projetos.
+- Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
+- Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
 
 ### Frontend - Clientes
 
 Objetivo:
 
-- permitir cadastrar, listar, buscar, filtrar, editar e excluir clientes com confirmacao.
+- permitir cadastrar, listar, buscar, filtrar, editar e excluir clientes com confirmação.
 
-Usuario beneficiado:
+Usuário beneficiado:
 
-- escritorio de arquitetura que precisa organizar leads, clientes ativos, clientes recorrentes e contatos em fase de orcamento.
+- escritório de arquitetura que precisa organizar leads, clientes ativos, clientes recorrentes e contatos em fase de orçamento.
 
 Fluxo implementado:
 
-1. Usuario acessa `/clients`.
+1. Usuário acessa `/clients`.
 2. A tela carrega status via `/clients/meta`.
 3. A tela lista clientes via `/clients`.
-4. Usuario pode buscar por nome, e-mail, telefone ou WhatsApp.
-5. Usuario pode filtrar por status.
-6. Usuario pode abrir o modal de novo cliente.
-7. Usuario pode editar um cliente existente.
+4. Usuário pode buscar por nome, e-mail, telefone ou WhatsApp.
+5. Usuário pode filtrar por status.
+6. Usuário pode abrir o modal de novo cliente.
+7. Usuário pode editar um cliente existente.
 8. Antes de excluir, a tela consulta `/clients/:id/delete-impact`.
-9. Se houver vinculos, a exclusao e bloqueada visualmente.
-10. Se nao houver vinculos, a tela abre modal de confirmacao e chama `DELETE /clients/:id`.
+9. Se houver vínculos, a exclusão e bloqueada visualmente.
+10. Se não houver vínculos, a tela abre modal de confirmação e chama `DELETE /clients/:id`.
 
-Campos principais do formulario:
+Campos principais do formulário:
 
 - nome;
 - status;
@@ -563,7 +586,7 @@ Campos principais do formulario:
 - cidade;
 - UF;
 - origem;
-- endereco;
+- endereço;
 - observacoes.
 
 Regras consideradas:
@@ -574,46 +597,46 @@ Regras consideradas:
 - CPF/CNPJ e opcional, mas deve ser valido quando preenchido;
 - frontend valida para UX;
 - backend continua sendo a fonte da verdade;
-- exclusao critica exige confirmacao;
-- exclusao de cliente com vinculos deve ser bloqueada.
+- exclusão crítica exige confirmação;
+- exclusão de cliente com vínculos deve ser bloqueada.
 
 ### Frontend - Projetos
 
 Objetivo:
 
-- permitir cadastrar, listar, buscar, filtrar, editar e excluir projetos com confirmacao, sempre vinculados a um cliente existente.
+- permitir cadastrar, listar, buscar, filtrar, editar e excluir projetos com confirmação, sempre vinculados a um cliente existente.
 
-Usuario beneficiado:
+Usuário beneficiado:
 
-- escritorio de arquitetura que precisa acompanhar projetos por cliente, tipo, status e prazo.
+- escritório de arquitetura que precisa acompanhar projetos por cliente, tipo, status e prazo.
 
 Fluxo implementado:
 
-1. Usuario acessa `/projects`.
+1. Usuário acessa `/projects`.
 2. A tela carrega status e tipos via `/projects/meta`.
 3. A tela carrega clientes via `/clients`.
 4. A tela lista projetos via `/projects`.
-5. Usuario pode buscar por projeto, cliente ou endereco.
-6. Usuario pode filtrar por status, tipo e cliente.
-7. Usuario pode abrir o modal de novo projeto.
-8. Usuario seleciona um cliente obrigatorio.
-9. Usuario pode editar um projeto existente.
+5. Usuário pode buscar por projeto, cliente ou endereço.
+6. Usuário pode filtrar por status, tipo e cliente.
+7. Usuário pode abrir o modal de novo projeto.
+8. Usuário seleciona um cliente obrigatório.
+9. Usuário pode editar um projeto existente.
 10. Antes de excluir, a tela consulta `/projects/:id/delete-impact`.
-11. Se houver vinculos, a exclusao e bloqueada visualmente.
-12. Se nao houver vinculos, a tela abre modal de confirmacao e chama `DELETE /projects/:id`.
+11. Se houver vínculos, a exclusão e bloqueada visualmente.
+12. Se não houver vínculos, a tela abre modal de confirmação e chama `DELETE /projects/:id`.
 
-Campos principais do formulario:
+Campos principais do formulário:
 
 - cliente;
 - nome do projeto;
 - tipo;
 - status;
-- data de inicio;
+- data de início;
 - data prevista de entrega;
 - valor contratado;
 - area;
-- endereco da obra;
-- descricao;
+- endereço da obra;
+- descrição;
 - observacoes.
 
 Regras consideradas:
@@ -622,34 +645,34 @@ Regras consideradas:
 - cliente deve existir no backend;
 - projeto deve ter nome;
 - projeto deve ter tipo;
-- data de entrega nao pode ser anterior a data de inicio;
+- data de entrega não pode ser anterior a data de início;
 - valor contratado e area sao opcionais, mas se preenchidos devem ser maiores que zero;
 - frontend valida para UX;
 - backend continua sendo a fonte da verdade;
-- exclusao critica exige confirmacao;
-- exclusao de projeto com vinculos deve ser bloqueada.
+- exclusão crítica exige confirmação;
+- exclusão de projeto com vínculos deve ser bloqueada.
 
 ### Frontend - Etapas de Projeto
 
 Objetivo:
 
-- permitir gerar etapas padrao por tipo de projeto, acompanhar status das etapas e alimentar o progresso real do projeto.
+- permitir gerar etapas padrão por tipo de projeto, acompanhar status das etapas e alimentar o progresso real do projeto.
 
-Usuario beneficiado:
+Usuário beneficiado:
 
-- escritorio de arquitetura que precisa transformar um projeto cadastrado em um roteiro operacional de trabalho.
+- escritório de arquitetura que precisa transformar um projeto cadastrado em um roteiro operacional de trabalho.
 
 Fluxo implementado:
 
-1. Usuario acessa `/projects`.
-2. Usuario clica no botao de etapas de um projeto.
+1. Usuário acessa `/projects`.
+2. Usuário clica no botao de etapas de um projeto.
 3. A tela carrega etapas via `/project-steps?projectId=:projectId`.
-4. Se o projeto nao tiver etapas, o modal mostra acao para gerar etapas padrao.
-5. A geracao chama `POST /project-steps/generate-defaults`.
+4. Se o projeto não tiver etapas, o modal mostra ação para gerar etapas padrão.
+5. A geração chama `POST /project-steps/generate-defaults`.
 6. As etapas aparecem ordenadas por `sortOrder`.
-7. Usuario pode concluir uma etapa.
-8. A conclusao chama `PATCH /project-steps/:id/complete`.
-9. Usuario pode reabrir uma etapa concluida ou cancelada.
+7. Usuário pode concluir uma etapa.
+8. A conclusão chama `PATCH /project-steps/:id/complete`.
+9. Usuário pode reabrir uma etapa concluída ou cancelada.
 10. A reabertura chama `PATCH /project-steps/:id/reopen`.
 11. A lista de projetos e recarregada para refletir o progresso atualizado.
 
@@ -658,20 +681,20 @@ Campos exibidos:
 - ordem;
 - nome da etapa;
 - status;
-- data de inicio;
+- data de início;
 - prazo;
-- data de conclusao;
+- data de conclusão;
 - progresso real do projeto.
 
 Regras consideradas:
 
-- frontend nao calcula progresso critico;
-- frontend nao envia `completedAt`;
-- backend e fonte da verdade para conclusao, reabertura e progresso;
-- geracao padrao so aparece como acao util quando nao ha etapas carregadas;
-- erros de duplicacao ou validacao aparecem dentro do modal.
+- frontend não calcula progresso crítico;
+- frontend não envia `completedAt`;
+- backend e fonte da verdade para conclusão, reabertura e progresso;
+- geração padrão so aparece como ação util quando não ha etapas carregadas;
+- erros de duplicação ou validação aparecem dentro do modal.
 
-## Regras de negocio ja implementadas
+## Regras de negócio ja implementadas
 
 Arquivo:
 
@@ -682,19 +705,19 @@ backend/src/shared/business-rules.ts
 Regras:
 
 - valor financeiro deve ser maior que zero;
-- orcamento deve ter pelo menos um item;
-- valor final do orcamento e calculado no backend;
-- desconto nao pode deixar valor final menor ou igual a zero;
-- progresso do projeto e calculado por etapas concluidas sobre total;
-- progresso nao aceita valores negativos;
-- etapas concluidas nao podem ultrapassar total de etapas;
-- etapa nao pode iniciar antes do inicio do projeto;
-- etapa nao pode ter prazo anterior ao inicio do projeto;
-- etapa nao pode ter prazo anterior ao proprio inicio;
-- conclusao de etapa preenche `completedAt` no backend;
+- orçamento deve ter pelo menos um item;
+- valor final do orçamento e calculado no backend;
+- desconto não pode deixar valor final menor ou igual a zero;
+- progresso do projeto e calculado por etapas concluídas sobre total;
+- progresso não aceita valores negativos;
+- etapas concluídas não podem ultrapassar total de etapas;
+- etapa não pode iniciar antes do início do projeto;
+- etapa não pode ter prazo anterior ao início do projeto;
+- etapa não pode ter prazo anterior ao próprio início;
+- conclusão de etapa preenche `completedAt` no backend;
 - reabertura de etapa limpa `completedAt` no backend;
 - pagamento atrasado e calculado dinamicamente;
-- pagamento pago ou cancelado nao e considerado atrasado;
+- pagamento pago ou cancelado não e considerado atrasado;
 - documento deve ter cliente e/ou projeto.
 
 ## Testes
@@ -714,31 +737,31 @@ backend/src/modules/projectSteps/projectSteps.service.test.ts
 Cobertura atual:
 
 - regras financeiras iniciais;
-- calculo de progresso;
+- cálculo de progresso;
 - pagamento atrasado;
-- dono obrigatorio de documento;
+- dono obrigatório de documento;
 - schema inicial de Clientes;
 - e-mail vazio;
-- e-mail invalido;
-- CPF/CNPJ invalido;
+- e-mail inválido;
+- CPF/CNPJ inválido;
 - update parcial.
 - metadados de status de Clientes;
 - montagem de filtros de busca e status.
 - schema inicial de Projetos;
-- cliente obrigatorio em Projetos;
-- data de entrega anterior ao inicio bloqueada;
+- cliente obrigatório em Projetos;
+- data de entrega anterior ao início bloqueada;
 - valor contratado zero ou negativo bloqueado;
 - metadados de status e tipos de Projetos;
 - montagem de filtros de busca, cliente, status e tipo de Projetos.
 - schema inicial de Etapas;
-- projeto obrigatorio para listar e gerar etapas;
+- projeto obrigatório para listar e gerar etapas;
 - status oficial de etapa;
-- data prevista anterior ao inicio da etapa bloqueada;
+- data prevista anterior ao início da etapa bloqueada;
 - metadados e templates de Etapas;
-- calculo de progresso por etapas concluidas;
-- datas de etapa anteriores ao inicio do projeto bloqueadas.
+- cálculo de progresso por etapas concluídas;
+- datas de etapa anteriores ao início do projeto bloqueadas.
 
-Validacoes ja executadas no estado atual:
+Validações ja executadas no estado atual:
 
 - `npm run typecheck` passou;
 - `npm run test` passou;
@@ -750,9 +773,9 @@ No ultimo fechamento da Fase 0.1 tambem passaram:
 - `prisma migrate status` indicou banco atualizado;
 - Prisma Client foi regenerado.
 
-## Documentacao existente
+## Documentação existente
 
-Arquivos de documentacao:
+Arquivos de documentação:
 
 - `README.md`
 - `SETUP.md`
@@ -845,9 +868,9 @@ Frontend local:
 http://localhost:5173
 ```
 
-## O que nao deve ir para o repositorio
+## O que não deve ir para o repositório
 
-Nao versionar:
+Não versionar:
 
 - `node_modules/`
 - `.env`
@@ -862,26 +885,26 @@ Versionar:
 
 - codigo fonte;
 - migrations;
-- documentacao;
-- arquivos de configuracao;
+- documentação;
+- arquivos de configuração;
 - testes.
 
 ## Proximo passo recomendado
 
-Validar o fluxo de Etapas de Projeto no navegador e iniciar a proxima fatia recomendada: Orcamentos.
+Validar o fluxo de Etapas de Projeto no navegador e iniciar a próxima fatia recomendada: Orçamentos.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
 2. Abrir `http://localhost:5173/projects`.
 3. Abrir o modal de etapas de um projeto sem etapas.
-4. Gerar etapas padrao e confirmar que a lista aparece ordenada.
-5. Tentar gerar novamente e confirmar bloqueio contra duplicacao.
+4. Gerar etapas padrão e confirmar que a lista aparece ordenada.
+5. Tentar gerar novamente e confirmar bloqueio contra duplicação.
 6. Concluir uma etapa e confirmar aumento do progresso.
 7. Reabrir a etapa e confirmar reducao do progresso.
 8. Confirmar que a barra de progresso da tabela de Projetos reflete a API.
 9. Tentar excluir projeto com etapas e confirmar bloqueio.
-10. Depois iniciar Orcamentos com cliente obrigatorio e possivel vinculo a projeto.
+10. Depois iniciar Orçamentos com cliente obrigatório e possível vínculo a projeto.
 
 ## Pontos de atencao para Clientes
 
@@ -892,9 +915,9 @@ Ao implementar Clientes, lembrar:
 - e-mail deve ser unico quando informado;
 - CPF/CNPJ e opcional, mas deve ser valido quando preenchido;
 - busca deve procurar por nome, e-mail, telefone e WhatsApp;
-- exclusao deve verificar vinculos antes de apagar;
-- se houver projeto, orcamento, pagamento, visita, documento ou briefing vinculado, a API deve retornar impacto estruturado;
-- frontend deve mostrar modal de confirmacao/impacto antes de exclusao;
+- exclusão deve verificar vínculos antes de apagar;
+- se houver projeto, orçamento, pagamento, visita, documento ou briefing vinculado, a API deve retornar impacto estruturado;
+- frontend deve mostrar modal de confirmação/impacto antes de exclusão;
 - backend continua sendo a fonte da verdade.
 
 ## Pontos de atencao para Etapas de Projeto
@@ -904,11 +927,11 @@ Ao evoluir Etapas, lembrar:
 - etapa sempre deve pertencer a projeto;
 - projeto deve existir antes de listar, gerar ou alterar etapas;
 - `sortOrder` deve continuar unico por projeto;
-- geracao padrao nao deve duplicar etapas existentes;
+- geração padrão não deve duplicar etapas existentes;
 - progresso deve continuar derivado de `status = COMPLETED`;
 - `completedAt` deve ser gerenciado pelo backend;
-- datas devem ser validadas no backend contra o inicio do projeto;
-- frontend pode melhorar UX, mas nao deve substituir a regra do backend.
+- datas devem ser validadas no backend contra o início do projeto;
+- frontend pode melhorar UX, mas não deve substituir a regra do backend.
 
 ## Sugestao de commit para o estado atual
 
@@ -963,11 +986,11 @@ corepack pnpm --filter @arqflow/backend prisma:generate
 6. Se o problema for no banco local:
 
 - conferir migrations em `backend/prisma/migrations`;
-- nao editar `dev.db` manualmente sem necessidade;
+- não editar `dev.db` manualmente sem necessidade;
 - preferir migrations Prisma;
-- lembrar que `dev.db` nao deve ser commitado.
+- lembrar que `dev.db` não deve ser commitado.
 
-7. Se o problema for em regra de negocio:
+7. Se o problema for em regra de negócio:
 
 - procurar primeiro em `backend/src/shared/business-rules.ts`;
 - adicionar ou ajustar teste antes de espalhar logica pelo sistema.
@@ -977,3 +1000,4 @@ corepack pnpm --filter @arqflow/backend prisma:generate
 - conferir `DESIGN_SYSTEM.md`;
 - reaproveitar componentes de `frontend/src/components/ui`;
 - manter dark premium e consistencia visual.
+

@@ -13,12 +13,12 @@ describe("project steps service", () => {
 
     expect(meta.statuses).toContainEqual({
       value: "COMPLETED",
-      label: "Concluida"
+      label: "Concluída"
     });
     expect(meta.templates.some((template) => template.type === "INTERIORS")).toBe(true);
   });
 
-  it("mantem templates padrao por tipo de projeto", () => {
+  it("mantém templates padrão por tipo de projeto", () => {
     const interiorsSteps = getDefaultStepsForType("INTERIORS");
 
     expect(interiorsSteps.map((step) => step.name)).toEqual([
@@ -31,7 +31,7 @@ describe("project steps service", () => {
     ]);
   });
 
-  it("mantem a sequencia padrao enxuta em todos os tipos", () => {
+  it("mantém a sequência padrão enxuta em todos os tipos", () => {
     const meta = getProjectStepsMeta();
 
     for (const template of meta.templates) {
@@ -47,7 +47,7 @@ describe("project steps service", () => {
     }
   });
 
-  it("calcula progresso por etapas concluidas", () => {
+  it("calcula progresso por etapas concluídas", () => {
     expect(calculateStepsProgress([])).toBe(0);
     expect(calculateStepsProgress([{ status: "PENDING" }, { status: "IN_PROGRESS" }])).toBe(0);
     expect(calculateStepsProgress([{ status: "COMPLETED" }, { status: "PENDING" }])).toBe(50);

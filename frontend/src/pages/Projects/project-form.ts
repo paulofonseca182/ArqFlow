@@ -56,7 +56,7 @@ export const projectFormSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["expectedDeliveryDate"],
-        message: "A entrega nao pode ser anterior ao inicio."
+        message: "A entrega não pode ser anterior ao início."
       });
     }
   });

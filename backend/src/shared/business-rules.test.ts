@@ -19,8 +19,8 @@ describe("business rules", () => {
     ).toEqual({ totalAmount: 3500, finalAmount: 3250 });
   });
 
-  it("bloqueia valores financeiros invalidos", () => {
-    expect(() => calculateBudgetFinalAmount([{ quantity: 1, unitAmount: 0 }])).toThrow("valor unitario");
+  it("bloqueia valores financeiros inválidos", () => {
+    expect(() => calculateBudgetFinalAmount([{ quantity: 1, unitAmount: 0 }])).toThrow("valor unitário");
   });
 
   it("exige pelo menos um item no orçamento", () => {
@@ -31,7 +31,7 @@ describe("business rules", () => {
     expect(() => calculateBudgetFinalAmount([{ quantity: 1, unitAmount: 100 }], 150)).toThrow("valor final");
   });
 
-  it("calcula progresso por etapas concluidas", () => {
+  it("calcula progresso por etapas concluídas", () => {
     expect(calculateProjectProgress(4, 3)).toBe(75);
     expect(calculateProjectProgress(0, 0)).toBe(0);
   });

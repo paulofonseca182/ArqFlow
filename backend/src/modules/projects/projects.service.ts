@@ -93,7 +93,7 @@ export async function getProjectById(id: string) {
   });
 
   if (!project) {
-    throw new AppError("PROJECT_NOT_FOUND", "Projeto nao encontrado.", 404);
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
   }
 
   return mapProject(project);
@@ -123,7 +123,7 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
   });
 
   if (!currentProject) {
-    throw new AppError("PROJECT_NOT_FOUND", "Projeto nao encontrado.", 404);
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
   }
 
   if (input.clientId && input.clientId !== currentProject.clientId) {
@@ -149,11 +149,11 @@ export async function deleteProject(id: string) {
   const impact = await getProjectDeleteImpact(id);
 
   if (!impact.exists) {
-    throw new AppError("PROJECT_NOT_FOUND", "Projeto nao encontrado.", 404);
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
   }
 
   if (impact.hasRelations) {
-    throw new AppError("PROJECT_HAS_RELATIONS", "Projeto possui registros vinculados e nao pode ser excluido.", 409, {
+    throw new AppError("PROJECT_HAS_RELATIONS", "Projeto possui registros vinculados e não pode ser excluído.", 409, {
       impact: impact.counts
     });
   }
@@ -266,13 +266,13 @@ async function ensureClientExists(clientId: string) {
   });
 
   if (!client) {
-    throw new AppError("CLIENT_NOT_FOUND", "Cliente nao encontrado.", 404);
+    throw new AppError("CLIENT_NOT_FOUND", "Cliente não encontrado.", 404);
   }
 }
 
 function assertProjectDates(startsAt?: Date | null, expectedDeliveryDate?: Date | null) {
   if (startsAt && expectedDeliveryDate && expectedDeliveryDate < startsAt) {
-    throw new AppError("INVALID_PROJECT_DATES", "Data de entrega nao pode ser anterior a data de inicio.", 422);
+    throw new AppError("INVALID_PROJECT_DATES", "Data de entrega não pode ser anterior à data de início.", 422);
   }
 }
 
