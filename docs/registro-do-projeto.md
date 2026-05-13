@@ -218,13 +218,14 @@ Base Express criada com:
 - CORS;
 - middleware de erro;
 - rota `GET /health`;
-- rota inicial `GET /dashboard`;
+- rota real `GET /dashboard`;
 - rota inicial `GET /clients/meta`;
 - modulo de Clientes em `/clients`;
 - modulo inicial de Projetos em `/projects`;
 - modulo de Etapas de Projeto em `/project-steps`.
 - modulo inicial de Orçamentos em `/budgets`.
 - modulo inicial de Financeiro em `/financial`.
+- modulo de Dashboard real agregado em `/dashboard`.
 
 Arquivos compartilhados importantes:
 
@@ -684,10 +685,74 @@ Regras consideradas:
 Ainda falta:
 
 - testes de frontend para formulários e ações financeiras;
-- refinamento visual após teste no navegador;
-- integração do Dashboard principal com os indicadores reais;
+- refinamento visual contínuo após uso real;
 - geração automática opcional de parcelas imediatamente após converter orçamento em projeto;
 - relatório financeiro por projeto.
+
+## Modulo Dashboard - estado atual
+
+O Dashboard foi integrado aos dados reais do backend como visão agregada do escritório.
+
+Backend:
+
+```txt
+backend/src/modules/dashboard/
+  dashboard.routes.ts
+  dashboard.controller.ts
+  dashboard.service.ts
+  dashboard.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Dashboard/
+  DashboardPage.tsx
+
+frontend/src/services/dashboard.ts
+frontend/src/types/dashboard.ts
+```
+
+Implementado no backend:
+
+- `GET /dashboard`;
+- agregação de clientes totais;
+- contagem de projetos ativos;
+- contagem de pagamentos atrasados;
+- contagem de pagamentos vencendo em 7 dias;
+- reaproveitamento de `getFinancialSummary()` do módulo Financeiro;
+- cálculo de progresso médio com `calculateProjectProgress()`;
+- próximas entregas a partir de projetos ativos com data futura;
+- agrupamento de projetos por status oficial;
+- alertas para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado;
+- testes para progresso médio, próximas entregas e alertas.
+
+Implementado no frontend:
+
+- Dashboard inicial conectado a `GET /dashboard`;
+- service Axios dedicado;
+- tipos TypeScript para o contrato do Dashboard;
+- cards reais de Clientes, Projetos ativos, Atrasados e Vencem em 7 dias;
+- cards financeiros reais de Receita do mês, Receita do ano, A receber e Ticket por projeto;
+- seção de Próximas entregas com progresso médio e progresso por projeto;
+- seção de Alertas com badges por severidade;
+- ação de atualização manual;
+- estado de carregamento e erro.
+
+Regras consideradas:
+
+- Dashboard agrega dados; não decide regra financeira crítica no frontend;
+- Financeiro continua sendo a fonte da verdade para recebido, a receber, vencido, vencendo e ticket médio;
+- atraso continua dinâmico;
+- progresso vem das etapas concluídas;
+- projetos finalizados e cancelados não entram como ativos;
+- alertas são calculados no backend.
+
+Ainda falta:
+
+- testes de frontend do Dashboard;
+- gráficos futuros, caso façam sentido;
+- atalhos de navegação dos alertas para os módulos relacionados.
 
 ## Ajuste de UI e português - Projetos e Clientes
 
@@ -743,9 +808,9 @@ Componentes UI:
 - `Table`
 - `Textarea`
 
-Rotas iniciais:
+Rotas atuais:
 
-- Dashboard
+- Dashboard, ja conectado a dados reais
 - Clientes, ja conectada a tela real
 - Projetos, ja conectada a tela real inicial
 - Orçamentos, ja conectada a tela real inicial
@@ -759,12 +824,13 @@ Rotas iniciais:
 
 Observação:
 
-- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto e Orçamentos ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos e Financeiro ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
 - Orçamentos é a quarta fatia operacional e inicia o fluxo comercial/financeiro.
 - Financeiro é a quinta fatia operacional e registra parcelas, pagamentos e indicadores.
+- Dashboard agora consolida a visão real desses módulos.
 
 ### Frontend - Clientes
 
@@ -1018,6 +1084,48 @@ Regras consideradas:
 - status atrasado vem calculado da API;
 - frontend não calcula regra crítica.
 
+### Frontend - Dashboard
+
+Objetivo:
+
+- exibir um resumo real do escritório com dados operacionais, financeiros e alertas.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa abrir o sistema e entender rapidamente clientes, projetos, recebimentos, atrasos e próximas entregas.
+
+Fluxo implementado:
+
+1. Usuário acessa `/`.
+2. A tela chama `GET /dashboard`.
+3. O backend agrega dados de clientes, projetos, financeiro e etapas.
+4. A tela exibe cards operacionais e financeiros.
+5. A tela mostra próximas entregas com progresso.
+6. A tela mostra alertas calculados pelo backend.
+7. Usuário pode atualizar o resumo manualmente.
+
+Campos exibidos:
+
+- clientes totais;
+- projetos ativos;
+- pagamentos atrasados;
+- parcelas vencendo em 7 dias;
+- receita do mês;
+- receita do ano;
+- valor a receber;
+- ticket médio por projeto;
+- progresso médio dos projetos ativos;
+- próximas entregas;
+- alertas operacionais.
+
+Regras consideradas:
+
+- dashboard não duplica regras financeiras no frontend;
+- indicadores financeiros vêm do backend;
+- progresso médio usa regra de etapas concluídas;
+- atrasos e vencimentos vêm calculados dinamicamente;
+- projetos finalizados e cancelados não entram como ativos.
+
 ## Regras de negócio ja implementadas
 
 Arquivo:
@@ -1073,6 +1181,7 @@ backend/src/modules/budgets/budgets.schema.test.ts
 backend/src/modules/budgets/budgets.service.test.ts
 backend/src/modules/financial/financial.schema.test.ts
 backend/src/modules/financial/financial.service.test.ts
+backend/src/modules/dashboard/dashboard.service.test.ts
 ```
 
 Cobertura atual:
@@ -1119,6 +1228,7 @@ Cobertura atual:
 - bloqueio de data de pagamento futura;
 - bloqueio de valor pago acima da parcela;
 - resumo financeiro por projeto e alerta acima do contratado.
+- dashboard com progresso médio, próximas entregas e alertas reais.
 
 Validações ja executadas no estado atual:
 
@@ -1266,20 +1376,18 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar o fluxo financeiro no navegador e iniciar a próxima fatia recomendada: integração do Dashboard principal com indicadores reais, depois Tarefas.
+Validar o Dashboard e o Financeiro no navegador e iniciar a próxima fatia recomendada: Tarefas vinculadas a projetos.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
 2. Abrir `http://localhost:5173/financial`.
-3. Selecionar um projeto convertido de orçamento e com valor contratado.
-4. Gerar parcelas em 1x, 2x ou 3x.
-5. Confirmar que as parcelas aparecem na tabela.
-6. Registrar pagamento total de uma parcela.
-7. Registrar pagamento parcial de outra parcela.
-8. Confirmar que indicadores de recebido, a receber, atrasado e vencendo atualizam.
-9. Testar filtro por status, projeto e cliente.
-10. Depois integrar o Dashboard principal com os indicadores reais.
+3. Confirmar cards, filtros, ações de parcela e ausência de erros visuais.
+4. Abrir `http://localhost:5173/`.
+5. Confirmar cards reais do Dashboard.
+6. Confirmar próximas entregas e alertas.
+7. Testar a atualização manual do Dashboard.
+8. Depois iniciar Tarefas com vínculo opcional a projeto, prioridades e status.
 
 ## Pontos de atencao para Clientes
 

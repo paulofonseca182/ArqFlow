@@ -98,6 +98,18 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - Formulários com React Hook Form e Zod para parcela manual, geração de parcelas e registro de pagamento.
 - Alertas quando a soma das parcelas ultrapassa o valor contratado do projeto.
 
+## Dashboard
+
+O Dashboard passou a consumir dados reais do backend:
+
+- API `GET /dashboard` com resumo operacional e financeiro.
+- Contagem real de clientes, projetos ativos, pagamentos atrasados e parcelas vencendo em 7 dias.
+- Reaproveitamento do resumo financeiro de `/financial/summary`.
+- Próximas entregas calculadas a partir dos projetos ativos.
+- Progresso médio calculado a partir das etapas dos projetos.
+- Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado.
+- Tela inicial conectada à API, com estados de carregamento, erro e atualização manual.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos

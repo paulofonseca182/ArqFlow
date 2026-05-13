@@ -1,15 +1,7 @@
 import { Router } from "express";
-import { ok } from "../../shared/http.js";
+import { asyncHandler } from "../../shared/async-handler.js";
+import { getDashboardController } from "./dashboard.controller.js";
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get("/", (_request, response) => {
-  response.json(
-    ok({
-      clients: 0,
-      projects: 0,
-      overduePayments: 0,
-      dueSoonPayments: 0
-    })
-  );
-});
+dashboardRouter.get("/", asyncHandler(getDashboardController));
