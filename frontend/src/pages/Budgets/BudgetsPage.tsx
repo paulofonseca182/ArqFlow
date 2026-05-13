@@ -1,0 +1,451 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { AlertCircle, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from "lucide-react";
+import { ActionIconButton } from "../../components/ui/ActionIconButton";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { DeleteModal } from "../../components/ui/DeleteModal";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { Input } from "../../components/ui/Input";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { Select } from "../../components/ui/Select";
+import { Table } from "../../components/ui/Table";
+import { PageWrapper } from "../../components/layout/PageWrapper";
+import { ApiError } from "../../services/api";
+import { createBudget, deleteBudget, getBudgetsMeta, listBudgets, sendBudget, updateBudget } from "../../services/budgets";
+import { listClients } from "../../services/clients";
+import type { PaginationMeta } from "../../types/api";
+import type { Budget, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
+import { budgetStatusValues } from "../../types/budget";
+import type { Client } from "../../types/client";
+import { BudgetFormModal } from "./BudgetFormModal";
+
+const pageSize = 20;
+const actionIconClassName = "h-4 w-4 shrink-0";
+const actionIconStrokeWidth = 1.75;
+const fallbackStatuses: BudgetOption<BudgetStatus>[] = budgetStatusValues.map((value) => ({ value, label: value }));
+const emptyPagination: PaginationMeta = {
+  page: 1,
+  pageSize,
+  total: 0,
+  totalPages: 1
+};
+
+export function BudgetsPage() {
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
+  const [statuses, setStatuses] = useState<BudgetOption<BudgetStatus>[]>(fallbackStatuses);
+  const [page, setPage] = useState(1);
+  const [draftSearch, setDraftSearch] = useState("");
+  const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">("");
+  const [draftClientId, setDraftClientId] = useState("");
+  const [query, setQuery] = useState<{ search: string; status: BudgetStatus | ""; clientId: string }>({
+    search: "",
+    status: "",
+    clientId: ""
+  });
+  const [loading, setLoading] = useState(true);
+  const [metaLoading, setMetaLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [sendLoadingId, setSendLoadingId] = useState<string | null>(null);
+
+  const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
+
+  const loadBudgets = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await listBudgets({
+        page,
+        pageSize,
+        search: query.search,
+        status: query.status || undefined,
+        clientId: query.clientId || undefined
+      });
+
+      setBudgets(result.data);
+      setPagination(result.meta);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, query.clientId, query.search, query.status]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMeta() {
+      setMetaLoading(true);
+
+      try {
+        const [budgetsMeta, clientsResult] = await Promise.all([getBudgetsMeta(), listClients({ page: 1, pageSize: 100 })]);
+
+        if (active) {
+          setStatuses(budgetsMeta.statuses);
+          setClients(clientsResult.data);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setMetaLoading(false);
+        }
+      }
+    }
+
+    void loadMeta();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void loadBudgets();
+  }, [loadBudgets]);
+
+  function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPage(1);
+    setQuery({
+      search: draftSearch.trim(),
+      status: draftStatus,
+      clientId: draftClientId
+    });
+  }
+
+  function handleClearFilters() {
+    setDraftSearch("");
+    setDraftStatus("");
+    setDraftClientId("");
+    setPage(1);
+    setQuery({ search: "", status: "", clientId: "" });
+  }
+
+  function handleOpenCreate() {
+    setFormMode("create");
+    setSelectedBudget(null);
+    setFormError(null);
+    setFormOpen(true);
+  }
+
+  function handleOpenEdit(budget: Budget) {
+    setFormMode("edit");
+    setSelectedBudget(budget);
+    setFormError(null);
+    setFormOpen(true);
+  }
+
+  async function handleSaveBudget(payload: BudgetWriteInput) {
+    setSaving(true);
+    setFormError(null);
+    setNotice(null);
+
+    try {
+      if (formMode === "create") {
+        await createBudget(payload);
+        setNotice("Orçamento cadastrado.");
+      } else if (selectedBudget) {
+        await updateBudget(selectedBudget.id, payload);
+        setNotice("Orçamento atualizado.");
+      }
+
+      setFormOpen(false);
+      setSelectedBudget(null);
+      await loadBudgets();
+    } catch (requestError) {
+      setFormError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSendBudget(budget: Budget) {
+    setSendLoadingId(budget.id);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await sendBudget(budget.id);
+      setNotice("Orçamento enviado.");
+      await loadBudgets();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSendLoadingId(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await deleteBudget(deleteTarget.id);
+      setNotice("Orçamento excluído.");
+      setDeleteTarget(null);
+      await loadBudgets();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const hasFilters = Boolean(query.search || query.status || query.clientId);
+
+  return (
+    <PageWrapper
+      actions={
+        <Button disabled={metaLoading || clients.length === 0} onClick={handleOpenCreate} type="button">
+          <Plus className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+          Novo orçamento
+        </Button>
+      }
+      description="Propostas comerciais com itens calculados pelo backend."
+      title="Orçamentos"
+    >
+      <Card>
+        <form className="grid gap-3 lg:grid-cols-[1fr_190px_220px_auto]" onSubmit={handleFilterSubmit}>
+          <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Orçamento, cliente, serviço ou item" value={draftSearch} />
+          <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as BudgetStatus | "")} value={draftStatus}>
+            <option value="">Todos</option>
+            {statuses.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </Select>
+          <Select label="Cliente" onChange={(event) => setDraftClientId(event.target.value)} value={draftClientId}>
+            <option value="">Todos</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </Select>
+          <div className="flex items-end gap-2">
+            <Button className="min-w-28" title="Buscar orçamentos" type="submit">
+              <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+              Buscar
+            </Button>
+            <ActionIconButton ariaLabel="Limpar filtros" label="Limpar filtros" onClick={handleClearFilters} size="control" variant="secondary">
+              <XCircle className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
+            <ActionIconButton ariaLabel="Atualizar lista" label="Atualizar lista" onClick={() => void loadBudgets()} size="control">
+              <RefreshCw className={`${actionIconClassName} ${loading ? "animate-spin" : ""}`} strokeWidth={actionIconStrokeWidth} />
+            </ActionIconButton>
+          </div>
+        </form>
+      </Card>
+
+      {error ? (
+        <div className="flex gap-2 rounded-ui border border-status-danger/30 bg-status-danger/10 px-4 py-3 text-sm text-status-danger">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className="rounded-ui border border-status-success/30 bg-status-success/10 px-4 py-3 text-sm text-status-success">
+          {notice}
+        </div>
+      ) : null}
+
+      {loading && budgets.length === 0 ? <LoadingState /> : null}
+
+      {!loading && budgets.length === 0 ? (
+        <EmptyState
+          action={
+            hasFilters ? (
+              <Button onClick={handleClearFilters} type="button" variant="secondary">
+                Limpar filtros
+              </Button>
+            ) : (
+              <Button disabled={clients.length === 0} onClick={handleOpenCreate} type="button">
+                <Plus className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                Novo orçamento
+              </Button>
+            )
+          }
+          description={hasFilters ? "Nenhum orçamento encontrado para os filtros atuais." : "Crie a primeira proposta vinculada a um cliente."}
+          title={hasFilters ? "Sem resultados" : "Nenhum orçamento cadastrado"}
+        />
+      ) : null}
+
+      {budgets.length > 0 ? (
+        <div className="space-y-3">
+          <Table headers={["Orçamento", "Cliente", "Serviço", "Status", "Valores", "Validade", "Ações"]}>
+            {budgets.map((budget) => (
+              <tr className="min-w-[980px]" key={budget.id}>
+                <td className="min-w-60 px-4 py-4 align-top">
+                  <div className="font-medium text-text-primary">{budget.title}</div>
+                  <div className="mt-1 text-xs text-text-muted">{formatItemsCount(budget.items.length)}</div>
+                </td>
+                <td className="min-w-44 px-4 py-4 align-top text-text-secondary">{budget.client.name}</td>
+                <td className="min-w-44 px-4 py-4 align-top text-text-secondary">
+                  <div>{budget.serviceType}</div>
+                  <div className="mt-1 text-xs text-text-muted">{budget.project?.name ?? "Sem projeto vinculado"}</div>
+                </td>
+                <td className="px-4 py-4 align-top">
+                  <Badge tone={getBudgetStatusTone(budget.status)}>{statusLabelByValue.get(budget.status) ?? budget.status}</Badge>
+                </td>
+                <td className="min-w-44 px-4 py-4 align-top text-text-secondary">
+                  <div>{formatMoney(budget.finalAmount)}</div>
+                  <div className="mt-1 text-xs text-text-muted">
+                    Total {formatMoney(budget.totalAmount)} - desconto {formatMoney(budget.discount)}
+                  </div>
+                </td>
+                <td className="min-w-32 px-4 py-4 align-top text-text-secondary">{formatDate(budget.expiresAt)}</td>
+                <td className="px-4 py-4 align-top">
+                  <div className="flex items-center gap-2">
+                    <ActionIconButton ariaLabel={`Editar ${budget.title}`} label="Editar" onClick={() => handleOpenEdit(budget)}>
+                      <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                    </ActionIconButton>
+                    {canSendBudget(budget) ? (
+                      <ActionIconButton
+                        ariaLabel={`Enviar ${budget.title}`}
+                        disabled={sendLoadingId === budget.id}
+                        label="Enviar"
+                        onClick={() => void handleSendBudget(budget)}
+                      >
+                        {sendLoadingId === budget.id ? (
+                          <RefreshCw className={`${actionIconClassName} animate-spin`} strokeWidth={actionIconStrokeWidth} />
+                        ) : (
+                          <Send className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                        )}
+                      </ActionIconButton>
+                    ) : null}
+                    <ActionIconButton
+                      ariaLabel={`Excluir ${budget.title}`}
+                      destructive
+                      label="Excluir"
+                      onClick={() => setDeleteTarget(budget)}
+                    >
+                      <Trash2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                    </ActionIconButton>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </Table>
+
+          <div className="flex flex-col gap-3 text-sm text-text-secondary sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {pagination.total} orçamento{pagination.total === 1 ? "" : "s"} encontrados
+            </span>
+            <div className="flex items-center gap-2">
+              <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
+                <ChevronLeft className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                Anterior
+              </Button>
+              <span className="min-w-20 text-center">
+                {pagination.page} / {pagination.totalPages}
+              </span>
+              <Button
+                disabled={page >= pagination.totalPages || loading}
+                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
+                type="button"
+                variant="secondary"
+              >
+                Próxima
+                <ChevronRight className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <BudgetFormModal
+        apiError={formError}
+        budget={selectedBudget}
+        clients={clients}
+        mode={formMode}
+        onClose={() => {
+          if (!saving) {
+            setFormOpen(false);
+          }
+        }}
+        onSubmit={handleSaveBudget}
+        open={formOpen}
+        saving={saving}
+        statuses={statuses}
+      />
+
+      <DeleteModal
+        confirming={deleting}
+        impact={`${deleteTarget?.items.length ?? 0} item${deleteTarget?.items.length === 1 ? "" : "s"} serão excluídos junto com o orçamento.`}
+        itemName={deleteTarget?.title ?? ""}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void handleConfirmDelete()}
+        open={Boolean(deleteTarget)}
+      />
+    </PageWrapper>
+  );
+}
+
+function canSendBudget(budget: Budget) {
+  return budget.status === "DRAFT" || budget.status === "NEGOTIATION";
+}
+
+function getBudgetStatusTone(status: BudgetStatus) {
+  if (status === "APPROVED") {
+    return "success";
+  }
+
+  if (status === "SENT" || status === "NEGOTIATION") {
+    return "warning";
+  }
+
+  if (status === "REFUSED" || status === "EXPIRED" || status === "CANCELLED") {
+    return "danger";
+  }
+
+  return "neutral";
+}
+
+function formatMoney(value: string) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(Number(value));
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return "Não informada";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+}
+
+function formatItemsCount(count: number) {
+  return `${count} item${count === 1 ? "" : "s"}`;
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  return "Não foi possível concluir a ação.";
+}

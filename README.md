@@ -66,6 +66,20 @@ O módulo de Etapas de Projeto já está integrado ao fluxo de Projetos:
 - Modal de etapas na tela `/projects`, com ação para gerar, concluir e reabrir etapas.
 - Testes de schema, templates, validação de datas e cálculo de progresso.
 
+## Orçamentos
+
+O módulo de Orçamentos já possui uma primeira fatia vertical:
+
+- API REST com listagem, busca, filtro por status e cliente.
+- Criação e edição de orçamento com cliente obrigatório e itens.
+- Cálculo de `totalAmount`, `finalAmount` e total de cada item sempre no backend.
+- Validação backend de valores positivos, desconto não negativo e pelo menos 1 item.
+- Envio de orçamento em rascunho ou negociação via `PATCH /budgets/:id/send`.
+- Exclusão com confirmação, preservando bloqueio para orçamento aprovado.
+- Tela `/budgets` conectada ao backend real.
+- Formulário com React Hook Form, Zod e itens dinâmicos.
+- Status oficiais de orçamento com badges visuais.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos
@@ -87,4 +101,5 @@ Frontend: http://localhost:5173
 Backend: http://localhost:3333
 Clientes: http://localhost:5173/clients
 Projetos: http://localhost:5173/projects
+Orçamentos: http://localhost:5173/budgets
 ```

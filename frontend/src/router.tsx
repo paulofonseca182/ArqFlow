@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import { BudgetsPage } from "./pages/Budgets/BudgetsPage";
 import { ClientsPage } from "./pages/Clients/ClientsPage";
 import { DashboardPage } from "./pages/Dashboard/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -13,7 +14,7 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: "clients", element: <ClientsPage /> },
       { path: "projects", element: <ProjectsPage /> },
-      { path: "budgets", element: <PlaceholderPage title="Orçamentos" /> },
+      { path: "budgets", element: <BudgetsPage /> },
       { path: "financial", element: <PlaceholderPage title="Financeiro" /> },
       { path: "tasks", element: <PlaceholderPage title="Tarefas" /> },
       { path: "visits", element: <PlaceholderPage title="Visitas" /> },

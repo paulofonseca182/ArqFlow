@@ -223,6 +223,7 @@ Base Express criada com:
 - modulo de Clientes em `/clients`;
 - modulo inicial de Projetos em `/projects`;
 - modulo de Etapas de Projeto em `/project-steps`.
+- modulo inicial de Orçamentos em `/budgets`.
 
 Arquivos compartilhados importantes:
 
@@ -477,6 +478,102 @@ Ainda falta:
 - reordenação manual de etapas;
 - testes de frontend do modal de etapas.
 
+## Modulo de Orçamentos - estado atual
+
+O modulo de Orçamentos possui backend inicial e frontend inicial conectados a API real.
+
+Banco:
+
+- os modelos `Budget` e `BudgetItem` ja existiam no Prisma;
+- `Budget` exige `clientId` obrigatório;
+- `Budget` pode ter `projectId` nulo;
+- `BudgetItem` pertence obrigatoriamente a `Budget`;
+- `BudgetItem -> Budget` usa `onDelete: Cascade`;
+- não foi necessário criar migration nesta primeira fatia.
+
+Backend:
+
+```txt
+backend/src/modules/budgets/
+  budgets.routes.ts
+  budgets.controller.ts
+  budgets.service.ts
+  budgets.schema.ts
+  budgets.schema.test.ts
+  budgets.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Budgets/
+  BudgetsPage.tsx
+  BudgetFormModal.tsx
+  budget-form.ts
+
+frontend/src/services/budgets.ts
+frontend/src/types/budget.ts
+```
+
+Implementado no backend:
+
+- `GET /budgets/meta`;
+- `GET /budgets`;
+- `GET /budgets/:id`;
+- `POST /budgets`;
+- `PATCH /budgets/:id`;
+- `PATCH /budgets/:id/send`;
+- `DELETE /budgets/:id`;
+- busca por título, tipo de serviço, descrição, cliente, projeto e descrição dos itens;
+- filtros por status, cliente e projeto;
+- paginação;
+- status oficiais de orçamento centralizados;
+- validação Zod de cliente, título, tipo de serviço, status, desconto, validade e itens;
+- validação de valores financeiros positivos;
+- exigência de pelo menos 1 item;
+- cálculo de `totalAmount`, `finalAmount` e `BudgetItem.totalAmount` no backend;
+- transação para criar orçamento com itens;
+- transação para substituir itens ao editar orçamento;
+- bloqueio de envio quando o orçamento não está em rascunho ou negociação;
+- bloqueio de exclusão de orçamento aprovado;
+- testes de schema e service.
+
+Implementado no frontend:
+
+- rota `/budgets` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/budgets`;
+- tipos TypeScript para Orçamento, Item, status e payload de escrita;
+- listagem com busca, filtro por status e filtro por cliente;
+- formulário de criação e edição em modal;
+- select de cliente consumindo dados reais de `/clients`;
+- React Hook Form com validação Zod manual;
+- itens dinâmicos com adicionar/remover item;
+- validação de cliente obrigatório, título, tipo de serviço, desconto, validade e itens;
+- exibição de valores calculados pela API;
+- ação para enviar orçamento;
+- exclusão com modal de confirmação;
+- estados de carregamento, vazio, erro e sucesso.
+
+Regras consideradas:
+
+- orçamento deve ter cliente;
+- cliente deve existir no backend;
+- projeto, quando vinculado no backend, deve pertencer ao mesmo cliente;
+- orçamento deve ter pelo menos 1 item;
+- quantidade e valor unitário devem ser maiores que zero;
+- desconto não pode ser negativo;
+- valor final é calculado no backend;
+- frontend valida para UX, mas não substitui regras críticas;
+- orçamento aprovado não pode ser excluído nesta fatia.
+
+Ainda falta:
+
+- vincular orçamento a projeto pela interface;
+- converter orçamento aprovado em projeto usando transação;
+- gerar parcelas a partir de orçamento aprovado;
+- testes de frontend para formulário, filtros, envio e exclusão;
+- refinamento de impressão/exportação de proposta.
+
 ## Ajuste de UI e português - Projetos e Clientes
 
 Foi feito um passe de qualidade visual e textual nas telas operacionais já entregues.
@@ -536,7 +633,7 @@ Rotas iniciais:
 - Dashboard
 - Clientes, ja conectada a tela real
 - Projetos, ja conectada a tela real inicial
-- Orçamentos
+- Orçamentos, ja conectada a tela real inicial
 - Financeiro
 - Tarefas
 - Visitas
@@ -547,10 +644,11 @@ Rotas iniciais:
 
 Observação:
 
-- As telas alem de Dashboard, Clientes, Projetos e Etapas de Projeto ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto e Orçamentos ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
+- Orçamentos é a quarta fatia operacional e inicia o fluxo comercial/financeiro.
 
 ### Frontend - Clientes
 
@@ -694,6 +792,55 @@ Regras consideradas:
 - geração padrão so aparece como ação util quando não ha etapas carregadas;
 - erros de duplicação ou validação aparecem dentro do modal.
 
+### Frontend - Orçamentos
+
+Objetivo:
+
+- permitir cadastrar, listar, buscar, filtrar, editar, enviar e excluir orçamentos com itens, sempre vinculados a um cliente.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa formalizar propostas comerciais antes de converter uma venda em projeto.
+
+Fluxo implementado:
+
+1. Usuário acessa `/budgets`.
+2. A tela carrega status via `/budgets/meta`.
+3. A tela carrega clientes via `/clients`.
+4. A tela lista orçamentos via `/budgets`.
+5. Usuário pode buscar por orçamento, cliente, serviço ou item.
+6. Usuário pode filtrar por status e cliente.
+7. Usuário pode abrir o modal de novo orçamento.
+8. Usuário seleciona um cliente obrigatório.
+9. Usuário adiciona um ou mais itens com quantidade e valor unitário.
+10. O backend calcula total bruto, desconto, total final e total de cada item.
+11. Usuário pode editar um orçamento existente.
+12. Usuário pode enviar um orçamento em rascunho ou negociação.
+13. Usuário pode excluir orçamento com modal de confirmação.
+
+Campos principais do formulário:
+
+- cliente;
+- título;
+- tipo de serviço;
+- status;
+- desconto;
+- validade;
+- forma de pagamento;
+- descrição;
+- itens com descrição, quantidade e valor unitário.
+
+Regras consideradas:
+
+- orçamento deve ter cliente;
+- orçamento deve ter pelo menos um item;
+- quantidade e valor unitário devem ser maiores que zero;
+- desconto não pode ser negativo;
+- frontend não calcula valores críticos;
+- backend continua sendo a fonte da verdade;
+- orçamento enviado exige pelo menos 1 item;
+- orçamento aprovado não pode ser excluído.
+
 ## Regras de negócio ja implementadas
 
 Arquivo:
@@ -707,7 +854,9 @@ Regras:
 - valor financeiro deve ser maior que zero;
 - orçamento deve ter pelo menos um item;
 - valor final do orçamento e calculado no backend;
+- total de cada item de orçamento e calculado no backend;
 - desconto não pode deixar valor final menor ou igual a zero;
+- desconto de orçamento não pode ser negativo;
 - progresso do projeto e calculado por etapas concluídas sobre total;
 - progresso não aceita valores negativos;
 - etapas concluídas não podem ultrapassar total de etapas;
@@ -732,6 +881,8 @@ backend/src/modules/projects/projects.schema.test.ts
 backend/src/modules/projects/projects.service.test.ts
 backend/src/modules/projectSteps/projectSteps.schema.test.ts
 backend/src/modules/projectSteps/projectSteps.service.test.ts
+backend/src/modules/budgets/budgets.schema.test.ts
+backend/src/modules/budgets/budgets.service.test.ts
 ```
 
 Cobertura atual:
@@ -760,6 +911,14 @@ Cobertura atual:
 - metadados e templates de Etapas;
 - cálculo de progresso por etapas concluídas;
 - datas de etapa anteriores ao início do projeto bloqueadas.
+- schema inicial de Orçamentos;
+- cliente obrigatório em Orçamentos;
+- orçamento com item obrigatório;
+- valores de item zero ou negativos bloqueados;
+- desconto negativo bloqueado;
+- metadados de status de Orçamentos;
+- montagem de filtros de busca, cliente, projeto e status de Orçamentos;
+- cálculo de totais de orçamento no backend.
 
 Validações ja executadas no estado atual:
 
@@ -847,6 +1006,13 @@ GET /clients/:id/delete-impact
 POST /clients
 PATCH /clients/:id
 DELETE /clients/:id
+GET /budgets/meta
+GET /budgets
+GET /budgets/:id
+POST /budgets
+PATCH /budgets/:id
+PATCH /budgets/:id/send
+DELETE /budgets/:id
 GET /projects/meta
 GET /projects
 GET /projects/:id
@@ -891,20 +1057,18 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar o fluxo de Etapas de Projeto no navegador e iniciar a próxima fatia recomendada: Orçamentos.
+Validar o fluxo de Orçamentos no navegador e iniciar a próxima fatia recomendada: conversão de orçamento aprovado em projeto.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Abrir `http://localhost:5173/projects`.
-3. Abrir o modal de etapas de um projeto sem etapas.
-4. Gerar etapas padrão e confirmar que a lista aparece ordenada.
-5. Tentar gerar novamente e confirmar bloqueio contra duplicação.
-6. Concluir uma etapa e confirmar aumento do progresso.
-7. Reabrir a etapa e confirmar reducao do progresso.
-8. Confirmar que a barra de progresso da tabela de Projetos reflete a API.
-9. Tentar excluir projeto com etapas e confirmar bloqueio.
-10. Depois iniciar Orçamentos com cliente obrigatório e possível vínculo a projeto.
+2. Abrir `http://localhost:5173/budgets`.
+3. Criar um orçamento com cliente obrigatório e pelo menos um item.
+4. Confirmar que os valores exibidos vêm calculados pela API.
+5. Editar itens e desconto e confirmar recálculo no backend.
+6. Enviar orçamento em rascunho ou negociação.
+7. Tentar excluir orçamento aprovado e confirmar bloqueio no backend.
+8. Depois implementar aprovação/conversão de orçamento em projeto usando `$transaction`.
 
 ## Pontos de atencao para Clientes
 
@@ -933,10 +1097,23 @@ Ao evoluir Etapas, lembrar:
 - datas devem ser validadas no backend contra o início do projeto;
 - frontend pode melhorar UX, mas não deve substituir a regra do backend.
 
+## Pontos de atencao para Orçamentos
+
+Ao evoluir Orçamentos, lembrar:
+
+- orçamento sempre deve pertencer a cliente;
+- projeto vinculado, quando existir, deve pertencer ao mesmo cliente;
+- orçamento enviado deve ter pelo menos um item;
+- total bruto, total final e total de item devem continuar calculados no backend;
+- desconto não pode ser negativo nem zerar o valor final;
+- conversão de orçamento aprovado em projeto deve usar `$transaction`;
+- valores financeiros não devem ser confiados apenas pelo frontend;
+- exclusões críticas devem continuar passando por confirmação.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(project-steps): implement project step workflow
+feat(budgets): implement budget workflow
 ```
 
 Resumo sugerido:
@@ -954,6 +1131,8 @@ Resumo sugerido:
 - Implement Projects frontend list, form, filters and protected delete flow
 - Implement Project Steps backend API with default generation and progress rules
 - Implement Project Steps frontend modal for generation, completion and reopening
+- Implement Budgets backend API with item totals and send action
+- Implement Budgets frontend list, form, filters and delete confirmation
 - Update project registry and README
 ```
 

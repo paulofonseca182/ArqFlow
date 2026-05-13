@@ -73,3 +73,13 @@ export const stepStatusLabels: Record<StepStatus, string> = {
   COMPLETED: "Concluída",
   CANCELLED: "Cancelada"
 };
+
+export const budgetStatusLabels: Record<BudgetStatus, string> = {
+  DRAFT: "Rascunho",
+  SENT: "Enviado",
+  NEGOTIATION: "Em negociação",
+  APPROVED: "Aprovado",
+  REFUSED: "Recusado",
+  EXPIRED: "Vencido",
+  CANCELLED: "Cancelado"
+};
