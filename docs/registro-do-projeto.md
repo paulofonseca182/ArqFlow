@@ -364,6 +364,7 @@ Implementado no backend:
 - filtros por status, tipo e cliente;
 - paginacao;
 - validacao Zod de `clientId`, nome, tipo, status, datas e valores positivos;
+- status `Desenho 3D em desenvolvimento` disponivel logo apos `Aguardando aprovacao do cliente`;
 - verificacao de cliente existente antes de criar ou trocar o cliente do projeto;
 - bloqueio de data de entrega anterior a data de inicio;
 - progresso calculado no backend a partir das etapas existentes;

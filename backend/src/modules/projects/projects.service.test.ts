@@ -9,6 +9,22 @@ describe("projects service", () => {
       value: "CONTRACT_IN_PROGRESS",
       label: "Contrato em andamento"
     });
+    expect(meta.statuses.map((status) => status.value)).toEqual([
+      "CONTRACT_IN_PROGRESS",
+      "CONTRACT_SIGNED",
+      "SURVEY_IN_PROGRESS",
+      "ANTEPROJECT_IN_DEVELOPMENT",
+      "WAITING_CLIENT_APPROVAL",
+      "DESIGN_3D_IN_DEVELOPMENT",
+      "EXECUTIVE_PROJECT_IN_DEVELOPMENT",
+      "FINAL_DELIVERY",
+      "FINISHED",
+      "CANCELLED"
+    ]);
+    expect(meta.statuses).toContainEqual({
+      value: "DESIGN_3D_IN_DEVELOPMENT",
+      label: "Desenho 3D em desenvolvimento"
+    });
     expect(meta.types).toContainEqual({
       value: "INTERIORS",
       label: "Interiores"

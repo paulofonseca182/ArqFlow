@@ -42,6 +42,7 @@ O modulo de Projetos ja possui uma primeira fatia vertical:
 - API REST com listagem, busca, filtro por status, tipo e cliente.
 - Criacao e edicao de projeto com cliente obrigatorio.
 - Validacao backend de cliente existente, datas e valores positivos.
+- Status oficial `Desenho 3D em desenvolvimento` logo apos `Aguardando aprovacao do cliente`.
 - Tela `/projects` conectada ao backend real.
 - Formulario com React Hook Form e Zod.
 - Progresso exibido a partir das etapas existentes.
