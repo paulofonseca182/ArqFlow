@@ -6,24 +6,27 @@ export default {
     extend: {
       colors: {
         brand: {
-          500: "#103253",
-          600: "#0b2742",
-          700: "#071d32"
+          500: "#244B78",
+          600: "#558CCA",
+          700: "#183756"
         },
         accent: {
-          bronze: "#B87333"
+          bronze: "#B67E5D",
+          dark: "#7A4E38"
         },
         surface: {
-          950: "#000000",
-          900: "#0B0B0B",
-          800: "#141414",
-          700: "#1A1A1A",
-          600: "#2A2A2A"
+          950: "#090B0D",
+          900: "#15181C",
+          elevated: "#171A1E",
+          800: "#15181C",
+          700: "#1D2025",
+          600: "#4A4340",
+          500: "#2D2B2B"
         },
         text: {
-          primary: "#F5F5F5",
-          secondary: "#A8A8A8",
-          muted: "#6F6F6F"
+          primary: "#F3F3F3",
+          secondary: "#B1B2B3",
+          muted: "#8A8B8D"
         },
         status: {
           success: "#3BA66B",
@@ -35,8 +38,8 @@ export default {
         ui: "8px"
       },
       boxShadow: {
-        subtle: "0 1px 2px rgba(0, 0, 0, 0.35)",
-        panel: "0 18px 60px rgba(0, 0, 0, 0.32)"
+        subtle: "0 1px 2px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(182, 126, 93, 0.04)",
+        panel: "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(182, 126, 93, 0.06)"
       }
     }
   },

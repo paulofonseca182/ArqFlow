@@ -92,6 +92,7 @@ A Fase 0.1 ajustou a base para ficar coerente com o `AGENTS.md`.
 Foram feitos:
 
 - alinhamento visual para dark premium;
+- atualização da paleta premium com fundo grafite, bronze de destaque e azul técnico;
 - criação de componentes UI obrigatórios;
 - criação do padrão backend `routes/controller/service/schema`;
 - centralização de contratos de domínio e status;
@@ -973,7 +974,17 @@ Documentação:
 
 O frontend foi estruturado com React, Vite, TypeScript e Tailwind.
 
-Foi aplicada a identidade visual dark premium definida no `AGENTS.md`.
+Foi aplicada a identidade visual dark premium definida no `AGENTS.md` e refinada com a nova paleta premium do ArqFlow.
+
+Paleta visual atual:
+
+- fundo principal `#090B0D`;
+- fundos de sidebar/cards `#15181C`;
+- card elevado/modal `#171A1E`;
+- bordas `#4A4340` e `#2D2B2B`;
+- textos `#F3F3F3`, `#B1B2B3` e `#8A8B8D`;
+- bronze `#B67E5D` e `#7A4E38` para marca, foco e detalhes;
+- azul `#244B78` e `#558CCA` para ações principais e estados ativos.
 
 Componentes de layout:
 
@@ -1008,7 +1019,7 @@ Rotas atuais:
 - Orçamentos, ja conectada a tela real inicial
 - Financeiro, ja conectado a tela real inicial
 - Tarefas, ja conectada a tela real inicial
-- Visitas
+- Visitas, ja conectada a tela real inicial
 - Documentos
 - Briefings
 - Relatórios
@@ -1016,7 +1027,7 @@ Rotas atuais:
 
 Observação:
 
-- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos, Financeiro e Tarefas ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos, Financeiro, Tarefas e Visitas ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
@@ -1024,6 +1035,7 @@ Observação:
 - Financeiro é a quinta fatia operacional e registra parcelas, pagamentos e indicadores.
 - Dashboard agora consolida a visão real desses módulos.
 - Tarefas é a sexta fatia operacional e organiza atividades com prazos, prioridades e status.
+- Visitas Técnicas é a sétima fatia operacional e organiza visitas com cliente obrigatório e projeto opcional.
 
 ### Frontend - Clientes
 

@@ -3,7 +3,7 @@ import { navigation } from "./navigation";
 
 export function MobileNav() {
   return (
-    <nav className="border-b border-surface-600 bg-surface-900 px-4 py-2 lg:hidden" aria-label="Navegação principal">
+    <nav className="border-b border-surface-500 bg-surface-900 px-4 py-2 lg:hidden" aria-label="Navegação principal">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {navigation.map((item) => (
           <NavLink
@@ -11,10 +11,10 @@ export function MobileNav() {
             to={item.href}
             className={({ isActive }) =>
               [
-                "flex shrink-0 items-center gap-2 rounded-ui px-3 py-2 text-sm font-medium transition",
+                "flex shrink-0 items-center gap-2 rounded-ui border px-3 py-2 text-sm font-medium transition",
                 isActive
-                  ? "bg-brand-500 text-text-primary"
-                  : "text-text-secondary hover:bg-surface-800 hover:text-text-primary"
+                  ? "border-accent-bronze/45 bg-brand-500 text-text-primary shadow-subtle"
+                  : "border-transparent text-text-secondary hover:border-surface-600 hover:bg-surface-elevated hover:text-text-primary"
               ].join(" ")
             }
           >

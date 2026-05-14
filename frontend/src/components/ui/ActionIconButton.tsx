@@ -98,7 +98,7 @@ export function ActionIconButton({
       {tooltipPosition
         ? createPortal(
             <span
-              className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-ui border border-surface-600 bg-surface-900 px-2 py-1 text-xs font-medium text-text-primary shadow-subtle"
+              className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-ui border border-surface-600 bg-surface-elevated px-2 py-1 text-xs font-medium text-text-primary shadow-subtle"
               id={tooltipId}
               role="tooltip"
               style={{

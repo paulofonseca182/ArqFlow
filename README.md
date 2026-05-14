@@ -18,6 +18,7 @@ Esta base define a estrutura técnica inicial do projeto antes da Fase 1:
 A Fase 0.1 alinha a base ao `AGENTS.md`:
 
 - UI dark premium.
+- Paleta premium atualizada com fundo grafite, bronze de destaque e azul técnico para ações.
 - Componentes obrigatórios iniciais.
 - Padrão backend `routes/controller/service/schema`.
 - Contratos de domínio centralizados.

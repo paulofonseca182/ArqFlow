@@ -384,6 +384,7 @@ export function FinancialPage() {
               label="Atualizar financeiro"
               onClick={() => void Promise.all([loadPayments(), loadSummary()])}
               size="control"
+              variant="secondary"
             >
               <RefreshCw className={`${actionIconClassName} ${loading ? "animate-spin" : ""}`} strokeWidth={actionIconStrokeWidth} />
             </ActionIconButton>

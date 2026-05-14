@@ -265,7 +265,7 @@ export function ClientsPage() {
             <ActionIconButton ariaLabel="Limpar filtros" label="Limpar filtros" onClick={handleClearFilters} size="control" variant="secondary">
               <XCircle className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
             </ActionIconButton>
-            <ActionIconButton ariaLabel="Atualizar lista" label="Atualizar lista" onClick={() => void loadClients()} size="control">
+            <ActionIconButton ariaLabel="Atualizar lista" label="Atualizar lista" onClick={() => void loadClients()} size="control" variant="secondary">
               <RefreshCw className={`${actionIconClassName} ${loading ? "animate-spin" : ""}`} strokeWidth={actionIconStrokeWidth} />
             </ActionIconButton>
           </div>

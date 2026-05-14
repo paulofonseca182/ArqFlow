@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ c
         id={inputId}
         ref={ref}
         className={clsx(
-          "h-10 w-full rounded-ui border border-surface-600 bg-surface-900 px-3 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-bronze",
+          "h-10 w-full rounded-ui border border-surface-500 bg-surface-950/70 px-3 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-bronze focus:bg-surface-950",
           error && "border-status-danger",
           className
         )}

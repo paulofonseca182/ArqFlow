@@ -7,9 +7,9 @@ type TableProps = {
 
 export function Table({ headers, children }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-ui border border-surface-600">
+    <div className="overflow-x-auto rounded-ui border border-surface-600 shadow-subtle">
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-surface-700 text-text-secondary">
+        <thead className="bg-surface-elevated text-text-secondary">
           <tr>
             {headers.map((header) => (
               <th key={header} className="px-4 py-3 font-medium">
@@ -18,7 +18,7 @@ export function Table({ headers, children }: TableProps) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-surface-600 bg-surface-800 text-text-primary">{children}</tbody>
+        <tbody className="divide-y divide-surface-500 bg-surface-900 text-text-primary">{children}</tbody>
       </table>
     </div>
   );
