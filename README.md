@@ -110,6 +110,24 @@ O Dashboard passou a consumir dados reais do backend:
 - Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado.
 - Tela inicial conectada à API, com estados de carregamento, erro e atualização manual.
 
+## Tarefas
+
+O módulo de Tarefas iniciou a organização operacional do escritório:
+
+- API REST em `/tasks` com metadados, listagem, busca, filtros, criação, edição, conclusão, reabertura, cancelamento e exclusão.
+- Vínculo com projeto opcional; quando informado, o projeto precisa existir.
+- Status oficiais: Pendente, Em andamento, Concluída e Cancelada.
+- Prioridades oficiais: Baixa, Média, Alta e Urgente.
+- Prazo opcional com filtro por intervalo.
+- Atraso de tarefa calculado dinamicamente pelo backend.
+- Tela `/tasks` conectada ao backend real.
+- Formulário com React Hook Form e Zod.
+- Ações rápidas com tooltips para editar, concluir, reabrir, cancelar e excluir.
+
+## Ponto de retomada
+
+Próxima etapa: iniciar Visitas Técnicas com cliente obrigatório, projeto opcional, data, horário, endereço, valor, status e observações.
+
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
 ## Comandos previstos
@@ -133,4 +151,5 @@ Clientes: http://localhost:5173/clients
 Projetos: http://localhost:5173/projects
 Orçamentos: http://localhost:5173/budgets
 Financeiro: http://localhost:5173/financial
+Tarefas: http://localhost:5173/tasks
 ```

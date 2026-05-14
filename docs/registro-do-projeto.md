@@ -226,6 +226,7 @@ Base Express criada com:
 - modulo inicial de Orçamentos em `/budgets`.
 - modulo inicial de Financeiro em `/financial`.
 - modulo de Dashboard real agregado em `/dashboard`.
+- modulo inicial de Tarefas em `/tasks`.
 
 Arquivos compartilhados importantes:
 
@@ -754,6 +755,98 @@ Ainda falta:
 - gráficos futuros, caso façam sentido;
 - atalhos de navegação dos alertas para os módulos relacionados.
 
+## Modulo de Tarefas - estado atual
+
+O módulo de Tarefas foi iniciado para organizar atividades operacionais do escritório, com vínculo opcional a projetos.
+
+Banco:
+
+- o modelo `Task` ja existia no Prisma;
+- `projectId` e opcional;
+- `Task -> Project` usa `onDelete: SetNull`;
+- se um projeto for removido futuramente, a tarefa pode permanecer como tarefa geral;
+- não foi necessário criar migration nesta fatia.
+
+Backend:
+
+```txt
+backend/src/modules/tasks/
+  tasks.routes.ts
+  tasks.controller.ts
+  tasks.service.ts
+  tasks.schema.ts
+  tasks.schema.test.ts
+  tasks.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Tasks/
+  TasksPage.tsx
+  TaskFormModal.tsx
+  task-form.ts
+
+frontend/src/services/tasks.ts
+frontend/src/types/task.ts
+```
+
+Implementado no backend:
+
+- `GET /tasks/meta`;
+- `GET /tasks`;
+- `GET /tasks/:id`;
+- `POST /tasks`;
+- `PATCH /tasks/:id`;
+- `PATCH /tasks/:id/complete`;
+- `PATCH /tasks/:id/reopen`;
+- `PATCH /tasks/:id/cancel`;
+- `DELETE /tasks/:id`;
+- metadados de status e prioridades oficiais;
+- listagem paginada;
+- busca por título, descrição, responsável, notas, projeto e cliente do projeto;
+- filtros por projeto, status, prioridade e intervalo de prazo;
+- criação de tarefa com projeto opcional;
+- validação de projeto existente quando `projectId` e informado;
+- edição de tarefa;
+- conclusão, reabertura e cancelamento por endpoints dedicados;
+- exclusão de tarefa;
+- atraso calculado dinamicamente pelo backend com `dueDate < hoje` e status diferente de concluída/cancelada;
+- testes de schema e service.
+
+Implementado no frontend:
+
+- rota `/tasks` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/tasks`;
+- tipos TypeScript para tarefa, status, prioridade e projeto resumido;
+- tela com busca, filtros por status, prioridade e projeto;
+- tabela com tarefa, projeto, responsável, prioridade, status, prazo e ações;
+- badges por status, prioridade e atraso;
+- modal de criação/edição com React Hook Form e Zod;
+- ações rápidas para concluir, reabrir e cancelar;
+- exclusão com modal de confirmação;
+- estados de carregamento, vazio, erro e sucesso;
+- tooltips nos botões de ação.
+
+Regras consideradas:
+
+- tarefa pode existir sem projeto;
+- projeto vinculado, quando informado, precisa existir;
+- título e obrigatório;
+- status e prioridade devem respeitar o domínio oficial;
+- prazo e opcional;
+- atraso de tarefa e dinâmico;
+- tarefa concluída ou cancelada não aparece como atrasada;
+- frontend valida para UX, mas backend continua sendo a fonte da verdade.
+
+Ainda falta:
+
+- campo `completedAt`, caso seja necessário auditar a data de conclusão;
+- testes de frontend para formulário, filtros e ações rápidas;
+- integração futura de tarefas no Dashboard;
+- detalhe de tarefa, caso o fluxo cresça;
+- responsáveis cadastrados, caso surja um módulo de equipe.
+
 ## Ajuste de UI e português - Projetos e Clientes
 
 Foi feito um passe de qualidade visual e textual nas telas operacionais já entregues.
@@ -815,7 +908,7 @@ Rotas atuais:
 - Projetos, ja conectada a tela real inicial
 - Orçamentos, ja conectada a tela real inicial
 - Financeiro, ja conectado a tela real inicial
-- Tarefas
+- Tarefas, ja conectada a tela real inicial
 - Visitas
 - Documentos
 - Briefings
@@ -824,13 +917,14 @@ Rotas atuais:
 
 Observação:
 
-- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos e Financeiro ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos, Financeiro e Tarefas ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
 - Orçamentos é a quarta fatia operacional e inicia o fluxo comercial/financeiro.
 - Financeiro é a quinta fatia operacional e registra parcelas, pagamentos e indicadores.
 - Dashboard agora consolida a visão real desses módulos.
+- Tarefas é a sexta fatia operacional e organiza atividades com prazos, prioridades e status.
 
 ### Frontend - Clientes
 
@@ -1126,6 +1220,52 @@ Regras consideradas:
 - atrasos e vencimentos vêm calculados dinamicamente;
 - projetos finalizados e cancelados não entram como ativos.
 
+### Frontend - Tarefas
+
+Objetivo:
+
+- permitir criar, acompanhar, filtrar e concluir tarefas gerais ou vinculadas a projetos.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa organizar pendências internas, atividades de projeto, responsáveis e prazos.
+
+Fluxo implementado:
+
+1. Usuário acessa `/tasks`.
+2. A tela carrega status e prioridades via `/tasks/meta`.
+3. A tela carrega projetos via `/projects`.
+4. A tela lista tarefas via `/tasks`.
+5. Usuário pode buscar por tarefa, responsável, projeto ou cliente.
+6. Usuário pode filtrar por status, prioridade e projeto.
+7. Usuário pode criar tarefa sem projeto ou vinculada a um projeto.
+8. Usuário pode editar tarefa existente.
+9. Usuário pode concluir tarefa aberta.
+10. Usuário pode reabrir tarefa concluída ou cancelada.
+11. Usuário pode cancelar tarefa aberta.
+12. Usuário pode excluir tarefa com confirmação.
+
+Campos principais:
+
+- projeto opcional;
+- título;
+- descrição;
+- responsável;
+- prazo;
+- prioridade;
+- status;
+- observações.
+
+Regras consideradas:
+
+- tarefa pode existir sem projeto;
+- projeto vinculado precisa existir no backend;
+- título deve ter pelo menos 2 caracteres;
+- status e prioridade usam domínio oficial;
+- prazo pode ficar vazio;
+- atraso é calculado pela API;
+- frontend não calcula regra crítica.
+
 ## Regras de negócio ja implementadas
 
 Arquivo:
@@ -1182,6 +1322,8 @@ backend/src/modules/budgets/budgets.service.test.ts
 backend/src/modules/financial/financial.schema.test.ts
 backend/src/modules/financial/financial.service.test.ts
 backend/src/modules/dashboard/dashboard.service.test.ts
+backend/src/modules/tasks/tasks.schema.test.ts
+backend/src/modules/tasks/tasks.service.test.ts
 ```
 
 Cobertura atual:
@@ -1229,6 +1371,11 @@ Cobertura atual:
 - bloqueio de valor pago acima da parcela;
 - resumo financeiro por projeto e alerta acima do contratado.
 - dashboard com progresso médio, próximas entregas e alertas reais.
+- schema inicial de Tarefas;
+- tarefa com projeto opcional;
+- filtros de Tarefas por projeto, status, prioridade e prazo;
+- busca de Tarefas por título, descrição, responsável, notas, projeto e cliente;
+- atraso dinâmico de tarefa;
 
 Validações ja executadas no estado atual:
 
@@ -1332,6 +1479,15 @@ PATCH /financial/payments/:id
 PATCH /financial/payments/:id/pay
 PATCH /financial/payments/:id/cancel
 POST /financial/installments
+GET /tasks/meta
+GET /tasks
+GET /tasks/:id
+POST /tasks
+PATCH /tasks/:id
+PATCH /tasks/:id/complete
+PATCH /tasks/:id/reopen
+PATCH /tasks/:id/cancel
+DELETE /tasks/:id
 GET /projects/meta
 GET /projects
 GET /projects/:id
@@ -1376,18 +1532,27 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar o Dashboard e o Financeiro no navegador e iniciar a próxima fatia recomendada: Tarefas vinculadas a projetos.
+Validar Tarefas no navegador e iniciar a próxima fatia recomendada: Visitas técnicas com cliente obrigatório e projeto opcional.
+
+Ponto de retomada para amanhã:
+
+- continuar a partir do módulo de Visitas Técnicas;
+- usar os agentes Arquiteto, Banco/Prisma, Backend/API, Frontend/UI, Formulários, Qualidade e Documentação;
+- implementar cliente obrigatório, projeto opcional, data, horário, endereço, valor, status e observações;
+- manter `README.md` e `docs/registro-do-projeto.md` atualizados.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Abrir `http://localhost:5173/financial`.
-3. Confirmar cards, filtros, ações de parcela e ausência de erros visuais.
-4. Abrir `http://localhost:5173/`.
-5. Confirmar cards reais do Dashboard.
-6. Confirmar próximas entregas e alertas.
-7. Testar a atualização manual do Dashboard.
-8. Depois iniciar Tarefas com vínculo opcional a projeto, prioridades e status.
+2. Abrir `http://localhost:5173/tasks`.
+3. Criar uma tarefa geral sem projeto.
+4. Criar uma tarefa vinculada a um projeto.
+5. Testar filtros por status, prioridade e projeto.
+6. Concluir uma tarefa.
+7. Reabrir uma tarefa.
+8. Cancelar uma tarefa.
+9. Excluir uma tarefa com confirmação.
+10. Depois iniciar Visitas técnicas.
 
 ## Pontos de atencao para Clientes
 
@@ -1446,10 +1611,23 @@ Ao evoluir Financeiro, lembrar:
 - indicadores financeiros devem ser calculados no backend;
 - frontend deve melhorar UX, mas não substituir regras críticas.
 
+## Pontos de atencao para Tarefas
+
+Ao evoluir Tarefas, lembrar:
+
+- tarefa pode existir sem projeto;
+- se `projectId` for informado, o projeto deve existir;
+- status e prioridade devem continuar centralizados no domínio;
+- atraso deve continuar calculado dinamicamente;
+- tarefas concluídas ou canceladas não devem aparecer como atrasadas;
+- exclusão deve continuar passando por confirmação visual;
+- se a auditoria de conclusão ficar importante, adicionar `completedAt` via migration;
+- frontend pode melhorar UX, mas backend deve validar o vínculo com projeto.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(financial): add installments and payment tracking
+feat(tasks): add task management module
 ```
 
 Resumo sugerido:
@@ -1473,6 +1651,9 @@ Resumo sugerido:
 - Add frontend approval modal for creating projects from budgets
 - Add financial API for installments, payment registration and summary
 - Add financial frontend page with indicators, filters and payment actions
+- Add real dashboard summary backed by financial and project data
+- Add task API with optional project relation, priorities, statuses and deadlines
+- Add task frontend page with filters, form and quick actions
 - Update project registry and README
 ```
 

@@ -8,6 +8,7 @@ import { financialRouter } from "./modules/financial/financial.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { projectStepsRouter } from "./modules/projectSteps/projectSteps.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
+import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,7 @@ export function createApp() {
   app.use("/financial", financialRouter);
   app.use("/projects", projectsRouter);
   app.use("/project-steps", projectStepsRouter);
+  app.use("/tasks", tasksRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

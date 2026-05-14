@@ -101,3 +101,17 @@ export const paymentMethodLabels: Record<PaymentMethod, string> = {
   BOLETO: "Boleto",
   OTHER: "Outro"
 };
+
+export const taskStatusLabels: Record<TaskStatus, string> = {
+  PENDING: "Pendente",
+  IN_PROGRESS: "Em andamento",
+  COMPLETED: "Concluída",
+  CANCELLED: "Cancelada"
+};
+
+export const taskPriorityLabels: Record<TaskPriority, string> = {
+  LOW: "Baixa",
+  MEDIUM: "Média",
+  HIGH: "Alta",
+  URGENT: "Urgente"
+};
