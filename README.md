@@ -124,9 +124,24 @@ O módulo de Tarefas iniciou a organização operacional do escritório:
 - Formulário com React Hook Form e Zod.
 - Ações rápidas com tooltips para editar, concluir, reabrir, cancelar e excluir.
 
+## Visitas Técnicas
+
+O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendimentos presenciais:
+
+- API REST em `/visits` com metadados, listagem, busca, filtros, criação, edição, conclusão, reabertura, cancelamento e exclusão.
+- Cliente obrigatório e projeto opcional.
+- Validação backend de cliente existente e, quando houver projeto, confirmação de que o projeto pertence ao mesmo cliente.
+- Tipos oficiais: Visita técnica, Levantamento, Vistoria, Reunião com cliente e Outra.
+- Status oficiais: Agendada, Concluída e Cancelada.
+- Data obrigatória, horário opcional no formato `HH:mm`, endereço, valor opcional positivo e observações.
+- Tela `/visits` conectada ao backend real.
+- Formulário com React Hook Form e Zod.
+- Filtros por busca, status, tipo, cliente e projeto.
+- Ações rápidas com tooltips para editar, concluir, reabrir, cancelar e excluir.
+
 ## Ponto de retomada
 
-Próxima etapa: iniciar Visitas Técnicas com cliente obrigatório, projeto opcional, data, horário, endereço, valor, status e observações.
+Próxima etapa: iniciar Documentos, vinculando arquivos por caminho local a cliente e/ou projeto.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
@@ -152,4 +167,5 @@ Projetos: http://localhost:5173/projects
 Orçamentos: http://localhost:5173/budgets
 Financeiro: http://localhost:5173/financial
 Tarefas: http://localhost:5173/tasks
+Visitas: http://localhost:5173/visits
 ```

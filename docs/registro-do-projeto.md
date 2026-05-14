@@ -227,6 +227,7 @@ Base Express criada com:
 - modulo inicial de Financeiro em `/financial`.
 - modulo de Dashboard real agregado em `/dashboard`.
 - modulo inicial de Tarefas em `/tasks`.
+- modulo inicial de Visitas Técnicas em `/visits`.
 
 Arquivos compartilhados importantes:
 
@@ -847,6 +848,104 @@ Ainda falta:
 - detalhe de tarefa, caso o fluxo cresça;
 - responsáveis cadastrados, caso surja um módulo de equipe.
 
+## Modulo de Visitas Técnicas - estado atual
+
+O modulo de Visitas Técnicas foi iniciado para registrar atendimentos presenciais, levantamentos, vistorias e visitas externas do escritório.
+
+Banco:
+
+- o modelo `Visit` ja existia no Prisma;
+- `clientId` e obrigatório;
+- `projectId` e opcional;
+- `Visit -> Client` usa `onDelete: Restrict`;
+- `Visit -> Project` usa `onDelete: SetNull`;
+- existem índices por cliente, projeto, status e data;
+- não foi necessário criar migration nesta fatia.
+
+Backend:
+
+```txt
+backend/src/modules/visits/
+  visits.routes.ts
+  visits.controller.ts
+  visits.service.ts
+  visits.schema.ts
+  visits.schema.test.ts
+  visits.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Visits/
+  VisitsPage.tsx
+  VisitFormModal.tsx
+  visit-form.ts
+
+frontend/src/services/visits.ts
+frontend/src/types/visit.ts
+```
+
+Implementado no backend:
+
+- `GET /visits/meta`;
+- `GET /visits`;
+- `GET /visits/:id`;
+- `POST /visits`;
+- `PATCH /visits/:id`;
+- `PATCH /visits/:id/complete`;
+- `PATCH /visits/:id/reopen`;
+- `PATCH /visits/:id/cancel`;
+- `DELETE /visits/:id`;
+- metadados de status e tipos oficiais;
+- listagem paginada;
+- busca por tipo, endereço, observações, cliente e projeto;
+- filtros por cliente, projeto, tipo, status e período;
+- criação e edição de visita com cliente obrigatório e projeto opcional;
+- validação de cliente existente;
+- validação de projeto existente quando `projectId` e informado;
+- validação de que o projeto pertence ao mesmo cliente da visita;
+- validação de horário no formato `HH:mm`;
+- validação de valor positivo quando informado;
+- bloqueio para concluir visita cancelada;
+- bloqueio para cancelar visita concluída;
+- exclusão de visita;
+- testes de schema e service.
+
+Implementado no frontend:
+
+- rota `/visits` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/visits`;
+- tipos TypeScript para visita, status, tipo, cliente e projeto resumidos;
+- tela com busca, filtros por status, tipo, cliente e projeto;
+- tabela com visita, cliente, projeto, data/hora, valor, status e ações;
+- badges por status;
+- modal de criação/edição com React Hook Form e Zod;
+- select de projeto filtrado pelo cliente selecionado;
+- ações rápidas para concluir, reabrir e cancelar;
+- exclusão com modal de confirmação;
+- estados de carregamento, vazio, erro e sucesso;
+- tooltips nos botões de ação.
+
+Regras consideradas:
+
+- visita deve ter cliente;
+- projeto e opcional;
+- projeto vinculado, quando informado, precisa existir;
+- projeto vinculado precisa pertencer ao mesmo cliente da visita;
+- data e obrigatória;
+- horário e opcional, mas deve estar em `HH:mm` quando preenchido;
+- valor e opcional, mas deve ser positivo quando informado;
+- status e tipo devem respeitar o domínio oficial;
+- frontend valida para UX, mas backend continua sendo a fonte da verdade.
+
+Ainda falta:
+
+- integração de visitas no Dashboard;
+- testes de frontend para formulário, filtros e ações rápidas;
+- recorrência de visitas, se esse fluxo surgir;
+- vínculo futuro com documentos/fotos da visita.
+
 ## Ajuste de UI e português - Projetos e Clientes
 
 Foi feito um passe de qualidade visual e textual nas telas operacionais já entregues.
@@ -1266,6 +1365,56 @@ Regras consideradas:
 - atraso é calculado pela API;
 - frontend não calcula regra crítica.
 
+### Frontend - Visitas Técnicas
+
+Objetivo:
+
+- permitir registrar, acompanhar, filtrar e concluir visitas técnicas vinculadas obrigatoriamente a cliente e opcionalmente a projeto.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa controlar agenda externa, levantamentos, vistorias, reuniões presenciais e visitas de acompanhamento.
+
+Fluxo implementado:
+
+1. Usuário acessa `/visits`.
+2. A tela carrega status e tipos via `/visits/meta`.
+3. A tela carrega clientes via `/clients`.
+4. A tela carrega projetos via `/projects`.
+5. A tela lista visitas via `/visits`.
+6. Usuário pode buscar por tipo, endereço, observações, cliente ou projeto.
+7. Usuário pode filtrar por status, tipo, cliente e projeto.
+8. Usuário cria visita com cliente obrigatório.
+9. Usuário pode vincular a visita a um projeto do mesmo cliente.
+10. Usuário pode editar visita existente.
+11. Usuário pode concluir visita agendada.
+12. Usuário pode reabrir visita concluída ou cancelada.
+13. Usuário pode cancelar visita agendada.
+14. Usuário pode excluir visita com confirmação.
+
+Campos principais:
+
+- cliente obrigatório;
+- projeto opcional;
+- tipo;
+- data;
+- horário;
+- endereço;
+- valor;
+- status;
+- observações.
+
+Regras consideradas:
+
+- cliente e obrigatório;
+- projeto pode ficar vazio;
+- projeto vinculado precisa pertencer ao mesmo cliente;
+- data e obrigatória;
+- horário deve seguir `HH:mm`;
+- valor deve ser maior que zero quando informado;
+- status e tipo usam domínio oficial;
+- frontend não calcula regra crítica.
+
 ## Regras de negócio ja implementadas
 
 Arquivo:
@@ -1304,6 +1453,12 @@ Regras:
 - parcelamento automático usa `contractedAmount` do projeto em 1x, 2x ou 3x;
 - soma de parcelas acima do contratado gera alerta;
 - documento deve ter cliente e/ou projeto.
+- visita deve ter cliente obrigatório;
+- visita pode ter projeto opcional;
+- projeto de visita, quando informado, deve pertencer ao mesmo cliente;
+- valor de visita deve ser positivo quando informado;
+- visita cancelada não pode ser concluída;
+- visita concluída não pode ser cancelada.
 
 ## Testes
 
@@ -1324,6 +1479,8 @@ backend/src/modules/financial/financial.service.test.ts
 backend/src/modules/dashboard/dashboard.service.test.ts
 backend/src/modules/tasks/tasks.schema.test.ts
 backend/src/modules/tasks/tasks.service.test.ts
+backend/src/modules/visits/visits.schema.test.ts
+backend/src/modules/visits/visits.service.test.ts
 ```
 
 Cobertura atual:
@@ -1376,6 +1533,12 @@ Cobertura atual:
 - filtros de Tarefas por projeto, status, prioridade e prazo;
 - busca de Tarefas por título, descrição, responsável, notas, projeto e cliente;
 - atraso dinâmico de tarefa;
+- schema inicial de Visitas;
+- visita com cliente obrigatório e projeto opcional;
+- filtros de Visitas por cliente, projeto, tipo, status e período;
+- busca de Visitas por tipo, endereço, observações, cliente e projeto;
+- validação de horário e valor positivo;
+- bloqueio de projeto pertencente a outro cliente;
 
 Validações ja executadas no estado atual:
 
@@ -1488,6 +1651,15 @@ PATCH /tasks/:id/complete
 PATCH /tasks/:id/reopen
 PATCH /tasks/:id/cancel
 DELETE /tasks/:id
+GET /visits/meta
+GET /visits
+GET /visits/:id
+POST /visits
+PATCH /visits/:id
+PATCH /visits/:id/complete
+PATCH /visits/:id/reopen
+PATCH /visits/:id/cancel
+DELETE /visits/:id
 GET /projects/meta
 GET /projects
 GET /projects/:id
@@ -1532,27 +1704,27 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar Tarefas no navegador e iniciar a próxima fatia recomendada: Visitas técnicas com cliente obrigatório e projeto opcional.
+Validar Visitas Técnicas no navegador e iniciar a próxima fatia recomendada: Documentos com caminho local, vinculados a cliente e/ou projeto.
 
 Ponto de retomada para amanhã:
 
-- continuar a partir do módulo de Visitas Técnicas;
+- continuar a partir do módulo de Documentos;
 - usar os agentes Arquiteto, Banco/Prisma, Backend/API, Frontend/UI, Formulários, Qualidade e Documentação;
-- implementar cliente obrigatório, projeto opcional, data, horário, endereço, valor, status e observações;
+- implementar vínculo por cliente e/ou projeto, tipo, título, caminho local do arquivo, descrição e confirmação de exclusão;
 - manter `README.md` e `docs/registro-do-projeto.md` atualizados.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Abrir `http://localhost:5173/tasks`.
-3. Criar uma tarefa geral sem projeto.
-4. Criar uma tarefa vinculada a um projeto.
-5. Testar filtros por status, prioridade e projeto.
-6. Concluir uma tarefa.
-7. Reabrir uma tarefa.
-8. Cancelar uma tarefa.
-9. Excluir uma tarefa com confirmação.
-10. Depois iniciar Visitas técnicas.
+2. Abrir `http://localhost:5173/visits`.
+3. Criar uma visita técnica com cliente obrigatório e sem projeto.
+4. Criar uma visita técnica vinculada a um projeto do mesmo cliente.
+5. Testar filtros por status, tipo, cliente e projeto.
+6. Concluir uma visita.
+7. Reabrir uma visita.
+8. Cancelar uma visita.
+9. Excluir uma visita com confirmação.
+10. Depois iniciar Documentos.
 
 ## Pontos de atencao para Clientes
 
@@ -1624,10 +1796,26 @@ Ao evoluir Tarefas, lembrar:
 - se a auditoria de conclusão ficar importante, adicionar `completedAt` via migration;
 - frontend pode melhorar UX, mas backend deve validar o vínculo com projeto.
 
+## Pontos de atencao para Visitas Técnicas
+
+Ao evoluir Visitas Técnicas, lembrar:
+
+- visita deve ter cliente obrigatório;
+- visita pode ter projeto opcional;
+- projeto de visita, quando informado, deve pertencer ao mesmo cliente;
+- valor de visita deve ser positivo quando informado;
+- visita cancelada não pode ser concluída;
+- visita concluída não pode ser cancelada.
+- status e tipos devem continuar centralizados no domínio;
+- data deve continuar obrigatória;
+- horário deve continuar validado em `HH:mm`;
+- exclusão deve continuar passando por confirmação visual;
+- frontend pode melhorar UX, mas backend deve validar os vínculos.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(tasks): add task management module
+feat(visits): add technical visits module
 ```
 
 Resumo sugerido:
@@ -1654,6 +1842,8 @@ Resumo sugerido:
 - Add real dashboard summary backed by financial and project data
 - Add task API with optional project relation, priorities, statuses and deadlines
 - Add task frontend page with filters, form and quick actions
+- Add technical visits API with required client relation and optional project relation
+- Add technical visits frontend page with filters, form and quick actions
 - Update project registry and README
 ```
 

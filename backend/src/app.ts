@@ -9,6 +9,7 @@ import { healthRouter } from "./modules/health/health.routes.js";
 import { projectStepsRouter } from "./modules/projectSteps/projectSteps.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
+import { visitsRouter } from "./modules/visits/visits.routes.js";
 
 export function createApp() {
   const app = express();
@@ -24,6 +25,7 @@ export function createApp() {
   app.use("/projects", projectsRouter);
   app.use("/project-steps", projectStepsRouter);
   app.use("/tasks", tasksRouter);
+  app.use("/visits", visitsRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

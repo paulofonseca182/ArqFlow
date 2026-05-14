@@ -7,6 +7,7 @@ import { FinancialPage } from "./pages/Financial/FinancialPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { ProjectsPage } from "./pages/Projects/ProjectsPage";
 import { TasksPage } from "./pages/Tasks/TasksPage";
+import { VisitsPage } from "./pages/Visits/VisitsPage";
 
 export const router = createBrowserRouter([
   {
@@ -19,7 +20,7 @@ export const router = createBrowserRouter([
       { path: "budgets", element: <BudgetsPage /> },
       { path: "financial", element: <FinancialPage /> },
       { path: "tasks", element: <TasksPage /> },
-      { path: "visits", element: <PlaceholderPage title="Visitas" /> },
+      { path: "visits", element: <VisitsPage /> },
       { path: "documents", element: <PlaceholderPage title="Documentos" /> },
       { path: "briefings", element: <PlaceholderPage title="Briefings" /> },
       { path: "reports", element: <PlaceholderPage title="Relatórios" /> },

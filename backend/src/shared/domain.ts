@@ -18,6 +18,7 @@ export const paymentStatuses = ["RECEIVABLE", "PAID", "PARTIALLY_PAID", "OVERDUE
 export const paymentMethods = ["CASH", "PIX", "BANK_TRANSFER", "CREDIT_CARD", "DEBIT_CARD", "BOLETO", "OTHER"] as const;
 export const taskStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+export const visitTypes = ["TECHNICAL_VISIT", "MEASUREMENT", "SITE_INSPECTION", "CLIENT_MEETING", "OTHER"] as const;
 export const visitStatuses = ["SCHEDULED", "COMPLETED", "CANCELLED"] as const;
 export const documentTypes = ["CONTRACT", "PROPOSAL", "BLUEPRINT", "PHOTO", "PERMIT", "OTHER"] as const;
 export const briefingTypes = ["RESIDENTIAL", "INTERIORS", "RENOVATION", "COMMERCIAL", "OTHER"] as const;
@@ -31,6 +32,7 @@ export type PaymentStatus = (typeof paymentStatuses)[number];
 export type PaymentMethod = (typeof paymentMethods)[number];
 export type TaskStatus = (typeof taskStatuses)[number];
 export type TaskPriority = (typeof taskPriorities)[number];
+export type VisitType = (typeof visitTypes)[number];
 export type VisitStatus = (typeof visitStatuses)[number];
 export type DocumentType = (typeof documentTypes)[number];
 export type BriefingType = (typeof briefingTypes)[number];
@@ -114,4 +116,18 @@ export const taskPriorityLabels: Record<TaskPriority, string> = {
   MEDIUM: "Média",
   HIGH: "Alta",
   URGENT: "Urgente"
+};
+
+export const visitTypeLabels: Record<VisitType, string> = {
+  TECHNICAL_VISIT: "Visita técnica",
+  MEASUREMENT: "Levantamento",
+  SITE_INSPECTION: "Vistoria",
+  CLIENT_MEETING: "Reunião com cliente",
+  OTHER: "Outra"
+};
+
+export const visitStatusLabels: Record<VisitStatus, string> = {
+  SCHEDULED: "Agendada",
+  COMPLETED: "Concluída",
+  CANCELLED: "Cancelada"
 };
