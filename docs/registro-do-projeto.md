@@ -17,8 +17,6 @@ O MVP deve centralizar:
 - financeiro;
 - tarefas;
 - visitas técnicas;
-- documentos;
-- briefings;
 - relatorios;
 - dashboard operacional.
 
@@ -173,9 +171,6 @@ Modelos criados:
 - `Payment`
 - `Task`
 - `Visit`
-- `Document`
-- `Briefing`
-- `BriefingAnswer`
 
 Migrations criadas:
 
@@ -190,10 +185,7 @@ Decisões importantes:
 - `Payment` exige `projectId` e `clientId`.
 - `Task` pode existir sem projeto.
 - `Visit` pode existir sem projeto, mas exige cliente.
-- `Document` pode ter cliente e/ou projeto, mas não pode ficar sem dono.
-- `Briefing` exige cliente e pode ter projeto nulo.
 - `BudgetItem` pertence a `Budget`.
-- `BriefingAnswer` pertence a `Briefing`.
 
 Regras técnicas:
 
@@ -201,7 +193,6 @@ Regras técnicas:
 - Status e tipos ficam como `String` no SQLite.
 - Contratos de status/tipos ficam centralizados em `backend/src/shared/domain.ts`.
 - `Payment -> Project` usa `Restrict`, para evitar apagar pagamentos automaticamente ao excluir projeto.
-- `Document` possui proteção para não ficar sem `clientId` nem `projectId`.
 
 Importante:
 
@@ -311,7 +302,7 @@ Implementado no frontend:
 - validação de nome, e-mail, CPF/CNPJ, telefone e WhatsApp;
 - normalização de telefone, WhatsApp e CPF/CNPJ para digitos antes de enviar;
 - exclusão em duas etapas com `GET /clients/:id/delete-impact`;
-- bloqueio visual quando houver projetos, orçamentos, pagamentos, visitas, documentos ou briefings vinculados;
+- bloqueio visual quando houver projetos, orçamentos, pagamentos ou visitas vinculados;
 - modal de confirmação quando a exclusão for permitida;
 - estados de carregamento, vazio, erro e sucesso.
 
@@ -389,14 +380,14 @@ Implementado no frontend:
 - validação de cliente obrigatório, nome, tipo, status, datas e valores positivos;
 - barra de progresso por projeto;
 - exclusão em duas etapas com `GET /projects/:id/delete-impact`;
-- bloqueio visual quando houver etapas, orçamentos, pagamentos, tarefas, visitas, documentos ou briefings vinculados;
+- bloqueio visual quando houver etapas, orçamentos, pagamentos, tarefas ou visitas vinculados;
 - estados de carregamento, vazio, erro e sucesso.
 
 Ainda falta:
 
 - testes de frontend para formulário e filtros;
 - tela de detalhe do projeto;
-- integração futura com orçamentos, financeiro, tarefas, visitas e documentos.
+- integração futura com orçamentos, financeiro, tarefas e visitas.
 
 ## Modulo de Etapas de Projeto - estado atual
 
@@ -441,7 +432,7 @@ Implementado no backend:
 - `PATCH /project-steps/:id/reopen`;
 - metadados de status oficiais de etapas;
 - templates de etapas padrão por tipo de projeto;
-- template padrão enxuto: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
+- template padrão enxuto: Alinhamento inicial, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
 - geração de etapas com `sortOrder` sequencial;
 - bloqueio de geração duplicada quando o projeto ja possui etapas;
 - listagem ordenada por `sortOrder`;
@@ -945,7 +936,52 @@ Ainda falta:
 - integração de visitas no Dashboard;
 - testes de frontend para formulário, filtros e ações rápidas;
 - recorrência de visitas, se esse fluxo surgir;
-- vínculo futuro com documentos/fotos da visita.
+- vínculo futuro com fotos da visita, caso o fluxo volte a exigir.
+
+## Modulo de Documentos - removido do escopo atual
+
+O modulo de Documentos foi removido em 2026-05-15 porque ainda não fazia sentido para o fluxo atual do ArqFlow.
+
+O que foi removido:
+
+- model `Document` do Prisma;
+- relações `documents` em `Client` e `Project`;
+- rota backend `/documents`;
+- módulo `backend/src/modules/documents`;
+- tela frontend `/documents`;
+- item `Documentos` da navegação;
+- service e tipos frontend de documentos;
+- testes específicos de documentos;
+- contadores de impacto de exclusão em Clientes e Projetos.
+
+Decisão de produto:
+
+- Documentos não fazem parte do escopo operacional atual.
+- Se o tema voltar, deve ser rediscutido antes de criar banco, API e UI novamente.
+- A remoção ajudou a manter o MVP mais enxuto.
+
+## Modulo de Briefings - removido do escopo atual
+
+O modulo de Briefings foi removido em 2026-05-15 porque ainda não faz sentido como entidade separada no fluxo atual do ArqFlow.
+
+O que foi removido:
+
+- models `Briefing` e `BriefingAnswer` do Prisma;
+- relações `briefings` em `Client` e `Project`;
+- rota placeholder `/briefings`;
+- pasta placeholder `backend/src/modules/briefings`;
+- pasta placeholder `frontend/src/pages/Briefings`;
+- item `Briefings` da navegação;
+- tipos e contadores de impacto de exclusão em Clientes e Projetos;
+- constantes de domínio `briefingTypes` e `BriefingType`;
+- referências de contrato ativo em documentação.
+
+Decisão de produto:
+
+- Briefings não fazem parte do escopo operacional atual.
+- O termo também foi removido das etapas padrão de projeto.
+- A antiga etapa `Briefing` foi renomeada para `Alinhamento inicial`.
+- Se o tema voltar, deve ser redesenhado como fluxo claro antes de recriar banco, API e UI.
 
 ## Ajuste de UI e português - Projetos e Clientes
 
@@ -1020,8 +1056,6 @@ Rotas atuais:
 - Financeiro, ja conectado a tela real inicial
 - Tarefas, ja conectada a tela real inicial
 - Visitas, ja conectada a tela real inicial
-- Documentos
-- Briefings
 - Relatórios
 - Configurações
 
@@ -1464,7 +1498,6 @@ Regras:
 - valor pago acima da parcela e bloqueado;
 - parcelamento automático usa `contractedAmount` do projeto em 1x, 2x ou 3x;
 - soma de parcelas acima do contratado gera alerta;
-- documento deve ter cliente e/ou projeto.
 - visita deve ter cliente obrigatório;
 - visita pode ter projeto opcional;
 - projeto de visita, quando informado, deve pertencer ao mesmo cliente;
@@ -1500,7 +1533,6 @@ Cobertura atual:
 - regras financeiras iniciais;
 - cálculo de progresso;
 - pagamento atrasado;
-- dono obrigatório de documento;
 - schema inicial de Clientes;
 - e-mail vazio;
 - e-mail inválido;
@@ -1716,27 +1748,21 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar Visitas Técnicas no navegador e iniciar a próxima fatia recomendada: Documentos com caminho local, vinculados a cliente e/ou projeto.
+Revisar o roadmap do MVP e definir o próximo módulo útil após a remoção de Documentos e Briefings.
 
 Ponto de retomada para amanhã:
 
-- continuar a partir do módulo de Documentos;
 - usar os agentes Arquiteto, Banco/Prisma, Backend/API, Frontend/UI, Formulários, Qualidade e Documentação;
-- implementar vínculo por cliente e/ou projeto, tipo, título, caminho local do arquivo, descrição e confirmação de exclusão;
+- escolher a próxima fatia com base no fluxo real do escritório;
 - manter `README.md` e `docs/registro-do-projeto.md` atualizados.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Abrir `http://localhost:5173/visits`.
-3. Criar uma visita técnica com cliente obrigatório e sem projeto.
-4. Criar uma visita técnica vinculada a um projeto do mesmo cliente.
-5. Testar filtros por status, tipo, cliente e projeto.
-6. Concluir uma visita.
-7. Reabrir uma visita.
-8. Cancelar uma visita.
-9. Excluir uma visita com confirmação.
-10. Depois iniciar Documentos.
+2. Revisar o roadmap com o escopo atual.
+3. Escolher entre evoluir relatórios, configurações ou refinar módulos já entregues.
+4. Atualizar documentação antes de iniciar nova fatia.
+5. Validar no navegador quando houver UI nova.
 
 ## Pontos de atencao para Clientes
 
@@ -1748,7 +1774,7 @@ Ao implementar Clientes, lembrar:
 - CPF/CNPJ e opcional, mas deve ser valido quando preenchido;
 - busca deve procurar por nome, e-mail, telefone e WhatsApp;
 - exclusão deve verificar vínculos antes de apagar;
-- se houver projeto, orçamento, pagamento, visita, documento ou briefing vinculado, a API deve retornar impacto estruturado;
+- se houver projeto, orçamento, pagamento ou visita vinculado, a API deve retornar impacto estruturado;
 - frontend deve mostrar modal de confirmação/impacto antes de exclusão;
 - backend continua sendo a fonte da verdade.
 
@@ -1827,7 +1853,7 @@ Ao evoluir Visitas Técnicas, lembrar:
 ## Sugestao de commit para o estado atual
 
 ```txt
-feat(visits): add technical visits module
+refactor(documents): remove documents module from current scope
 ```
 
 Resumo sugerido:
@@ -1856,6 +1882,8 @@ Resumo sugerido:
 - Add task frontend page with filters, form and quick actions
 - Add technical visits API with required client relation and optional project relation
 - Add technical visits frontend page with filters, form and quick actions
+- Remove documents API, frontend page, navigation entry and Prisma model
+- Add migration to drop the documents table from the local schema
 - Update project registry and README
 ```
 

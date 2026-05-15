@@ -55,7 +55,7 @@ Converter o cronograma do ArqFlow em uma base tecnica consistente antes do inici
 ## Complemento Fase 0.1
 
 - Estrutura alinhada ao `AGENTS.md`.
-- `Document` permite vinculo por cliente e/ou projeto.
+- Modulo de Documentos removido temporariamente do escopo atual.
 - Status oficiais ficam centralizados em `backend/src/shared/domain.ts`.
 - Regras puras testaveis ficam em `backend/src/shared/business-rules.ts`.
 - Frontend segue visual dark premium do ArqFlow.

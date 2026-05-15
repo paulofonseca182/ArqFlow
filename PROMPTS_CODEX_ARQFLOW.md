@@ -9,7 +9,7 @@ Leia o AGENTS.md e implemente a Fase 1 do ArqFlow: monorepo pnpm, frontend Vite 
 ## Banco de dados
 
 ```txt
-Leia o AGENTS.md e crie o schema.prisma inicial do ArqFlow com os modelos Client, Project, ProjectStep, Budget, BudgetItem, Payment, Task, Visit, Document, Briefing e BriefingAnswer. Respeite as regras de relacionamento, nullable FKs e integridade.
+Leia o AGENTS.md e crie o schema.prisma inicial do ArqFlow com os modelos Client, Project, ProjectStep, Budget, BudgetItem, Payment, Task e Visit. Respeite as regras de relacionamento, nullable FKs e integridade.
 ```
 
 ## Clientes

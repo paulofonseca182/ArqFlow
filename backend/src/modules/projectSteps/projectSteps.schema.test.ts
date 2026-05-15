@@ -16,7 +16,7 @@ describe("project steps schema", () => {
 
   it("exige pelo menos um campo no update", () => {
     expect(updateProjectStepSchema.safeParse({}).success).toBe(false);
-    expect(updateProjectStepSchema.safeParse({ name: "Briefing" }).success).toBe(true);
+    expect(updateProjectStepSchema.safeParse({ name: "Alinhamento inicial" }).success).toBe(true);
   });
 
   it("aceita somente status oficiais", () => {

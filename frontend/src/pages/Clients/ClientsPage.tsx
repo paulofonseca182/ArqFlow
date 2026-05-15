@@ -457,9 +457,7 @@ function formatImpact(counts: ClientRelationCounts) {
     projects: "projetos",
     budgets: "orçamentos",
     payments: "pagamentos",
-    visits: "visitas",
-    documents: "documentos",
-    briefings: "briefings"
+    visits: "visitas"
   };
 
   const parts = Object.entries(counts)

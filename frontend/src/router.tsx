@@ -21,8 +21,6 @@ export const router = createBrowserRouter([
       { path: "financial", element: <FinancialPage /> },
       { path: "tasks", element: <TasksPage /> },
       { path: "visits", element: <VisitsPage /> },
-      { path: "documents", element: <PlaceholderPage title="Documentos" /> },
-      { path: "briefings", element: <PlaceholderPage title="Briefings" /> },
       { path: "reports", element: <PlaceholderPage title="Relatórios" /> },
       { path: "settings", element: <PlaceholderPage title="Configurações" /> }
     ]

@@ -58,7 +58,7 @@ O módulo de Etapas de Projeto já está integrado ao fluxo de Projetos:
 
 - API REST em `/project-steps`.
 - Geração de etapas padrão conforme o tipo do projeto.
-- Template padrão: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final.
+- Template padrão: Alinhamento inicial, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final.
 - Proteção contra duplicação de etapas já geradas.
 - Listagem de etapas ordenadas por projeto.
 - Conclusão e reabertura de etapas com `completedAt` controlado pelo backend.
@@ -142,7 +142,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-Próxima etapa: iniciar Documentos, vinculando arquivos por caminho local a cliente e/ou projeto.
+Próxima etapa: revisar o roadmap do MVP e definir o próximo módulo útil após a remoção de Documentos e Briefings.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 

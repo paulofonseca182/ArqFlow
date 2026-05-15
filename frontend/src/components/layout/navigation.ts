@@ -3,10 +3,8 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   ClipboardList,
-  FileText,
   FolderKanban,
   LayoutDashboard,
-  MessageSquareText,
   Settings,
   Users,
   WalletCards
@@ -20,8 +18,6 @@ export const navigation = [
   { label: "Financeiro", href: "/financial", icon: WalletCards },
   { label: "Tarefas", href: "/tasks", icon: ClipboardList },
   { label: "Visitas", href: "/visits", icon: CalendarDays },
-  { label: "Documentos", href: "/documents", icon: FileText },
-  { label: "Briefings", href: "/briefings", icon: MessageSquareText },
   { label: "Relatórios", href: "/reports", icon: BarChart3 },
   { label: "Configurações", href: "/settings", icon: Settings }
 ];

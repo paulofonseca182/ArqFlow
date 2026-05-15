@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "BriefingAnswer";
+DROP TABLE IF EXISTS "Briefing";

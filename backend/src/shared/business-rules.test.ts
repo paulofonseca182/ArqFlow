@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   calculateBudgetFinalAmount,
   calculateProjectProgress,
-  ensureDocumentHasOwner,
   isPaymentOverdue
 } from "./business-rules.js";
 
@@ -54,9 +53,4 @@ describe("business rules", () => {
     );
   });
 
-  it("exige cliente e/ou projeto para documentos", () => {
-    expect(() => ensureDocumentHasOwner(null, null)).toThrow("documento");
-    expect(() => ensureDocumentHasOwner("client-1", null)).not.toThrow();
-    expect(() => ensureDocumentHasOwner(null, "project-1")).not.toThrow();
-  });
 });

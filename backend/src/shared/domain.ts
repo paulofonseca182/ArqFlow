@@ -20,8 +20,6 @@ export const taskStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 export const visitTypes = ["TECHNICAL_VISIT", "MEASUREMENT", "SITE_INSPECTION", "CLIENT_MEETING", "OTHER"] as const;
 export const visitStatuses = ["SCHEDULED", "COMPLETED", "CANCELLED"] as const;
-export const documentTypes = ["CONTRACT", "PROPOSAL", "BLUEPRINT", "PHOTO", "PERMIT", "OTHER"] as const;
-export const briefingTypes = ["RESIDENTIAL", "INTERIORS", "RENOVATION", "COMMERCIAL", "OTHER"] as const;
 
 export type ClientStatus = (typeof clientStatuses)[number];
 export type ProjectType = (typeof projectTypes)[number];
@@ -34,8 +32,6 @@ export type TaskStatus = (typeof taskStatuses)[number];
 export type TaskPriority = (typeof taskPriorities)[number];
 export type VisitType = (typeof visitTypes)[number];
 export type VisitStatus = (typeof visitStatuses)[number];
-export type DocumentType = (typeof documentTypes)[number];
-export type BriefingType = (typeof briefingTypes)[number];
 
 export const clientStatusLabels: Record<ClientStatus, string> = {
   NEW_CONTACT: "Novo contato",

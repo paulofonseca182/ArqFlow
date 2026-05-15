@@ -10,8 +10,6 @@
 - `Payment`: parcela ou lancamento financeiro de um projeto.
 - `Task`: atividade livre ou vinculada a um projeto.
 - `Visit`: visita tecnica associada a cliente e opcionalmente a projeto.
-- `Document`: registro de documento local associado a cliente/projeto.
-- `Briefing`: conjunto de perguntas e respostas por tipo de projeto.
 
 ## Nomes padronizados
 

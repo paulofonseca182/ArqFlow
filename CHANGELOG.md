@@ -38,6 +38,7 @@
 - Design system dark premium iniciado.
 - Componentes UI obrigatorios adicionados.
 - Contratos de dominio/status centralizados.
-- Regra de `Document` ajustada para cliente e/ou projeto.
+- Modulo de Documentos removido do escopo atual.
+- Modulo de Briefings removido do escopo atual.
 - Padrao backend de modulo preparado para Clientes.
 - Testes iniciais de regras de negocio adicionados.

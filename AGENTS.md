@@ -42,8 +42,7 @@ O MVP deve permitir:
 11. Exibir alertas de pagamentos atrasados e vencendo.
 12. Criar tarefas.
 13. Registrar visitas técnicas.
-14. Vincular documentos a projetos com caminho local.
-15. Visualizar dashboard com resumo real do escritório.
+14. Visualizar dashboard com resumo real do escritório.
 
 ---
 
@@ -85,8 +84,6 @@ arqflow/
         Financial/
         Tasks/
         Visits/
-        Documents/
-        Briefings/
         Reports/
         Settings/
       services/
@@ -105,8 +102,6 @@ arqflow/
         financial/
         tasks/
         visits/
-        documents/
-        briefings/
         reports/
       middleware/
       database/
@@ -186,9 +181,6 @@ Use este papel quando a tarefa envolver:
 - Payment
 - Task
 - Visit
-- Document
-- Briefing
-- BriefingAnswer
 
 ## Regras de banco
 
@@ -198,10 +190,7 @@ Use este papel quando a tarefa envolver:
 - Payment deve ter `project_id` obrigatório.
 - Task pode ter `project_id` nulo.
 - Visit pode ter `project_id` nulo.
-- Document pode ter `client_id` e/ou `project_id`.
-- Briefing deve ter `client_id`; `project_id` pode ser nulo.
 - BudgetItem deve pertencer a Budget.
-- BriefingAnswer deve pertencer a Briefing.
 
 ---
 
@@ -496,8 +485,6 @@ Lead / Primeiro contato
   ↓
 Cliente
   ↓
-Briefing
-  ↓
 Orçamento
   ↓
 Aprovação ou recusa
@@ -506,7 +493,7 @@ Projeto
   ↓
 Etapas
   ↓
-Financeiro + Tarefas + Visitas + Documentos
+Financeiro + Tarefas + Visitas
   ↓
 Entrega final
   ↓

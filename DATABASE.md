@@ -16,19 +16,14 @@
 - `Payment`
 - `Task`
 - `Visit`
-- `Document`
-- `Briefing`
-- `BriefingAnswer`
 
 ## Integridade
 
 - `Project` sempre exige `clientId`.
 - `Budget` sempre exige `clientId` e pode ter `projectId` nulo.
 - `Payment` sempre exige `projectId` e `clientId`.
-- `Task`, `Visit`, `Document` e `Briefing` podem se vincular a projeto conforme o fluxo.
-- `Document` aceita `clientId` e/ou `projectId`, mas a regra de negocio e o banco exigem pelo menos um dono.
+- `Task` e `Visit` podem se vincular a projeto conforme o fluxo.
 - `BudgetItem` pertence a `Budget`.
-- `BriefingAnswer` pertence a `Briefing`.
 
 ## Exclusoes
 

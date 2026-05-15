@@ -19,8 +19,6 @@ export type ClientRelationCounts = {
   budgets: number;
   payments: number;
   visits: number;
-  documents: number;
-  briefings: number;
 };
 
 export type Client = {

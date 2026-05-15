@@ -45,9 +45,7 @@ export async function listClients(query: ListClientsQuery) {
             projects: true,
             budgets: true,
             payments: true,
-            visits: true,
-            documents: true,
-            briefings: true
+            visits: true
           }
         }
       },
@@ -84,9 +82,7 @@ export async function getClientById(id: string) {
           projects: true,
           budgets: true,
           payments: true,
-          visits: true,
-          documents: true,
-          briefings: true
+          visits: true
         }
       }
     }
@@ -158,9 +154,7 @@ export async function getClientDeleteImpact(id: string) {
           projects: true,
           budgets: true,
           payments: true,
-          visits: true,
-          documents: true,
-          briefings: true
+          visits: true
         }
       }
     }
@@ -208,8 +202,6 @@ function emptyImpactCounts() {
     projects: 0,
     budgets: 0,
     payments: 0,
-    visits: 0,
-    documents: 0,
-    briefings: 0
+    visits: 0
   };
 }

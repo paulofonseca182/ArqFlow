@@ -56,9 +56,7 @@ const projectSelect = {
       budgets: true,
       payments: true,
       tasks: true,
-      visits: true,
-      documents: true,
-      briefings: true
+      visits: true
     }
   }
 } satisfies Prisma.ProjectSelect;
@@ -174,9 +172,7 @@ export async function getProjectDeleteImpact(id: string) {
           budgets: true,
           payments: true,
           tasks: true,
-          visits: true,
-          documents: true,
-          briefings: true
+          visits: true
         }
       }
     }
@@ -282,8 +278,6 @@ function emptyImpactCounts() {
     budgets: 0,
     payments: 0,
     tasks: 0,
-    visits: 0,
-    documents: 0,
-    briefings: 0
+    visits: 0
   };
 }

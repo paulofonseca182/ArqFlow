@@ -26,8 +26,6 @@ export type ProjectRelationCounts = {
   payments: number;
   tasks: number;
   visits: number;
-  documents: number;
-  briefings: number;
 };
 
 export type ProjectClientSummary = {

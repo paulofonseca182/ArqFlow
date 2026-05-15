@@ -62,12 +62,6 @@ export function isPaymentOverdue(payment: PaymentLike, today = new Date()) {
   return dueDate < referenceDate;
 }
 
-export function ensureDocumentHasOwner(clientId?: string | null, projectId?: string | null) {
-  if (!clientId && !projectId) {
-    throw new AppError("DOCUMENT_OWNER_REQUIRED", "documento deve estar vinculado a cliente e/ou projeto.", 422);
-  }
-}
-
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
