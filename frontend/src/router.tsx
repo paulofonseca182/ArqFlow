@@ -6,6 +6,7 @@ import { DashboardPage } from "./pages/Dashboard/DashboardPage";
 import { FinancialPage } from "./pages/Financial/FinancialPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { ProjectsPage } from "./pages/Projects/ProjectsPage";
+import { ReportsPage } from "./pages/Reports/ReportsPage";
 import { TasksPage } from "./pages/Tasks/TasksPage";
 import { VisitsPage } from "./pages/Visits/VisitsPage";
 
@@ -21,7 +22,7 @@ export const router = createBrowserRouter([
       { path: "financial", element: <FinancialPage /> },
       { path: "tasks", element: <TasksPage /> },
       { path: "visits", element: <VisitsPage /> },
-      { path: "reports", element: <PlaceholderPage title="Relatórios" /> },
+      { path: "reports", element: <ReportsPage /> },
       { path: "settings", element: <PlaceholderPage title="Configurações" /> }
     ]
   }

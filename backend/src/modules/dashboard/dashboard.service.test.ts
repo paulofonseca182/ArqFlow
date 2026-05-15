@@ -54,6 +54,10 @@ describe("dashboard service", () => {
           overdueAmount: "300.00",
           overdueCount: 1
         },
+        operations: {
+          overdueTasks: 2,
+          visitsNextSevenDays: 3
+        },
         overContractedProjects: [{ id: "project-1", name: "Projeto 1", overContractedAmount: "150.00" }]
       })
     ).toEqual([
@@ -82,6 +86,22 @@ describe("dashboard service", () => {
         severity: "info",
         title: "Entregas próximas",
         type: "PROJECT_DELIVERY_SOON"
+      },
+      {
+        count: 2,
+        id: "task-overdue",
+        message: "2 tarefas com prazo vencido.",
+        severity: "warning",
+        title: "Tarefas atrasadas",
+        type: "TASK_OVERDUE"
+      },
+      {
+        count: 3,
+        id: "visit-due-soon",
+        message: "3 visitas agendadas nos próximos 7 dias.",
+        severity: "info",
+        title: "Visitas próximas",
+        type: "VISIT_DUE_SOON"
       },
       {
         amount: "150.00",

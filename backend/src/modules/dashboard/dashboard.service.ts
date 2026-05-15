@@ -27,7 +27,13 @@ export type DashboardProjectSnapshot = {
 };
 
 type DashboardAlertSeverity = "danger" | "warning" | "info";
-type DashboardAlertType = "PAYMENT_OVERDUE" | "PAYMENT_DUE_SOON" | "PROJECT_DELIVERY_SOON" | "PROJECT_OVER_CONTRACTED";
+type DashboardAlertType =
+  | "PAYMENT_OVERDUE"
+  | "PAYMENT_DUE_SOON"
+  | "PROJECT_DELIVERY_SOON"
+  | "PROJECT_OVER_CONTRACTED"
+  | "TASK_OVERDUE"
+  | "VISIT_DUE_SOON";
 
 const dashboardProjectSelect = {
   id: true,
@@ -59,14 +65,43 @@ type DashboardProjectRecord = Prisma.ProjectGetPayload<{ select: typeof dashboar
 
 export async function getDashboardSummary() {
   const financial = await getFinancialSummary();
-  const [clientsTotal, projects] = await prisma.$transaction([
+  const today = startOfDay(new Date());
+  const sevenDaysFromToday = addDays(today, 7);
+  const [clientsTotal, projects, tasksTotal, openTasks, overdueTasks, tasksDueSoon, scheduledVisits, visitsToday, visitsNextSevenDays, openBudgets] =
+    await prisma.$transaction([
     prisma.client.count(),
     prisma.project.findMany({
       select: dashboardProjectSelect,
       orderBy: [{ expectedDeliveryDate: "asc" }, { updatedAt: "desc" }]
-    })
+    }),
+    prisma.task.count(),
+    prisma.task.count({ where: { status: { in: ["PENDING", "IN_PROGRESS"] } } }),
+    prisma.task.count({ where: { dueDate: { lt: today }, status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
+    prisma.task.count({
+      where: {
+        dueDate: {
+          gte: today,
+          lte: sevenDaysFromToday
+        },
+        status: { notIn: ["COMPLETED", "CANCELLED"] }
+      }
+    }),
+    prisma.visit.count({ where: { status: "SCHEDULED" } }),
+    prisma.visit.count({ where: { date: { gte: today, lte: endOfDay(today) }, status: "SCHEDULED" } }),
+    prisma.visit.count({ where: { date: { gte: today, lte: sevenDaysFromToday }, status: "SCHEDULED" } }),
+    prisma.budget.count({ where: { status: { in: ["DRAFT", "SENT", "NEGOTIATION"] } } })
   ]);
   const projectSummary = buildProjectDashboard(projects);
+  const operations = {
+    tasksTotal,
+    openTasks,
+    overdueTasks,
+    tasksDueSoon,
+    scheduledVisits,
+    visitsToday,
+    visitsNextSevenDays,
+    openBudgets
+  };
   const alerts = buildDashboardAlerts({
     deliverySoonCount: projectSummary.nextDeliveries.filter((delivery) => {
       const dueDate = new Date(delivery.expectedDeliveryDate);
@@ -74,6 +109,7 @@ export async function getDashboardSummary() {
       return dueDate <= addDays(startOfDay(new Date()), 14);
     }).length,
     financial,
+    operations,
     overContractedProjects: getOverContractedProjects(projects)
   });
 
@@ -88,6 +124,7 @@ export async function getDashboardSummary() {
     },
     financial,
     projects: projectSummary,
+    operations,
     alerts
   };
 }
@@ -128,10 +165,15 @@ export function buildProjectDashboard(projects: DashboardProjectSnapshot[], toda
 export function buildDashboardAlerts({
   deliverySoonCount,
   financial,
+  operations,
   overContractedProjects
 }: {
   deliverySoonCount: number;
   financial: Pick<FinancialSummary, "dueSoonAmount" | "dueSoonCount" | "overdueAmount" | "overdueCount">;
+  operations?: {
+    overdueTasks: number;
+    visitsNextSevenDays: number;
+  };
   overContractedProjects: Array<{ id: string; name: string; overContractedAmount: string }>;
 }) {
   const alerts: Array<{
@@ -178,6 +220,28 @@ export function buildDashboardAlerts({
       severity: "info",
       title: "Entregas próximas",
       type: "PROJECT_DELIVERY_SOON"
+    });
+  }
+
+  if (operations?.overdueTasks) {
+    alerts.push({
+      count: operations.overdueTasks,
+      id: "task-overdue",
+      message: `${operations.overdueTasks} tarefa${operations.overdueTasks === 1 ? "" : "s"} com prazo vencido.`,
+      severity: "warning",
+      title: "Tarefas atrasadas",
+      type: "TASK_OVERDUE"
+    });
+  }
+
+  if (operations?.visitsNextSevenDays) {
+    alerts.push({
+      count: operations.visitsNextSevenDays,
+      id: "visit-due-soon",
+      message: `${operations.visitsNextSevenDays} visita${operations.visitsNextSevenDays === 1 ? "" : "s"} agendada${operations.visitsNextSevenDays === 1 ? "" : "s"} nos próximos 7 dias.`,
+      severity: "info",
+      title: "Visitas próximas",
+      type: "VISIT_DUE_SOON"
     });
   }
 
@@ -231,4 +295,8 @@ function addDays(date: Date, days: number) {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
   return nextDate;
+}
+
+function endOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }

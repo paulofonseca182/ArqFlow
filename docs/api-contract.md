@@ -50,5 +50,5 @@ type PaginatedResponse<T> = {
 - `/payments`
 - `/tasks`
 - `/visits`
-- `/reports`
+- `/reports/overview`
 - `/dashboard`

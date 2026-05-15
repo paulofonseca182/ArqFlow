@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 - Dashboard e Relatórios
+
+- Dashboard ampliado com indicadores de tarefas, visitas e orçamentos abertos.
+- Alertas de tarefas atrasadas e visitas próximas adicionados ao resumo inicial.
+- Endpoint `GET /reports/overview` adicionado.
+- Tela `/reports` substituiu o placeholder por relatórios reais.
+- Relatórios consolidam clientes, comercial, projetos, financeiro, tarefas e visitas.
+- Testes de service para Relatórios adicionados.
+- README, API, Roadmap e registro do projeto atualizados.
+
 ## 0.4.0 - Projetos inicial
 
 - Modulo backend de Projetos adicionado no padrao `routes/controller/service/schema`.

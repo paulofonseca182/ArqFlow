@@ -218,6 +218,7 @@ Base Express criada com:
 - modulo inicial de Orçamentos em `/budgets`.
 - modulo inicial de Financeiro em `/financial`.
 - modulo de Dashboard real agregado em `/dashboard`.
+- modulo de Relatórios consolidado em `/reports`.
 - modulo inicial de Tarefas em `/tasks`.
 - modulo inicial de Visitas Técnicas em `/visits`.
 
@@ -714,11 +715,14 @@ Implementado no backend:
 - contagem de projetos ativos;
 - contagem de pagamentos atrasados;
 - contagem de pagamentos vencendo em 7 dias;
+- contagem de tarefas abertas, tarefas atrasadas e tarefas vencendo em 7 dias;
+- contagem de visitas agendadas, visitas de hoje e visitas dos próximos 7 dias;
+- contagem de orçamentos abertos;
 - reaproveitamento de `getFinancialSummary()` do módulo Financeiro;
 - cálculo de progresso médio com `calculateProjectProgress()`;
 - próximas entregas a partir de projetos ativos com data futura;
 - agrupamento de projetos por status oficial;
-- alertas para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado;
+- alertas para pagamentos atrasados, vencimentos próximos, entregas próximas, tarefas atrasadas, visitas próximas e parcelas acima do contratado;
 - testes para progresso médio, próximas entregas e alertas.
 
 Implementado no frontend:
@@ -728,6 +732,7 @@ Implementado no frontend:
 - tipos TypeScript para o contrato do Dashboard;
 - cards reais de Clientes, Projetos ativos, Atrasados e Vencem em 7 dias;
 - cards financeiros reais de Receita do mês, Receita do ano, A receber e Ticket por projeto;
+- cards operacionais reais de Tarefas abertas, Tarefas atrasadas, Visitas agendadas e Orçamentos abertos;
 - seção de Próximas entregas com progresso médio e progresso por projeto;
 - seção de Alertas com badges por severidade;
 - ação de atualização manual;
@@ -747,6 +752,73 @@ Ainda falta:
 - testes de frontend do Dashboard;
 - gráficos futuros, caso façam sentido;
 - atalhos de navegação dos alertas para os módulos relacionados.
+
+## Modulo de Relatórios - estado atual
+
+Após a remoção de Documentos e Briefings, Relatórios foi escolhido como a próxima fatia mais útil do MVP. A decisão foi fortalecer a leitura executiva dos módulos já existentes antes de criar novos módulos.
+
+Backend:
+
+```txt
+backend/src/modules/reports/
+  reports.routes.ts
+  reports.controller.ts
+  reports.service.ts
+  reports.service.test.ts
+```
+
+Frontend:
+
+```txt
+frontend/src/pages/Reports/
+  ReportsPage.tsx
+
+frontend/src/services/reports.ts
+frontend/src/types/reports.ts
+```
+
+Implementado no backend:
+
+- `GET /reports/overview`;
+- consolidação real de clientes, orçamentos, projetos, financeiro, tarefas e visitas;
+- contagem de clientes totais e ativos;
+- conversão comercial por orçamentos aprovados versus recusados;
+- valores aprovados e valores em aberto de orçamentos;
+- reaproveitamento do resumo financeiro já calculado no backend;
+- carteira de projetos por status e tipo;
+- progresso médio de projetos ativos a partir das etapas;
+- total contratado da carteira;
+- projetos com recebíveis pendentes ou atrasados;
+- tarefas abertas, atrasadas, urgentes e vencendo em 7 dias;
+- visitas agendadas, concluídas e próximas;
+- distribuição por status, prioridade e tipo.
+
+Implementado no frontend:
+
+- rota `/reports` substituiu o placeholder por uma tela real;
+- service Axios para consumir `/reports/overview`;
+- tipos TypeScript dedicados para o contrato de relatórios;
+- cards de clientes ativos, projetos ativos, receita recebida e valor a receber;
+- seção comercial com taxa de conversão, valores e distribuição por status;
+- seção de projetos com progresso médio, total contratado e distribuição por status;
+- seção operacional com tarefas e visitas;
+- tabela de recebíveis por projeto;
+- atualização manual e estados de carregamento, erro e vazio.
+
+Regras consideradas:
+
+- relatórios não recalculam regra financeira crítica no frontend;
+- valores monetários e status dinâmicos vêm do backend;
+- progresso usa etapas concluídas sobre total;
+- atrasos de tarefas e pagamentos continuam dinâmicos;
+- nenhuma dependência nova de gráficos foi adicionada.
+
+Ainda falta:
+
+- filtros por período;
+- exportação futura, se fizer sentido;
+- testes de frontend da tela de relatórios;
+- atalhos para abrir os módulos filtrados a partir dos indicadores.
 
 ## Modulo de Tarefas - estado atual
 
@@ -836,7 +908,7 @@ Ainda falta:
 
 - campo `completedAt`, caso seja necessário auditar a data de conclusão;
 - testes de frontend para formulário, filtros e ações rápidas;
-- integração futura de tarefas no Dashboard;
+- refinamento dos indicadores de tarefas no Dashboard e nos Relatórios;
 - detalhe de tarefa, caso o fluxo cresça;
 - responsáveis cadastrados, caso surja um módulo de equipe.
 
@@ -933,7 +1005,7 @@ Regras consideradas:
 
 Ainda falta:
 
-- integração de visitas no Dashboard;
+- refinamento dos indicadores de visitas no Dashboard e nos Relatórios;
 - testes de frontend para formulário, filtros e ações rápidas;
 - recorrência de visitas, se esse fluxo surgir;
 - vínculo futuro com fotos da visita, caso o fluxo volte a exigir.
@@ -1061,7 +1133,7 @@ Rotas atuais:
 
 Observação:
 
-- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos, Financeiro, Tarefas e Visitas ainda sao placeholders.
+- As telas alem de Dashboard, Clientes, Projetos, Etapas de Projeto, Orçamentos, Financeiro, Tarefas, Visitas e Relatórios ainda sao placeholders.
 - Clientes foi a primeira tela operacional do MVP.
 - Projetos é a segunda fatia operacional e depende de Cliente como vínculo obrigatório.
 - Etapas de Projeto é a terceira fatia operacional e alimenta o progresso real de Projetos.
@@ -1070,6 +1142,7 @@ Observação:
 - Dashboard agora consolida a visão real desses módulos.
 - Tarefas é a sexta fatia operacional e organiza atividades com prazos, prioridades e status.
 - Visitas Técnicas é a sétima fatia operacional e organiza visitas com cliente obrigatório e projeto opcional.
+- Relatórios é a fatia executiva que consolida os módulos ativos antes da criação de novos módulos.
 
 ### Frontend - Clientes
 
@@ -1337,7 +1410,7 @@ Fluxo implementado:
 
 1. Usuário acessa `/`.
 2. A tela chama `GET /dashboard`.
-3. O backend agrega dados de clientes, projetos, financeiro e etapas.
+3. O backend agrega dados de clientes, projetos, financeiro, etapas, tarefas, visitas e orçamentos.
 4. A tela exibe cards operacionais e financeiros.
 5. A tela mostra próximas entregas com progresso.
 6. A tela mostra alertas calculados pelo backend.
@@ -1353,6 +1426,10 @@ Campos exibidos:
 - receita do ano;
 - valor a receber;
 - ticket médio por projeto;
+- tarefas abertas;
+- tarefas atrasadas;
+- visitas agendadas;
+- orçamentos abertos;
 - progresso médio dos projetos ativos;
 - próximas entregas;
 - alertas operacionais.
@@ -1363,7 +1440,49 @@ Regras consideradas:
 - indicadores financeiros vêm do backend;
 - progresso médio usa regra de etapas concluídas;
 - atrasos e vencimentos vêm calculados dinamicamente;
+- tarefas e visitas entram como indicadores operacionais, não como regra crítica no frontend;
 - projetos finalizados e cancelados não entram como ativos.
+
+### Frontend - Relatórios
+
+Objetivo:
+
+- consolidar a leitura executiva dos módulos ativos sem criar novos domínios antes da hora.
+
+Usuário beneficiado:
+
+- escritório de arquitetura que precisa acompanhar conversão comercial, carteira de projetos, recebíveis e operação em uma única tela.
+
+Fluxo implementado:
+
+1. Usuário acessa `/reports`.
+2. A tela chama `GET /reports/overview`.
+3. O backend consolida dados reais de clientes, orçamentos, projetos, financeiro, tarefas e visitas.
+4. A tela exibe cards executivos.
+5. A tela mostra blocos de Comercial, Projetos e Operação.
+6. A tela lista projetos com recebíveis pendentes ou atrasados.
+7. Usuário pode atualizar os relatórios manualmente.
+
+Campos exibidos:
+
+- clientes ativos;
+- projetos ativos;
+- receita recebida;
+- valor a receber;
+- taxa de conversão comercial;
+- valores aprovados e em aberto;
+- progresso médio de projetos;
+- total contratado;
+- tarefas abertas, atrasadas, urgentes e vencendo;
+- visitas agendadas e próximas;
+- recebíveis por projeto.
+
+Regras consideradas:
+
+- relatórios não recalculam financeiro no frontend;
+- conversão, atrasos, progresso e valores vêm do backend;
+- a primeira versão não adiciona biblioteca de gráficos;
+- os indicadores usam os módulos já existentes como fonte da verdade.
 
 ### Frontend - Tarefas
 
@@ -1522,6 +1641,7 @@ backend/src/modules/budgets/budgets.service.test.ts
 backend/src/modules/financial/financial.schema.test.ts
 backend/src/modules/financial/financial.service.test.ts
 backend/src/modules/dashboard/dashboard.service.test.ts
+backend/src/modules/reports/reports.service.test.ts
 backend/src/modules/tasks/tasks.schema.test.ts
 backend/src/modules/tasks/tasks.service.test.ts
 backend/src/modules/visits/visits.schema.test.ts
@@ -1571,7 +1691,8 @@ Cobertura atual:
 - bloqueio de data de pagamento futura;
 - bloqueio de valor pago acima da parcela;
 - resumo financeiro por projeto e alerta acima do contratado.
-- dashboard com progresso médio, próximas entregas e alertas reais.
+- dashboard com progresso médio, próximas entregas, alertas reais e indicadores operacionais.
+- relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas e visitas.
 - schema inicial de Tarefas;
 - tarefa com projeto opcional;
 - filtros de Tarefas por projeto, status, prioridade e prazo;
@@ -1663,6 +1784,7 @@ Endpoints:
 ```txt
 GET /health
 GET /dashboard
+GET /reports/overview
 GET /clients/meta
 GET /clients
 GET /clients/:id
@@ -1748,21 +1870,22 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Revisar o roadmap do MVP e definir o próximo módulo útil após a remoção de Documentos e Briefings.
+Validar visualmente `/` e `/reports` com dados reais. Depois, evoluir Relatórios com filtros de período e atalhos para abrir os módulos relacionados já filtrados.
 
 Ponto de retomada para amanhã:
 
-- usar os agentes Arquiteto, Banco/Prisma, Backend/API, Frontend/UI, Formulários, Qualidade e Documentação;
-- escolher a próxima fatia com base no fluxo real do escritório;
+- usar os agentes Arquiteto, Backend/API, Frontend/UI, Qualidade e Documentação;
+- testar Dashboard e Relatórios no navegador;
+- refinar filtros e períodos dos relatórios sem duplicar cálculo no frontend;
 - manter `README.md` e `docs/registro-do-projeto.md` atualizados.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Revisar o roadmap com o escopo atual.
-3. Escolher entre evoluir relatórios, configurações ou refinar módulos já entregues.
+2. Rodar o app e validar `/` e `/reports` visualmente.
+3. Ajustar filtros de período em `/reports`.
 4. Atualizar documentação antes de iniciar nova fatia.
-5. Validar no navegador quando houver UI nova.
+5. Só depois avaliar Configurações ou refinamentos dos módulos já entregues.
 
 ## Pontos de atencao para Clientes
 

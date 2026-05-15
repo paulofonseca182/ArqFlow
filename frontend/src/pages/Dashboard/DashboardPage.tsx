@@ -35,6 +35,16 @@ const emptyDashboard: DashboardSummary = {
     overduePayments: 0,
     projectsInProgress: 0
   },
+  operations: {
+    openBudgets: 0,
+    openTasks: 0,
+    overdueTasks: 0,
+    scheduledVisits: 0,
+    tasksDueSoon: 0,
+    tasksTotal: 0,
+    visitsNextSevenDays: 0,
+    visitsToday: 0
+  },
   projects: {
     active: 0,
     averageProgress: 0,
@@ -100,6 +110,25 @@ export function DashboardPage() {
         <StatCard badge={<Badge tone="neutral">Ano</Badge>} label="Receita do ano" value={formatMoney(summary.financial.revenueYear)} />
         <StatCard badge={<Badge tone="warning">Aberto</Badge>} label="A receber" value={formatMoney(summary.financial.receivableAmount)} />
         <StatCard badge={<Badge tone="neutral">Médio</Badge>} label="Ticket por projeto" value={formatMoney(summary.financial.averageProjectTicket)} />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          badge={<Badge tone="warning">{summary.operations.tasksDueSoon} em 7 dias</Badge>}
+          label="Tarefas abertas"
+          value={summary.operations.openTasks.toString()}
+        />
+        <StatCard
+          badge={<Badge tone={summary.operations.overdueTasks > 0 ? "danger" : "success"}>Prazo</Badge>}
+          label="Tarefas atrasadas"
+          value={summary.operations.overdueTasks.toString()}
+        />
+        <StatCard
+          badge={<Badge tone="neutral">{summary.operations.visitsToday} hoje</Badge>}
+          label="Visitas agendadas"
+          value={summary.operations.scheduledVisits.toString()}
+        />
+        <StatCard badge={<Badge tone="warning">Comercial</Badge>} label="Orçamentos abertos" value={summary.operations.openBudgets.toString()} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">

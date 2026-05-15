@@ -109,7 +109,22 @@ O Dashboard passou a consumir dados reais do backend:
 - Próximas entregas calculadas a partir dos projetos ativos.
 - Progresso médio calculado a partir das etapas dos projetos.
 - Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado.
+- Indicadores operacionais de tarefas abertas, tarefas atrasadas, visitas agendadas e orçamentos abertos.
+- Alertas também consideram tarefas atrasadas e visitas dos próximos 7 dias.
 - Tela inicial conectada à API, com estados de carregamento, erro e atualização manual.
+
+## Relatórios
+
+O módulo de Relatórios foi escolhido como próxima fatia útil após a remoção de Documentos e Briefings:
+
+- API `GET /reports/overview` com leitura consolidada dos módulos ativos.
+- Tela `/reports` substituiu o placeholder por uma visão real.
+- Relatórios usam dados reais de clientes, orçamentos, projetos, financeiro, tarefas e visitas.
+- Conversão comercial calculada por orçamentos aprovados versus recusados.
+- Valor aprovado, valor em aberto, valor contratado, recebíveis e atrasos calculados no backend.
+- Carteira de projetos por status, tipo, progresso médio e recebíveis por projeto.
+- Operação consolidada com tarefas abertas, atrasadas, urgentes, vencendo em 7 dias e visitas agendadas.
+- Sem dependência nova de gráficos; a interface usa cards, tabelas e barras simples do design system.
 
 ## Tarefas
 
@@ -142,7 +157,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-Próxima etapa: revisar o roadmap do MVP e definir o próximo módulo útil após a remoção de Documentos e Briefings.
+Próxima etapa: validar visualmente `/` e `/reports` com dados reais e, depois, refinar os filtros/períodos dos relatórios.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
@@ -169,4 +184,5 @@ Orçamentos: http://localhost:5173/budgets
 Financeiro: http://localhost:5173/financial
 Tarefas: http://localhost:5173/tasks
 Visitas: http://localhost:5173/visits
+Relatórios: http://localhost:5173/reports
 ```

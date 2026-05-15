@@ -31,8 +31,21 @@ type ApiError = {
 
 - `GET /health`
 - `GET /dashboard`
+- `GET /reports/overview`
 - `GET /clients/meta`
 - `GET /projects/meta`
+
+## Dashboard
+
+- `GET /dashboard`
+  - Retorna resumo real de clientes, projetos, financeiro, tarefas, visitas, orçamentos e alertas operacionais.
+  - Indicadores financeiros e atrasos são calculados no backend.
+
+## Relatórios
+
+- `GET /reports/overview`
+  - Retorna visão consolidada de clientes, comercial, projetos, financeiro, tarefas e visitas.
+  - Inclui conversão de orçamentos, progresso médio, recebíveis por projeto e distribuição por status/tipo/prioridade.
 
 ## Clientes
 

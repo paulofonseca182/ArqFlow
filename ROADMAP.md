@@ -36,8 +36,17 @@
 - Exibir progresso calculado a partir das etapas existentes.
 - Bloquear exclusao quando houver vinculos.
 
-## Proxima fase: Etapas de Projeto
+## Etapas, Orçamentos, Financeiro, Tarefas e Visitas - concluídos na primeira fatia
 
-- Preparar geracao de etapas padrao por tipo de projeto.
-- Marcar etapas como concluidas.
-- Calcular progresso do projeto como regra de backend.
+- Etapas padrão por tipo de projeto.
+- Progresso real por etapas concluídas.
+- Orçamentos com itens, envio e aprovação transacional.
+- Financeiro com parcelas, pagamentos e indicadores.
+- Tarefas com prioridade, status e prazos.
+- Visitas técnicas com cliente obrigatório e projeto opcional.
+
+## Dashboard e Relatórios - fatia executiva atual
+
+- Dashboard conectado a dados reais, incluindo indicadores financeiros e operacionais.
+- Relatórios consolidados em `/reports` com dados reais de clientes, comercial, projetos, financeiro, tarefas e visitas.
+- Próxima evolução recomendada: filtros por período nos relatórios e validação visual com dados reais.

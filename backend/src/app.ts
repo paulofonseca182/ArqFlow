@@ -8,6 +8,7 @@ import { financialRouter } from "./modules/financial/financial.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { projectStepsRouter } from "./modules/projectSteps/projectSteps.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
+import { reportsRouter } from "./modules/reports/reports.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 import { visitsRouter } from "./modules/visits/visits.routes.js";
 
@@ -24,6 +25,7 @@ export function createApp() {
   app.use("/financial", financialRouter);
   app.use("/projects", projectsRouter);
   app.use("/project-steps", projectStepsRouter);
+  app.use("/reports", reportsRouter);
   app.use("/tasks", tasksRouter);
   app.use("/visits", visitsRouter);
 
