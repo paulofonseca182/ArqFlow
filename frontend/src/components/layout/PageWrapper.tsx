@@ -15,7 +15,7 @@ export function PageWrapper({ title, description, actions, children }: PageWrapp
           <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
           {description ? <p className="mt-1 text-sm text-text-secondary">{description}</p> : null}
         </div>
-        {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div> : null}
       </div>
       {children}
     </div>

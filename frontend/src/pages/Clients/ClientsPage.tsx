@@ -238,7 +238,7 @@ export function ClientsPage() {
       title="Clientes"
     >
       <Card>
-        <form className="grid gap-3 lg:grid-cols-[1fr_220px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px]" onSubmit={handleFilterSubmit}>
           <Input
             label="Busca"
             onChange={(event) => setDraftSearch(event.target.value)}
@@ -257,7 +257,7 @@ export function ClientsPage() {
               </option>
             ))}
           </Select>
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:justify-end">
             <Button className="min-w-28" title="Buscar clientes" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -325,7 +325,7 @@ export function ClientsPage() {
                 <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatLocation(client)}</td>
                 <td className="px-4 py-4 align-top text-text-secondary">{formatRelationCount(client._count)}</td>
                 <td className="px-4 py-4 align-top">
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-full flex-wrap items-center gap-2">
                     <ActionIconButton ariaLabel={`Editar ${client.name}`} label="Editar" onClick={() => handleOpenEdit(client)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>
@@ -352,7 +352,7 @@ export function ClientsPage() {
             <span>
               {pagination.total} cliente{pagination.total === 1 ? "" : "s"} encontrados
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className="h-4 w-4" />
                 Anterior

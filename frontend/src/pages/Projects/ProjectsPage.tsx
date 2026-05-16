@@ -397,7 +397,7 @@ export function ProjectsPage() {
       title="Projetos"
     >
       <Card>
-        <form className="grid gap-3 xl:grid-cols-[1fr_190px_170px_220px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Projeto, cliente ou endereço" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as ProjectStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
@@ -423,7 +423,7 @@ export function ProjectsPage() {
               </option>
             ))}
           </Select>
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-4 xl:justify-end">
             <Button className="min-w-28" title="Buscar projetos" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -491,7 +491,7 @@ export function ProjectsPage() {
                 </td>
                 <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatDate(project.expectedDeliveryDate)}</td>
                 <td className="px-4 py-4 align-top">
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-full flex-wrap items-center gap-2">
                     <ActionIconButton ariaLabel={`Editar ${project.name}`} label="Editar" onClick={() => handleOpenEdit(project)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>
@@ -525,7 +525,7 @@ export function ProjectsPage() {
             <span>
               {pagination.total} projeto{pagination.total === 1 ? "" : "s"} encontrados
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className="h-4 w-4" />
                 Anterior
@@ -627,7 +627,7 @@ export function ProjectsPage() {
 
                   return (
                     <div
-                      className="grid gap-3 border-b border-surface-600 px-4 py-4 last:border-b-0 sm:grid-cols-[48px_1fr_auto] sm:items-start"
+                      className="grid min-w-0 gap-3 border-b border-surface-600 px-4 py-4 last:border-b-0 sm:grid-cols-[48px_minmax(0,1fr)] sm:items-start"
                       key={step.id}
                     >
                       <div className="flex h-9 w-9 items-center justify-center rounded-ui border border-surface-600 bg-surface-900 text-xs text-text-secondary">
@@ -647,7 +647,7 @@ export function ProjectsPage() {
                           <span>Conclusão: {formatDate(step.completedAt)}</span>
                         </div>
                       </div>
-                      <div className="flex sm:justify-end">
+                      <div className="flex min-w-0 flex-wrap sm:col-span-2 sm:justify-end">
                         {isClosed ? (
                           <Button
                             className="min-w-28"

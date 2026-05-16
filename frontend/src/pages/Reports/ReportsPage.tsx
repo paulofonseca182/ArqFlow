@@ -106,7 +106,7 @@ export function ReportsPage() {
       {loading ? <LoadingState /> : null}
 
       <Card>
-        <form className="grid gap-3 lg:grid-cols-[220px_180px_180px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-3" onSubmit={handleFilterSubmit}>
           <Select label="Período" onChange={(event) => setDraftPeriod(event.target.value as ReportPeriodKey)} value={draftPeriod}>
             <option value="CURRENT_MONTH">Mês atual</option>
             <option value="CURRENT_YEAR">Ano atual</option>
@@ -126,7 +126,7 @@ export function ReportsPage() {
             type="date"
             value={draftTo}
           />
-          <div className="flex items-end">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-3 md:justify-end">
             <Button className="w-full lg:w-auto" disabled={loading} type="submit">
               <Filter className="h-4 w-4" strokeWidth={1.75} />
               Aplicar

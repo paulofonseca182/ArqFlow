@@ -24,6 +24,7 @@ A Fase 0.1 alinha a base ao `AGENTS.md`:
 - Contratos de domínio centralizados.
 - Testes iniciais de regras críticas.
 - Documentação técnica mínima.
+- Ajuste global de responsividade para filtros, grupos de ações, paginações, cards e modais, evitando botões fora dos limites visuais.
 
 ## Clientes
 
@@ -167,7 +168,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-Relatórios agora possui exportação CSV e detalhamentos adicionais sem criar módulo novo. A próxima etapa recomendada é validar o arquivo exportado com dados reais do escritório e, depois, avaliar filtros adicionais por cliente/projeto.
+Relatórios já possui exportação CSV e detalhamentos adicionais sem criar módulo novo. A interface também recebeu ajuste global de responsividade para evitar botões fora de cards, filtros e modais. A próxima etapa recomendada é validar o arquivo exportado com dados reais do escritório e, depois, avaliar filtros adicionais por cliente/projeto.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 

@@ -51,7 +51,7 @@ export function Modal({ children, footer, onClose, open, size = "md", title }: M
           </Button>
         </div>
         <div className="px-5 py-4 text-sm text-text-secondary">{children}</div>
-        {footer ? <div className="flex justify-end gap-2 border-t border-surface-500 px-5 py-4">{footer}</div> : null}
+        {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-surface-500 px-5 py-4">{footer}</div> : null}
       </div>
     </div>
   );

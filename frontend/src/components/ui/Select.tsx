@@ -11,7 +11,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const errorId = error && props.name ? `${props.name}-error` : undefined;
 
   return (
-    <label className="block space-y-2">
+    <label className="block min-w-0 space-y-2">
       {label ? <span className="text-sm font-medium text-text-secondary">{label}</span> : null}
       <select
         aria-describedby={errorId}

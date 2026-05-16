@@ -308,7 +308,7 @@ export function BudgetsPage() {
       title="Orçamentos"
     >
       <Card>
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_170px_180px_210px_145px_145px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Orçamento, cliente, serviço ou item" value={draftSearch} />
           <Select label="Visão" onChange={(event) => setDraftScope(event.target.value as BudgetScope | "")} value={draftScope}>
             <option value="">Todos</option>
@@ -332,7 +332,7 @@ export function BudgetsPage() {
           </Select>
           <Input label="Criado de" onChange={(event) => setDraftCreatedFrom(event.target.value)} type="date" value={draftCreatedFrom} />
           <Input label="Criado até" onChange={(event) => setDraftCreatedTo(event.target.value)} type="date" value={draftCreatedTo} />
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3 xl:justify-end 2xl:col-span-6">
             <Button className="min-w-28" title="Buscar orçamentos" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -406,7 +406,7 @@ export function BudgetsPage() {
                 </td>
                 <td className="min-w-32 px-4 py-4 align-top text-text-secondary">{formatDate(budget.expiresAt)}</td>
                 <td className="px-4 py-4 align-top">
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-full flex-wrap items-center gap-2">
                     <ActionIconButton ariaLabel={`Editar ${budget.title}`} label="Editar" onClick={() => handleOpenEdit(budget)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>
@@ -451,7 +451,7 @@ export function BudgetsPage() {
             <span>
               {pagination.total} orçamento{pagination.total === 1 ? "" : "s"} encontrados
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                 Anterior

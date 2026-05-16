@@ -2026,10 +2026,52 @@ Ao evoluir Visitas Técnicas, lembrar:
 - exclusão deve continuar passando por confirmação visual;
 - frontend pode melhorar UX, mas backend deve validar os vínculos.
 
+## Ajuste global de responsividade da interface
+
+Foi feita uma revisão de Frontend/UI e Qualidade para corrigir casos em que botões e grupos de ação podiam ultrapassar os limites de cards, filtros, modais e paginações.
+
+Arquivos ajustados:
+
+- `frontend/src/components/layout/PageWrapper.tsx`
+- `frontend/src/components/ui/Button.tsx`
+- `frontend/src/components/ui/Card.tsx`
+- `frontend/src/components/ui/Input.tsx`
+- `frontend/src/components/ui/Select.tsx`
+- `frontend/src/components/ui/Textarea.tsx`
+- `frontend/src/components/ui/Modal.tsx`
+- `frontend/src/pages/Clients/ClientsPage.tsx`
+- `frontend/src/pages/Projects/ProjectsPage.tsx`
+- `frontend/src/pages/Budgets/BudgetsPage.tsx`
+- `frontend/src/pages/Budgets/BudgetFormModal.tsx`
+- `frontend/src/pages/Financial/FinancialPage.tsx`
+- `frontend/src/pages/Tasks/TasksPage.tsx`
+- `frontend/src/pages/Visits/VisitsPage.tsx`
+- `frontend/src/pages/Reports/ReportsPage.tsx`
+
+O que mudou:
+
+- filtros passaram a usar grids responsivos sem colunas `auto` que empurravam botões para fora;
+- grupos de ações usam `flex-wrap`, `min-w-0` e `max-w-full` para quebrar linha quando necessário;
+- paginações permitem quebra de linha em telas menores;
+- cards, labels, inputs, selects, textareas e modais receberam proteção contra overflow horizontal;
+- itens dinâmicos de orçamento e linhas de etapas de projeto deixaram de depender de coluna automática para ações;
+- botões ganharam `max-w-full` e `min-w-0` como comportamento padrão.
+
+Validação realizada:
+
+- busca por padrões de risco como `min-w-max`, grids com coluna `auto` e grupos rígidos de ação;
+- `corepack pnpm -r typecheck`;
+- validação no navegador em `/`, `/clients`, `/projects`, `/budgets`, `/financial`, `/tasks`, `/visits`, `/reports` e `/settings` nos tamanhos 1440, 1280, 1024 e 768px.
+
+Resultado:
+
+- filtros e botões de ação não geraram overflow global;
+- conteúdos largos dentro de tabelas continuam usando scroll horizontal próprio, que é esperado para dados tabulares.
+
 ## Sugestao de commit para o estado atual
 
 ```txt
-refactor(documents): remove documents module from current scope
+fix(ui): harden responsive action layouts
 ```
 
 Resumo sugerido:
@@ -2060,6 +2102,7 @@ Resumo sugerido:
 - Add technical visits frontend page with filters, form and quick actions
 - Remove documents API, frontend page, navigation entry and Prisma model
 - Add migration to drop the documents table from the local schema
+- Harden responsive filters, action groups, pagination and modal layouts
 - Update project registry and README
 ```
 

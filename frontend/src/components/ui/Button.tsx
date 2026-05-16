@@ -17,7 +17,7 @@ export function Button({ className, type = "button", variant = "primary", ...pro
   return (
     <button
       className={clsx(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-ui px-4 text-sm font-medium shadow-subtle outline-none transition focus-visible:ring-2 focus-visible:ring-accent-bronze focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-10 max-w-full min-w-0 items-center justify-center gap-2 rounded-ui px-4 text-sm font-medium shadow-subtle outline-none transition focus-visible:ring-2 focus-visible:ring-accent-bronze focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],
         className
       )}

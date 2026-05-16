@@ -298,7 +298,7 @@ export function TasksPage() {
       title="Tarefas"
     >
       <Card>
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-[minmax(180px,1fr)_140px_140px_170px_minmax(180px,1fr)_145px_145px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Tarefa, responsável, projeto ou cliente" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as TaskStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
@@ -331,7 +331,7 @@ export function TasksPage() {
           </Select>
           <Input label="Prazo de" onChange={(event) => setDraftDueFrom(event.target.value)} type="date" value={draftDueFrom} />
           <Input label="Prazo até" onChange={(event) => setDraftDueTo(event.target.value)} type="date" value={draftDueTo} />
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-4 2xl:col-span-1">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-4 xl:justify-end 2xl:col-span-7">
             <Button className="min-w-28" title="Buscar tarefas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -408,7 +408,7 @@ export function TasksPage() {
                   </td>
                   <td className="min-w-32 px-4 py-4 align-top text-text-secondary">{formatDate(task.dueDate)}</td>
                   <td className="px-4 py-4 align-top">
-                    <div className="flex items-center gap-2">
+                    <div className="flex max-w-full flex-wrap items-center gap-2">
                       <ActionIconButton ariaLabel={`Editar ${task.title}`} label="Editar" onClick={() => handleOpenEdit(task)}>
                         <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                       </ActionIconButton>
@@ -464,7 +464,7 @@ export function TasksPage() {
             <span>
               {pagination.total} tarefa{pagination.total === 1 ? "" : "s"} encontradas
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                 Anterior

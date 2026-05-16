@@ -134,7 +134,7 @@ export function BudgetFormModal({
         <Textarea error={errors.description?.message} label="Descrição" placeholder="Escopo resumido da proposta" rows={3} {...form.register("description")} />
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h4 className="text-sm font-medium text-text-primary">Itens do orçamento</h4>
             <Button onClick={() => itemFields.append(getEmptyBudgetItem())} type="button" variant="secondary">
               <Plus className={formIconClassName} strokeWidth={formIconStrokeWidth} />
@@ -144,7 +144,10 @@ export function BudgetFormModal({
 
           <div className="space-y-3">
             {itemFields.fields.map((field, index) => (
-              <div className="grid gap-3 rounded-ui border border-surface-600 bg-surface-900/60 p-3 md:grid-cols-[1fr_120px_150px_auto]" key={field.id}>
+              <div
+                className="grid min-w-0 gap-3 rounded-ui border border-surface-600 bg-surface-900/60 p-3 md:grid-cols-[minmax(0,1fr)_120px_150px]"
+                key={field.id}
+              >
                 <Input
                   error={errors.items?.[index]?.description?.message}
                   label="Descrição"
@@ -163,7 +166,7 @@ export function BudgetFormModal({
                   placeholder="2500,00"
                   {...form.register(`items.${index}.unitAmount` as const)}
                 />
-                <div className="flex items-end">
+                <div className="flex min-w-0 flex-wrap items-end md:col-span-3 md:justify-end">
                   <ActionIconButton
                     ariaLabel={`Remover item ${index + 1}`}
                     disabled={itemFields.fields.length <= 1}

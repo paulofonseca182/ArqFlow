@@ -379,7 +379,7 @@ export function FinancialPage() {
 
       <Card>
         <form
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_190px_190px_145px_145px_auto]"
+          className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
           onSubmit={handleFilterSubmit}
         >
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Parcela, projeto ou cliente" value={draftSearch} />
@@ -409,7 +409,7 @@ export function FinancialPage() {
           </Select>
           <Input label="De" onChange={(event) => setDraftDueFrom(event.target.value)} type="date" value={draftDueFrom} />
           <Input label="Até" onChange={(event) => setDraftDueTo(event.target.value)} type="date" value={draftDueTo} />
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3 xl:justify-end 2xl:col-span-6">
             <Button className="min-w-28" title="Buscar parcelas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -490,7 +490,7 @@ export function FinancialPage() {
                   {payment.paymentMethod ? methodLabelByValue.get(payment.paymentMethod) ?? payment.paymentMethod : "Não informada"}
                 </td>
                 <td className="px-4 py-4 align-top">
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-full flex-wrap items-center gap-2">
                     <ActionIconButton ariaLabel={`Editar ${payment.description}`} label="Editar" onClick={() => handleOpenEdit(payment)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>
@@ -526,7 +526,7 @@ export function FinancialPage() {
             <span>
               {pagination.total} parcela{pagination.total === 1 ? "" : "s"} encontradas
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                 Anterior

@@ -337,7 +337,7 @@ export function VisitsPage() {
     >
       <Card>
         <form
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_150px_170px_minmax(170px,220px)_minmax(170px,220px)_auto]"
+          className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
           onSubmit={handleFilterSubmit}
         >
           <Input
@@ -382,7 +382,7 @@ export function VisitsPage() {
               </option>
             ))}
           </Select>
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1 2xl:justify-self-end">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3 xl:justify-end 2xl:col-span-6">
             <Button className="min-w-28" title="Buscar visitas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -467,7 +467,7 @@ export function VisitsPage() {
                     <Badge tone={getVisitStatusTone(visit.status)}>{statusLabelByValue.get(visit.status) ?? visit.status}</Badge>
                   </td>
                   <td className="px-4 py-4 align-top">
-                    <div className="flex items-center gap-2">
+                    <div className="flex max-w-full flex-wrap items-center gap-2">
                       <ActionIconButton ariaLabel={`Editar ${visitLabel}`} label="Editar" onClick={() => handleOpenEdit(visit)}>
                         <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                       </ActionIconButton>
@@ -523,7 +523,7 @@ export function VisitsPage() {
             <span>
               {pagination.total} visita{pagination.total === 1 ? "" : "s"} encontradas
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <Button disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button" variant="secondary">
                 <ChevronLeft className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                 Anterior
