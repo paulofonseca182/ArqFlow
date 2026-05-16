@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.3 - Relatórios com exportação e detalhamento
+
+- Botão `Exportar CSV` adicionado em `/reports` para baixar o relatório carregado.
+- Exportação usa `;`, BOM UTF-8 e dados já calculados pelo backend.
+- Detalhamento visual adicionado para projetos por tipo, tarefas por prioridade e visitas por tipo.
+- Testes frontend adicionados para a montagem do CSV e nome do arquivo.
+- README, ROADMAP, USER_GUIDE e registro do projeto atualizados.
+
 ## 0.5.2 - Escopos compostos de Relatórios
 
 - Contratos `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS` adicionados nas APIs relacionadas.

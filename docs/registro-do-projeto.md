@@ -773,6 +773,8 @@ Frontend:
 ```txt
 frontend/src/pages/Reports/
   ReportsPage.tsx
+  reports-export.ts
+  reports-export.test.ts
 
 frontend/src/services/reports.ts
 frontend/src/types/reports.ts
@@ -810,6 +812,8 @@ Implementado no frontend:
 - atalhos em indicadores para abrir módulos relacionados já filtrados;
 - atalhos de Financeiro preservam o período ativo quando o filtro usa vencimento (`dueFrom` e `dueTo`);
 - Orçamentos, Financeiro, Tarefas e Visitas passam a ler filtros da URL e preencher os campos visuais automaticamente;
+- detalhamento adicional por tipo de projeto, prioridade de tarefas e tipo de visita;
+- exportação CSV do relatório carregado, com separador `;` e BOM UTF-8 para compatibilidade com Excel/LibreOffice;
 - atualização manual e estados de carregamento, erro e vazio.
 
 Regras consideradas:
@@ -821,13 +825,14 @@ Regras consideradas:
 - progresso usa etapas concluídas sobre total;
 - atrasos de tarefas e pagamentos continuam dinâmicos;
 - atalhos só foram aplicados em métricas com filtro de destino representável hoje;
+- exportação CSV apenas serializa o `overview` retornado pelo backend, sem recalcular valores financeiros no frontend;
 - nenhuma dependência nova de gráficos foi adicionada.
 
 Ainda falta:
 
-- exportação futura, se fizer sentido;
 - testes de frontend da tela de relatórios;
-- ampliar escopos compostos como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
+- validar a exportação CSV com dados reais do escritório;
+- avaliar filtros adicionais por cliente/projeto se a rotina do escritório pedir.
 
 ## Modulo de Tarefas - estado atual
 
@@ -1662,6 +1667,7 @@ backend/src/modules/financial/financial.schema.test.ts
 backend/src/modules/financial/financial.service.test.ts
 backend/src/modules/dashboard/dashboard.service.test.ts
 backend/src/modules/reports/reports.service.test.ts
+frontend/src/pages/Reports/reports-export.test.ts
 backend/src/modules/tasks/tasks.schema.test.ts
 backend/src/modules/tasks/tasks.service.test.ts
 backend/src/modules/visits/visits.schema.test.ts
@@ -1714,6 +1720,7 @@ Cobertura atual:
 - resumo financeiro por projeto e alerta acima do contratado.
 - dashboard com progresso médio, próximas entregas, alertas reais e indicadores operacionais.
 - relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas e visitas.
+- exportação CSV de Relatórios com teste de helper puro.
 - schema inicial de Tarefas;
 - tarefa com projeto opcional;
 - filtros de Tarefas por projeto, status, prioridade, prazo e atraso derivado;
@@ -1931,7 +1938,7 @@ Qualidade:
 
 ## Proximo passo recomendado
 
-Refinar Relatórios por necessidade real do escritório antes de criar novos módulos. Bons candidatos para a próxima fatia são detalhamento de indicadores por lista resumida, exportação simples ou filtros adicionais de status/tipo, sempre mantendo o backend como fonte da verdade.
+Validar a exportação CSV de Relatórios com dados reais do escritório. Depois disso, bons candidatos para a próxima fatia são filtros adicionais por cliente/projeto ou detalhamento limitado de pagamentos, tarefas e visitas mais críticos, sempre mantendo o backend como fonte da verdade.
 
 ## Pontos de atencao para Clientes
 

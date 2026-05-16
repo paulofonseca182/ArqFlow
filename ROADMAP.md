@@ -52,4 +52,5 @@
 - Filtros por período concluídos em Relatórios.
 - Atalhos filtrados concluídos para Orçamentos, Financeiro, Tarefas e Visitas.
 - Escopos compostos concluídos para orçamentos abertos, tarefas atrasadas, tarefas vencendo em 7 dias e visitas próximas.
-- Próxima evolução recomendada: refinar relatórios com detalhamento de indicadores, exportação simples ou filtros adicionais antes de abrir novos módulos.
+- Detalhamento de indicadores e exportação CSV simples concluídos em Relatórios.
+- Próxima evolução recomendada: validar exportação com dados reais e avaliar filtros adicionais por cliente/projeto.

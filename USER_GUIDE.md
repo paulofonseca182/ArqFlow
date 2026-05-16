@@ -18,4 +18,6 @@ O ArqFlow ainda esta em fundacao tecnica. O uso final sera documentado a cada mo
 - Use mês atual, ano atual ou intervalo personalizado.
 - Clique nos indicadores com seta para abrir o módulo relacionado já filtrado.
 - Indicadores compostos como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas usam filtros próprios nas telas destino.
+- Use `Exportar CSV` para baixar o relatório carregado e abrir em Excel ou LibreOffice.
+- Consulte os blocos de detalhamento para ver projetos por tipo, tarefas por prioridade e visitas por tipo.
 - Use `Limpar filtros` no módulo destino para voltar à listagem completa.

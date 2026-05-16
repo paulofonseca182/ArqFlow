@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowUpRight, Filter, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Download, Filter, RefreshCw } from "lucide-react";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -16,6 +16,7 @@ import { Table } from "../../components/ui/Table";
 import { ApiError } from "../../services/api";
 import { getReportsOverview } from "../../services/reports";
 import type { ReportPeriodKey, ReportsOverview, ReportsOverviewParams, ReportStatusCount } from "../../types/reports";
+import { buildReportsCsv, createReportExportFilename } from "./reports-export";
 
 const defaultQuery: ReportsOverviewParams = {
   period: "CURRENT_MONTH"
@@ -63,13 +64,34 @@ export function ReportsPage() {
     });
   }
 
+  function handleExportReports() {
+    if (!overview) {
+      return;
+    }
+
+    const blob = new Blob([`\uFEFF${buildReportsCsv(overview)}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = createReportExportFilename(overview);
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <PageWrapper
       actions={
-        <Button disabled={loading} onClick={() => void loadReports()} type="button" variant="secondary">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={1.75} />
-          Atualizar
-        </Button>
+        <>
+          <Button disabled={loading || !overview} onClick={handleExportReports} type="button" variant="secondary">
+            <Download className="h-4 w-4" strokeWidth={1.75} />
+            Exportar CSV
+          </Button>
+          <Button disabled={loading} onClick={() => void loadReports()} type="button" variant="secondary">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={1.75} />
+            Atualizar
+          </Button>
+        </>
       }
       description="Leitura consolidada dos módulos ativos, com dados calculados pelo backend."
       title="Relatórios"
@@ -196,6 +218,27 @@ export function ReportsPage() {
             </Card>
           </section>
 
+          <section className="grid gap-4 lg:grid-cols-3">
+            <BreakdownCard
+              description="Distribuição da carteira por tipo de projeto no período."
+              emptyMessage="Nenhum tipo de projeto no período."
+              items={overview.projects.byType}
+              title="Projetos por tipo"
+            />
+            <BreakdownCard
+              description="Prioridades abertas e concluídas consideradas no período."
+              emptyMessage="Nenhuma tarefa no período."
+              items={overview.operations.byTaskPriority}
+              title="Tarefas por prioridade"
+            />
+            <BreakdownCard
+              description="Tipos de visitas técnicas registrados no período."
+              emptyMessage="Nenhuma visita no período."
+              items={overview.operations.byVisitType}
+              title="Visitas por tipo"
+            />
+          </section>
+
           <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <Card>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -283,6 +326,46 @@ function StatusList({ items }: { items: ReportStatusCount[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function BreakdownCard({
+  description,
+  emptyMessage,
+  items,
+  title
+}: {
+  description: string;
+  emptyMessage: string;
+  items: ReportStatusCount[];
+  title: string;
+}) {
+  const visibleItems = items.filter((item) => item.count > 0);
+
+  return (
+    <Card>
+      <h3 className="text-base font-semibold text-text-primary">{title}</h3>
+      <p className="mt-2 text-sm text-text-secondary">{description}</p>
+      {visibleItems.length > 0 ? (
+        <div className="mt-5 space-y-3">
+          {visibleItems.map((item) => (
+            <div key={item.status}>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate text-text-secondary">{item.label}</span>
+                <span className="shrink-0 text-text-muted">
+                  {item.count} · {item.percentage}%
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-700">
+                <div className="h-full rounded-full bg-accent-bronze" style={{ width: `${item.percentage}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-5 text-sm text-text-muted">{emptyMessage}</p>
+      )}
+    </Card>
   );
 }
 

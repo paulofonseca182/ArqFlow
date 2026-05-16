@@ -129,6 +129,8 @@ O módulo de Relatórios foi escolhido como próxima fatia útil após a remoç�
 - Atalhos nos indicadores para abrir Orçamentos, Financeiro, Tarefas e Visitas já filtrados.
 - Atalhos de recebíveis financeiros preservam o período ativo usando `dueFrom` e `dueTo`.
 - Atalhos compostos usam contratos explícitos do backend: `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS`.
+- Detalhamento adicional por tipo de projeto, prioridade de tarefas e tipo de visita.
+- Exportação CSV do relatório carregado, usando somente dados já calculados pelo backend.
 - Sem dependência nova de gráficos; a interface usa cards, tabelas e barras simples do design system.
 
 ## Tarefas
@@ -165,7 +167,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-Escopos compostos de `/reports` foram implementados e validados visualmente com contratos explícitos no backend e filtros visíveis no frontend. A próxima etapa recomendada é refinar Relatórios com necessidades reais do escritório, sem iniciar novo módulo antes da hora.
+Relatórios agora possui exportação CSV e detalhamentos adicionais sem criar módulo novo. A próxima etapa recomendada é validar o arquivo exportado com dados reais do escritório e, depois, avaliar filtros adicionais por cliente/projeto.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 
