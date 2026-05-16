@@ -175,11 +175,14 @@ export function buildTaskWhere(
     priority,
     projectId,
     search,
+    scope,
     status
-  }: Partial<Pick<ListTasksQuery, "dueFrom" | "dueTo" | "overdue" | "priority" | "projectId" | "search" | "status">>,
+  }: Partial<Pick<ListTasksQuery, "dueFrom" | "dueTo" | "overdue" | "priority" | "projectId" | "scope" | "search" | "status">>,
   today = new Date()
 ): Prisma.TaskWhereInput {
   const where: Prisma.TaskWhereInput = {};
+  const deadlineFilters: Prisma.DateTimeFilter[] = [];
+  const usesOpenTaskScope = Boolean(overdue || scope === "OVERDUE_TASKS" || scope === "DUE_SOON_TASKS");
 
   if (projectId) {
     where.projectId = projectId;
@@ -189,13 +192,13 @@ export function buildTaskWhere(
     where.status = status;
   }
 
-  if (overdue && !status) {
+  if (usesOpenTaskScope && !status) {
     where.status = {
       notIn: ["COMPLETED", "CANCELLED"]
     };
   }
 
-  if (overdue && status) {
+  if (usesOpenTaskScope && status) {
     where.AND = [
       {
         status: {
@@ -209,10 +212,33 @@ export function buildTaskWhere(
     where.priority = priority;
   }
 
-  if (overdue) {
-    where.dueDate = {
+  if (overdue || scope === "OVERDUE_TASKS") {
+    deadlineFilters.push({
       lt: startOfDay(today)
-    };
+    });
+  }
+
+  if (scope === "DUE_SOON_TASKS") {
+    deadlineFilters.push({
+      gte: startOfDay(today),
+      lte: endOfDay(addDays(startOfDay(today), 7))
+    });
+  }
+
+  if (dueFrom || dueTo) {
+    deadlineFilters.push({
+      ...(dueFrom ? { gte: startOfDay(dueFrom) } : {}),
+      ...(dueTo ? { lte: endOfDay(dueTo) } : {})
+    });
+  }
+
+  if (deadlineFilters.length === 1) {
+    where.dueDate = deadlineFilters[0];
+  } else if (deadlineFilters.length > 1) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      ...deadlineFilters.map((dueDate) => ({ dueDate }))
+    ];
   } else if (dueFrom || dueTo) {
     where.dueDate = {
       ...(dueFrom ? { gte: startOfDay(dueFrom) } : {}),
@@ -292,4 +318,10 @@ function startOfDay(date: Date) {
 
 function endOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
 }

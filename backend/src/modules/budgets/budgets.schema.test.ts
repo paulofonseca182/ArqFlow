@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { approveBudgetSchema, createBudgetSchema, updateBudgetSchema } from "./budgets.schema.js";
+import { approveBudgetSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetSchema } from "./budgets.schema.js";
 
 const validClientId = "clw0000000000000000000000";
 
@@ -54,6 +54,24 @@ describe("budgets schema", () => {
   it("permite update parcial com pelo menos um campo", () => {
     expect(updateBudgetSchema.safeParse({}).success).toBe(false);
     expect(updateBudgetSchema.safeParse({ status: "NEGOTIATION" }).success).toBe(true);
+  });
+
+  it("valida escopo composto de orçamentos abertos e período de criação", () => {
+    expect(
+      listBudgetsQuerySchema.safeParse({
+        scope: "OPEN_BUDGETS",
+        createdFrom: "2026-05-01",
+        createdTo: "2026-05-31"
+      }).success
+    ).toBe(true);
+
+    expect(listBudgetsQuerySchema.safeParse({ scope: "OPEN" }).success).toBe(false);
+    expect(
+      listBudgetsQuerySchema.safeParse({
+        createdFrom: "2026-05-31",
+        createdTo: "2026-05-01"
+      }).success
+    ).toBe(false);
   });
 
   it("valida dados para aprovar e converter em projeto", () => {

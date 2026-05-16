@@ -165,9 +165,9 @@ export function ReportsPage() {
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <MetricLine label="Aprovados" to="/budgets?status=APPROVED" value={overview.commercial.approvedBudgets.toString()} />
                 <MetricLine label="Recusados" to="/budgets?status=REFUSED" value={overview.commercial.refusedBudgets.toString()} />
-                <MetricLine label="Abertos" value={overview.commercial.openBudgets.toString()} />
+                <MetricLine label="Abertos" to={shortcuts?.budgetsOpen} value={overview.commercial.openBudgets.toString()} />
                 <MetricLine label="Valor aprovado" to="/budgets?status=APPROVED" value={formatMoney(overview.commercial.approvedAmount)} />
-                <MetricLine label="Valor em aberto" value={formatMoney(overview.commercial.openAmount)} />
+                <MetricLine label="Valor em aberto" to={shortcuts?.budgetsOpen} value={formatMoney(overview.commercial.openAmount)} />
                 <MetricLine label="Total de orçamentos" value={overview.commercial.totalBudgets.toString()} />
               </div>
               <StatusList items={overview.commercial.byStatus} />
@@ -207,11 +207,11 @@ export function ReportsPage() {
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <MetricLine label="Tarefas abertas" value={overview.operations.openTasks.toString()} />
-                <MetricLine label="Tarefas atrasadas" to="/tasks?scope=OVERDUE" value={overview.operations.overdueTasks.toString()} />
+                <MetricLine label="Tarefas atrasadas" to={shortcuts?.tasksOverdue} value={overview.operations.overdueTasks.toString()} />
                 <MetricLine label="Urgentes" to="/tasks?priority=URGENT" value={overview.operations.urgentTasks.toString()} />
-                <MetricLine label="Vencem em 7 dias" value={overview.operations.dueSoonTasks.toString()} />
-                <MetricLine label="Visitas agendadas" to="/visits?status=SCHEDULED" value={overview.operations.scheduledVisits.toString()} />
-                <MetricLine label="Visitas em 7 dias" value={overview.operations.visitsNextSevenDays.toString()} />
+                <MetricLine label="Vencem em 7 dias" to={shortcuts?.tasksDueSoon} value={overview.operations.dueSoonTasks.toString()} />
+                <MetricLine label="Visitas agendadas" to={shortcuts?.visitsScheduled} value={overview.operations.scheduledVisits.toString()} />
+                <MetricLine label="Visitas em 7 dias" to={shortcuts?.visitsUpcoming} value={overview.operations.visitsNextSevenDays.toString()} />
               </div>
               <StatusList items={overview.operations.byTaskStatus} />
               <StatusList items={overview.operations.byVisitStatus} />
@@ -317,6 +317,11 @@ function getReportShortcuts(overview: ReportsOverview) {
   const dueTo = toDateParam(overview.period.to);
 
   return {
+    budgetsOpen: buildPath("/budgets", {
+      createdFrom: dueFrom,
+      createdTo: dueTo,
+      scope: "OPEN_BUDGETS"
+    }),
     financialOverdue: buildPath("/financial", {
       dueFrom,
       dueTo,
@@ -326,6 +331,26 @@ function getReportShortcuts(overview: ReportsOverview) {
       dueFrom,
       dueTo,
       status: "RECEIVABLE"
+    }),
+    tasksDueSoon: buildPath("/tasks", {
+      dueFrom,
+      dueTo,
+      scope: "DUE_SOON_TASKS"
+    }),
+    tasksOverdue: buildPath("/tasks", {
+      dueFrom,
+      dueTo,
+      scope: "OVERDUE_TASKS"
+    }),
+    visitsScheduled: buildPath("/visits", {
+      dateFrom: dueFrom,
+      dateTo: dueTo,
+      status: "SCHEDULED"
+    }),
+    visitsUpcoming: buildPath("/visits", {
+      dateFrom: dueFrom,
+      dateTo: dueTo,
+      scope: "UPCOMING_VISITS"
     })
   };
 }

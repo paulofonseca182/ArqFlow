@@ -2,6 +2,7 @@ import { z } from "zod";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 import { taskPriorities, taskStatuses } from "../../shared/domain.js";
 
+const taskScopeValues = ["OVERDUE_TASKS", "DUE_SOON_TASKS"] as const;
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
 const optionalBoolean = z.preprocess((value) => {
@@ -45,7 +46,8 @@ export const listTasksQuerySchema = paginationQuerySchema
     priority: z.enum(taskPriorities).optional(),
     dueFrom: optionalDate,
     dueTo: optionalDate,
-    overdue: optionalBoolean
+    overdue: optionalBoolean,
+    scope: z.enum(taskScopeValues).optional()
   })
   .superRefine(validateDueDateRange);
 

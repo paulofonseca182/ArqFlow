@@ -2,6 +2,7 @@ import { z } from "zod";
 import { visitStatuses, visitTypes } from "../../shared/domain.js";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
+const visitScopeValues = ["UPCOMING_VISITS"] as const;
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
 const requiredDate = z.coerce.date({ invalid_type_error: "data inválida" });
@@ -33,7 +34,8 @@ export const listVisitsQuerySchema = paginationQuerySchema
     type: z.enum(visitTypes).optional(),
     status: z.enum(visitStatuses).optional(),
     dateFrom: optionalDate,
-    dateTo: optionalDate
+    dateTo: optionalDate,
+    scope: z.enum(visitScopeValues).optional()
   })
   .superRefine(validateVisitDateRange);
 

@@ -17,6 +17,7 @@ type ListVisitsParams = {
   status?: VisitStatus;
   dateFrom?: string;
   dateTo?: string;
+  scope?: "UPCOMING_VISITS";
 };
 
 export async function getVisitsMeta() {
@@ -36,7 +37,8 @@ export async function listVisits(params: ListVisitsParams) {
       type: params.type || undefined,
       status: params.status || undefined,
       dateFrom: params.dateFrom || undefined,
-      dateTo: params.dateTo || undefined
+      dateTo: params.dateTo || undefined,
+      scope: params.scope || undefined
     }
   });
 

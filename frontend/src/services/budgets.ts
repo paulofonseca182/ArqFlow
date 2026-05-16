@@ -11,8 +11,11 @@ type ListBudgetsParams = {
   pageSize: number;
   search?: string;
   status?: BudgetStatus;
+  scope?: "OPEN_BUDGETS";
   clientId?: string;
   projectId?: string;
+  createdFrom?: string;
+  createdTo?: string;
 };
 
 export async function listBudgets(params: ListBudgetsParams) {
@@ -22,8 +25,11 @@ export async function listBudgets(params: ListBudgetsParams) {
       pageSize: params.pageSize,
       search: params.search || undefined,
       status: params.status || undefined,
+      scope: params.scope || undefined,
       clientId: params.clientId || undefined,
-      projectId: params.projectId || undefined
+      projectId: params.projectId || undefined,
+      createdFrom: params.createdFrom || undefined,
+      createdTo: params.createdTo || undefined
     }
   });
 

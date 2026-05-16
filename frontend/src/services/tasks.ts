@@ -17,6 +17,7 @@ type ListTasksParams = {
   dueFrom?: string;
   dueTo?: string;
   overdue?: boolean;
+  scope?: "OVERDUE_TASKS" | "DUE_SOON_TASKS";
 };
 
 export async function getTasksMeta() {
@@ -36,7 +37,8 @@ export async function listTasks(params: ListTasksParams) {
       projectId: params.projectId || undefined,
       dueFrom: params.dueFrom || undefined,
       dueTo: params.dueTo || undefined,
-      overdue: params.overdue || undefined
+      overdue: params.overdue || undefined,
+      scope: params.scope || undefined
     }
   });
 

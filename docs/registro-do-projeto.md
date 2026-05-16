@@ -1699,7 +1699,8 @@ Cobertura atual:
 - valores de item zero ou negativos bloqueados;
 - desconto negativo bloqueado;
 - metadados de status de Orçamentos;
-- montagem de filtros de busca, cliente, projeto e status de Orçamentos;
+- montagem de filtros de busca, cliente, projeto, status e escopo de Orçamentos;
+- escopo composto de Orçamentos abertos por status e período de criação;
 - cálculo de totais de orçamento no backend.
 - validação de dados para aprovação/conversão de orçamento;
 - preparação dos dados de projeto a partir de orçamento aprovado;
@@ -1716,12 +1717,14 @@ Cobertura atual:
 - schema inicial de Tarefas;
 - tarefa com projeto opcional;
 - filtros de Tarefas por projeto, status, prioridade, prazo e atraso derivado;
+- escopos compostos de Tarefas para atrasadas e vencendo em 7 dias;
 - busca de Tarefas por título, descrição, responsável, notas, projeto e cliente;
 - atraso dinâmico de tarefa;
 - helpers frontend de query string para atalhos e filtros vindos da URL;
 - schema inicial de Visitas;
 - visita com cliente obrigatório e projeto opcional;
 - filtros de Visitas por cliente, projeto, tipo, status e período;
+- escopo composto de Visitas próximas com status agendada e janela de 7 dias;
 - busca de Visitas por tipo, endereço, observações, cliente e projeto;
 - validação de horário e valor positivo;
 - bloqueio de projeto pertencente a outro cliente;
@@ -1818,6 +1821,7 @@ PATCH /clients/:id
 DELETE /clients/:id
 GET /budgets/meta
 GET /budgets
+GET /budgets?scope=OPEN_BUDGETS&createdFrom=YYYY-MM-DD&createdTo=YYYY-MM-DD
 GET /budgets/:id
 POST /budgets
 PATCH /budgets/:id
@@ -1835,6 +1839,8 @@ POST /financial/installments
 GET /tasks/meta
 GET /tasks
 GET /tasks?overdue=true
+GET /tasks?scope=OVERDUE_TASKS
+GET /tasks?scope=DUE_SOON_TASKS&dueFrom=YYYY-MM-DD&dueTo=YYYY-MM-DD
 GET /tasks/:id
 POST /tasks
 PATCH /tasks/:id
@@ -1844,6 +1850,7 @@ PATCH /tasks/:id/cancel
 DELETE /tasks/:id
 GET /visits/meta
 GET /visits
+GET /visits?scope=UPCOMING_VISITS&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD
 GET /visits/:id
 POST /visits
 PATCH /visits/:id
@@ -1893,24 +1900,38 @@ Versionar:
 - arquivos de configuração;
 - testes.
 
+## Escopos compostos de Relatórios
+
+Foi iniciada a etapa que transforma indicadores agregados de `/reports` em atalhos confiáveis para os módulos relacionados. A decisão técnica foi não usar links improvisados: cada indicador composto precisa de contrato explícito no backend e filtro visível na tela destino.
+
+Contratos implementados:
+
+- `OPEN_BUDGETS` em `/budgets?scope=OPEN_BUDGETS`: lista orçamentos em `DRAFT`, `SENT` ou `NEGOTIATION`, com período opcional por `createdFrom` e `createdTo`.
+- `OVERDUE_TASKS` em `/tasks?scope=OVERDUE_TASKS`: lista tarefas com prazo anterior a hoje e status diferente de `COMPLETED` ou `CANCELLED`.
+- `DUE_SOON_TASKS` em `/tasks?scope=DUE_SOON_TASKS`: lista tarefas abertas que vencem de hoje até os próximos 7 dias, combinável com `dueFrom` e `dueTo`.
+- `UPCOMING_VISITS` em `/visits?scope=UPCOMING_VISITS`: lista visitas `SCHEDULED` de hoje até os próximos 7 dias, combinável com `dateFrom` e `dateTo`.
+
+Frontend implementado:
+
+- `/reports` agora aponta `Abertos` e `Valor em aberto` para Orçamentos com `scope=OPEN_BUDGETS`.
+- `/reports` aponta `Tarefas atrasadas` para `scope=OVERDUE_TASKS`.
+- `/reports` aponta `Vencem em 7 dias` para `scope=DUE_SOON_TASKS`.
+- `/reports` aponta `Visitas em 7 dias` para `scope=UPCOMING_VISITS`.
+- `/budgets` mostra o filtro visual `Visão`.
+- `/tasks` mostra o filtro visual `Prazo`, com opções para atrasadas e vencendo em 7 dias.
+- `/visits` mostra o filtro visual `Agenda`, preservando o layout enxuto sem reintroduzir campos visíveis de `De` e `Até`.
+
+Qualidade:
+
+- Foram adicionados testes backend de schema e service para os novos escopos.
+- O helper frontend de leitura de datas continua validando `YYYY-MM-DD` antes de aplicar filtros vindos da URL.
+- `corepack pnpm -r typecheck` passou após os ajustes iniciais.
+- Validação visual no navegador confirmou links de `/reports` para `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS`.
+- As telas destino exibiram os filtros selecionados: `Visão = Orçamentos abertos`, `Prazo = Vencem em 7 dias` e `Agenda = Próximos 7 dias`.
+
 ## Proximo passo recomendado
 
-Validar visualmente os atalhos de `/reports` no navegador. Depois, avaliar escopos compostos que ainda não viraram atalho exato, como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
-
-Ponto de retomada para amanhã:
-
-- usar os agentes Arquiteto, Backend/API, Frontend/UI, Qualidade e Documentação;
-- testar Relatórios, Financeiro, Tarefas, Orçamentos e Visitas no navegador a partir dos atalhos;
-- conferir se os filtros vindos da URL ficam visíveis nas telas destino;
-- manter `README.md` e `docs/registro-do-projeto.md` atualizados.
-
-Ordem sugerida:
-
-1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Rodar o app e validar os atalhos de `/reports` visualmente.
-3. Ajustar detalhes visuais dos links e filtros nas telas destino, se necessário.
-4. Atualizar documentação antes de iniciar nova fatia.
-5. Só depois avaliar Configurações ou refinamentos dos módulos já entregues.
+Refinar Relatórios por necessidade real do escritório antes de criar novos módulos. Bons candidatos para a próxima fatia são detalhamento de indicadores por lista resumida, exportação simples ou filtros adicionais de status/tipo, sempre mantendo o backend como fonte da verdade.
 
 ## Pontos de atencao para Clientes
 

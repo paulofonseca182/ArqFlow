@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.2 - Escopos compostos de Relatórios
+
+- Contratos `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS` adicionados nas APIs relacionadas.
+- Relatórios agora abrem orçamentos abertos, tarefas atrasadas, tarefas vencendo em 7 dias e visitas próximas com filtros explícitos.
+- Telas de Orçamentos, Tarefas e Visitas passaram a exibir os escopos compostos recebidos pela URL.
+- Testes backend de schema e service adicionados para os novos escopos.
+- Validação visual local confirmou os atalhos compostos de `/reports` e os filtros nas telas destino.
+- README, API e registro do projeto atualizados.
+
 ## 0.5.1 - Atalhos filtrados em Relatórios
 
 - Indicadores de Relatórios agora abrem módulos relacionados com filtros pela URL.

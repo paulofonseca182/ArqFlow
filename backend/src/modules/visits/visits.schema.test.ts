@@ -80,6 +80,11 @@ describe("visits schema", () => {
     ).toBe(false);
   });
 
+  it("valida escopo composto de visitas próximas", () => {
+    expect(listVisitsQuerySchema.parse({ scope: "UPCOMING_VISITS" }).scope).toBe("UPCOMING_VISITS");
+    expect(listVisitsQuerySchema.safeParse({ scope: "UPCOMING" }).success).toBe(false);
+  });
+
   it("exige ao menos um campo no update", () => {
     expect(updateVisitSchema.safeParse({}).success).toBe(false);
     expect(updateVisitSchema.safeParse({ status: "COMPLETED" }).success).toBe(true);

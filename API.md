@@ -94,13 +94,22 @@ type ApiError = {
   - Exclui apenas projetos sem vinculos.
   - Retorna `PROJECT_HAS_RELATIONS` com detalhes de impacto quando houver registros vinculados.
 
+## Orçamentos
+
+- `GET /budgets`
+  - Lista orçamentos com `page`, `pageSize`, `search`, `status`, `clientId`, `projectId`, `scope`, `createdFrom` e `createdTo`.
+  - `scope=OPEN_BUDGETS` filtra orçamentos em `DRAFT`, `SENT` ou `NEGOTIATION`.
+  - `createdFrom` e `createdTo` restringem o período de criação quando informados.
+
 ## Tarefas
 
 - `GET /tasks/meta`
   - Retorna status e prioridades oficiais de tarefas.
 - `GET /tasks`
-  - Lista tarefas com `page`, `pageSize`, `search`, `status`, `priority`, `projectId`, `dueFrom`, `dueTo` e `overdue`.
+  - Lista tarefas com `page`, `pageSize`, `search`, `status`, `priority`, `projectId`, `dueFrom`, `dueTo`, `overdue` e `scope`.
   - `overdue=true` filtra tarefas com `dueDate` menor que hoje e status diferente de `COMPLETED` ou `CANCELLED`.
+  - `scope=OVERDUE_TASKS` aplica a mesma regra de atraso como contrato explícito para relatórios.
+  - `scope=DUE_SOON_TASKS` filtra tarefas abertas com `dueDate` de hoje até os próximos 7 dias.
   - Busca por titulo, descricao, responsavel, notas, projeto e cliente do projeto.
 - `POST /tasks`
   - Cria tarefa com projeto opcional.
@@ -115,6 +124,13 @@ type ApiError = {
   - Cancela tarefa aberta.
 - `DELETE /tasks/:id`
   - Remove tarefa com confirmacao visual no frontend.
+
+## Visitas
+
+- `GET /visits`
+  - Lista visitas com `page`, `pageSize`, `search`, `clientId`, `projectId`, `type`, `status`, `dateFrom`, `dateTo` e `scope`.
+  - `scope=UPCOMING_VISITS` filtra visitas `SCHEDULED` de hoje até os próximos 7 dias.
+  - `dateFrom` e `dateTo` podem restringir o período retornado.
 
 ## Padrao de modulo backend
 

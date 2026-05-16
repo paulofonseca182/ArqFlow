@@ -40,6 +40,24 @@ describe("budgets service", () => {
     });
   });
 
+  it("monta escopo de orçamentos abertos com período de criação", () => {
+    expect(
+      buildBudgetWhere({
+        createdFrom: new Date(2026, 4, 1),
+        createdTo: new Date(2026, 4, 31),
+        scope: "OPEN_BUDGETS"
+      })
+    ).toEqual({
+      createdAt: {
+        gte: new Date(2026, 4, 1),
+        lte: new Date(2026, 4, 31, 23, 59, 59, 999)
+      },
+      status: {
+        in: ["DRAFT", "SENT", "NEGOTIATION"]
+      }
+    });
+  });
+
   it("monta busca por título, serviço, cliente, projeto e item", () => {
     expect(buildBudgetWhere({ search: "interiores" })).toEqual({
       OR: [

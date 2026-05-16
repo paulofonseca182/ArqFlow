@@ -2,6 +2,7 @@ import { z } from "zod";
 import { budgetStatuses, projectStatuses, projectTypes } from "../../shared/domain.js";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
+const budgetScopeValues = ["OPEN_BUDGETS"] as const;
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
 const optionalProjectId = z
@@ -26,11 +27,16 @@ export const budgetIdParamsSchema = z.object({
   id: z.string().cuid()
 });
 
-export const listBudgetsQuerySchema = paginationQuerySchema.extend({
-  clientId: z.string().cuid().optional(),
-  projectId: z.string().cuid().optional(),
-  status: z.enum(budgetStatuses).optional()
-});
+export const listBudgetsQuerySchema = paginationQuerySchema
+  .extend({
+    clientId: z.string().cuid().optional(),
+    projectId: z.string().cuid().optional(),
+    status: z.enum(budgetStatuses).optional(),
+    scope: z.enum(budgetScopeValues).optional(),
+    createdFrom: optionalDate,
+    createdTo: optionalDate
+  })
+  .superRefine(validateCreatedAtRange);
 
 const budgetItemSchema = z.object({
   description: z.string().trim().min(2, "descrição do item deve ter pelo menos 2 caracteres"),
@@ -122,6 +128,16 @@ function validateProjectDateRange(data: { startsAt?: Date; expectedDeliveryDate?
       code: z.ZodIssueCode.custom,
       path: ["expectedDeliveryDate"],
       message: "data de entrega não pode ser anterior à data de início"
+    });
+  }
+}
+
+function validateCreatedAtRange(data: { createdFrom?: Date; createdTo?: Date }, context: z.RefinementCtx) {
+  if (data.createdFrom && data.createdTo && data.createdTo < data.createdFrom) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["createdTo"],
+      message: "data final não pode ser anterior à data inicial"
     });
   }
 }

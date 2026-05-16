@@ -33,7 +33,7 @@ import type { PaginationMeta } from "../../types/api";
 import type { Project } from "../../types/project";
 import type { Task, TaskOption, TaskPriority, TaskStatus, TaskWriteInput } from "../../types/task";
 import { taskPriorityValues, taskStatusValues } from "../../types/task";
-import { getBooleanSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
+import { getBooleanSearchParam, getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { TaskFormModal } from "./TaskFormModal";
 
 const pageSize = 20;
@@ -45,7 +45,7 @@ const emptyPagination: PaginationMeta = {
   total: 0,
   totalPages: 1
 };
-const taskDeadlineScopeValues = ["OVERDUE"] as const;
+const taskDeadlineScopeValues = ["OVERDUE_TASKS", "DUE_SOON_TASKS"] as const;
 const fallbackStatuses: TaskOption<TaskStatus>[] = taskStatusValues.map((value) => ({ value, label: value }));
 const fallbackPriorities: TaskOption<TaskPriority>[] = taskPriorityValues.map((value) => ({ value, label: value }));
 type TaskDeadlineScope = (typeof taskDeadlineScopeValues)[number];
@@ -54,6 +54,8 @@ type TasksQuery = {
   status: TaskStatus | "";
   priority: TaskPriority | "";
   projectId: string;
+  dueFrom: string;
+  dueTo: string;
   scope: TaskDeadlineScope | "";
 };
 
@@ -71,6 +73,8 @@ export function TasksPage() {
   const [draftPriority, setDraftPriority] = useState<TaskPriority | "">(initialQuery.priority);
   const [draftDeadlineScope, setDraftDeadlineScope] = useState<TaskDeadlineScope | "">(initialQuery.scope);
   const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
+  const [draftDueFrom, setDraftDueFrom] = useState(initialQuery.dueFrom);
+  const [draftDueTo, setDraftDueTo] = useState(initialQuery.dueTo);
   const [query, setQuery] = useState<TasksQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -101,7 +105,9 @@ export function TasksPage() {
         status: query.status || undefined,
         priority: query.priority || undefined,
         projectId: query.projectId || undefined,
-        overdue: query.scope === "OVERDUE"
+        dueFrom: query.dueFrom || undefined,
+        dueTo: query.dueTo || undefined,
+        scope: query.scope || undefined
       });
 
       setTasks(result.data);
@@ -111,7 +117,7 @@ export function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.priority, query.projectId, query.scope, query.search, query.status]);
+  }, [page, query.dueFrom, query.dueTo, query.priority, query.projectId, query.scope, query.search, query.status]);
 
   useEffect(() => {
     const nextQuery = readTasksSearchParams(searchParams);
@@ -121,6 +127,8 @@ export function TasksPage() {
     setDraftPriority(nextQuery.priority);
     setDraftDeadlineScope(nextQuery.scope);
     setDraftProjectId(nextQuery.projectId);
+    setDraftDueFrom(nextQuery.dueFrom);
+    setDraftDueTo(nextQuery.dueTo);
     setPage(1);
     setQuery(nextQuery);
   }, [searchParamsKey]);
@@ -168,12 +176,14 @@ export function TasksPage() {
       status: draftStatus,
       priority: draftPriority,
       scope: draftDeadlineScope,
-      projectId: draftProjectId
+      projectId: draftProjectId,
+      dueFrom: draftDueFrom,
+      dueTo: draftDueTo
     });
   }
 
   function handleClearFilters() {
-    applyQuery({ search: "", status: "", priority: "", projectId: "", scope: "" });
+    applyQuery({ search: "", status: "", priority: "", projectId: "", dueFrom: "", dueTo: "", scope: "" });
   }
 
   function applyQuery(nextQuery: TasksQuery) {
@@ -182,6 +192,8 @@ export function TasksPage() {
     setDraftPriority(nextQuery.priority);
     setDraftDeadlineScope(nextQuery.scope);
     setDraftProjectId(nextQuery.projectId);
+    setDraftDueFrom(nextQuery.dueFrom);
+    setDraftDueTo(nextQuery.dueTo);
     setPage(1);
     setQuery(nextQuery);
     setSearchParams(toTasksSearchParams(nextQuery), { replace: true });
@@ -272,7 +284,7 @@ export function TasksPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.status || query.priority || query.projectId || query.scope);
+  const hasFilters = Boolean(query.search || query.status || query.priority || query.projectId || query.dueFrom || query.dueTo || query.scope);
 
   return (
     <PageWrapper
@@ -286,7 +298,7 @@ export function TasksPage() {
       title="Tarefas"
     >
       <Card>
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_150px_150px_210px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-[minmax(180px,1fr)_140px_140px_170px_minmax(180px,1fr)_145px_145px_auto]" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Tarefa, responsável, projeto ou cliente" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as TaskStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
@@ -306,7 +318,8 @@ export function TasksPage() {
           </Select>
           <Select label="Prazo" onChange={(event) => setDraftDeadlineScope(event.target.value as TaskDeadlineScope | "")} value={draftDeadlineScope}>
             <option value="">Todos</option>
-            <option value="OVERDUE">Atrasadas</option>
+            <option value="OVERDUE_TASKS">Atrasadas</option>
+            <option value="DUE_SOON_TASKS">Vencem em 7 dias</option>
           </Select>
           <Select label="Projeto" onChange={(event) => setDraftProjectId(event.target.value)} value={draftProjectId}>
             <option value="">Todos</option>
@@ -316,7 +329,9 @@ export function TasksPage() {
               </option>
             ))}
           </Select>
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
+          <Input label="Prazo de" onChange={(event) => setDraftDueFrom(event.target.value)} type="date" value={draftDueFrom} />
+          <Input label="Prazo até" onChange={(event) => setDraftDueTo(event.target.value)} type="date" value={draftDueTo} />
+          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-4 2xl:col-span-1">
             <Button className="min-w-28" title="Buscar tarefas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -502,13 +517,16 @@ export function TasksPage() {
 
 function readTasksSearchParams(searchParams: URLSearchParams): TasksQuery {
   const scope = getEnumSearchParam(searchParams, "scope", taskDeadlineScopeValues);
+  const legacyOverdue = getStringSearchParam(searchParams, "scope") === "OVERDUE" || getBooleanSearchParam(searchParams, "overdue");
 
   return {
     search: getStringSearchParam(searchParams, "search"),
     status: getEnumSearchParam(searchParams, "status", taskStatusValues),
     priority: getEnumSearchParam(searchParams, "priority", taskPriorityValues),
     projectId: getStringSearchParam(searchParams, "projectId"),
-    scope: scope || (getBooleanSearchParam(searchParams, "overdue") ? "OVERDUE" : "")
+    dueFrom: getDateSearchParam(searchParams, "dueFrom"),
+    dueTo: getDateSearchParam(searchParams, "dueTo"),
+    scope: scope || (legacyOverdue ? "OVERDUE_TASKS" : "")
   };
 }
 
@@ -529,6 +547,14 @@ function toTasksSearchParams(query: TasksQuery) {
 
   if (query.projectId) {
     searchParams.set("projectId", query.projectId);
+  }
+
+  if (query.dueFrom) {
+    searchParams.set("dueFrom", query.dueFrom);
+  }
+
+  if (query.dueTo) {
+    searchParams.set("dueTo", query.dueTo);
   }
 
   if (query.scope) {

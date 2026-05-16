@@ -49,6 +49,12 @@ describe("tasks schema", () => {
     expect(listTasksQuerySchema.safeParse({ overdue: "sim" }).success).toBe(false);
   });
 
+  it("valida escopos compostos de prazo", () => {
+    expect(listTasksQuerySchema.parse({ scope: "DUE_SOON_TASKS" }).scope).toBe("DUE_SOON_TASKS");
+    expect(listTasksQuerySchema.parse({ scope: "OVERDUE_TASKS" }).scope).toBe("OVERDUE_TASKS");
+    expect(listTasksQuerySchema.safeParse({ scope: "DUE_SOON" }).success).toBe(false);
+  });
+
   it("exige ao menos um campo no update", () => {
     expect(updateTaskSchema.safeParse({}).success).toBe(false);
     expect(updateTaskSchema.safeParse({ status: "IN_PROGRESS" }).success).toBe(true);

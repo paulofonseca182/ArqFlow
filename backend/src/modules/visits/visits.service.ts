@@ -188,10 +188,12 @@ export function buildVisitWhere({
   dateTo,
   projectId,
   search,
+  scope,
   status,
   type
-}: Partial<Pick<ListVisitsQuery, "clientId" | "dateFrom" | "dateTo" | "projectId" | "search" | "status" | "type">>): Prisma.VisitWhereInput {
+}: Partial<Pick<ListVisitsQuery, "clientId" | "dateFrom" | "dateTo" | "projectId" | "scope" | "search" | "status" | "type">>, today = new Date()): Prisma.VisitWhereInput {
   const where: Prisma.VisitWhereInput = {};
+  const dateFilters: Prisma.DateTimeFilter[] = [];
 
   if (clientId) {
     where.clientId = clientId;
@@ -205,15 +207,43 @@ export function buildVisitWhere({
     where.status = status;
   }
 
+  if (scope === "UPCOMING_VISITS" && !status) {
+    where.status = "SCHEDULED";
+  }
+
+  if (scope === "UPCOMING_VISITS" && status) {
+    where.AND = [
+      {
+        status: "SCHEDULED"
+      }
+    ];
+  }
+
   if (type) {
     where.type = type;
   }
 
+  if (scope === "UPCOMING_VISITS") {
+    dateFilters.push({
+      gte: startOfDay(today),
+      lte: endOfDay(addDays(startOfDay(today), 7))
+    });
+  }
+
   if (dateFrom || dateTo) {
-    where.date = {
+    dateFilters.push({
       ...(dateFrom ? { gte: startOfDay(dateFrom) } : {}),
       ...(dateTo ? { lte: endOfDay(dateTo) } : {})
-    };
+    });
+  }
+
+  if (dateFilters.length === 1) {
+    where.date = dateFilters[0];
+  } else if (dateFilters.length > 1) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      ...dateFilters.map((date) => ({ date }))
+    ];
   }
 
   if (search) {
@@ -305,4 +335,10 @@ function startOfDay(date: Date) {
 
 function endOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
 }

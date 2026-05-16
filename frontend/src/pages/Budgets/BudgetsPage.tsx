@@ -23,7 +23,7 @@ import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
 import type { ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
-import { getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
+import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { ApproveBudgetModal } from "./ApproveBudgetModal";
 import { BudgetFormModal } from "./BudgetFormModal";
 
@@ -33,16 +33,21 @@ const actionIconStrokeWidth = 1.75;
 const fallbackStatuses: BudgetOption<BudgetStatus>[] = budgetStatusValues.map((value) => ({ value, label: value }));
 const fallbackProjectTypes: ProjectOption<ProjectType>[] = projectTypeValues.map((value) => ({ value, label: value }));
 const fallbackProjectStatuses: ProjectOption<ProjectStatus>[] = projectStatusValues.map((value) => ({ value, label: value }));
+const budgetScopeValues = ["OPEN_BUDGETS"] as const;
 const emptyPagination: PaginationMeta = {
   page: 1,
   pageSize,
   total: 0,
   totalPages: 1
 };
+type BudgetScope = (typeof budgetScopeValues)[number];
 type BudgetsQuery = {
   search: string;
+  scope: BudgetScope | "";
   status: BudgetStatus | "";
   clientId: string;
+  createdFrom: string;
+  createdTo: string;
 };
 
 export function BudgetsPage() {
@@ -56,8 +61,11 @@ export function BudgetsPage() {
   const [projectStatuses, setProjectStatuses] = useState<ProjectOption<ProjectStatus>[]>(fallbackProjectStatuses);
   const [page, setPage] = useState(1);
   const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftScope, setDraftScope] = useState<BudgetScope | "">(initialQuery.scope);
   const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">(initialQuery.status);
   const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
+  const [draftCreatedFrom, setDraftCreatedFrom] = useState(initialQuery.createdFrom);
+  const [draftCreatedTo, setDraftCreatedTo] = useState(initialQuery.createdTo);
   const [query, setQuery] = useState<BudgetsQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -87,8 +95,11 @@ export function BudgetsPage() {
         page,
         pageSize,
         search: query.search,
+        scope: query.scope || undefined,
         status: query.status || undefined,
-        clientId: query.clientId || undefined
+        clientId: query.clientId || undefined,
+        createdFrom: query.createdFrom || undefined,
+        createdTo: query.createdTo || undefined
       });
 
       setBudgets(result.data);
@@ -98,14 +109,17 @@ export function BudgetsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.clientId, query.search, query.status]);
+  }, [page, query.clientId, query.createdFrom, query.createdTo, query.scope, query.search, query.status]);
 
   useEffect(() => {
     const nextQuery = readBudgetsSearchParams(searchParams);
 
     setDraftSearch(nextQuery.search);
+    setDraftScope(nextQuery.scope);
     setDraftStatus(nextQuery.status);
     setDraftClientId(nextQuery.clientId);
+    setDraftCreatedFrom(nextQuery.createdFrom);
+    setDraftCreatedTo(nextQuery.createdTo);
     setPage(1);
     setQuery(nextQuery);
   }, [searchParamsKey]);
@@ -155,19 +169,25 @@ export function BudgetsPage() {
     event.preventDefault();
     applyQuery({
       search: draftSearch.trim(),
+      scope: draftScope,
       status: draftStatus,
-      clientId: draftClientId
+      clientId: draftClientId,
+      createdFrom: draftCreatedFrom,
+      createdTo: draftCreatedTo
     });
   }
 
   function handleClearFilters() {
-    applyQuery({ search: "", status: "", clientId: "" });
+    applyQuery({ search: "", scope: "", status: "", clientId: "", createdFrom: "", createdTo: "" });
   }
 
   function applyQuery(nextQuery: BudgetsQuery) {
     setDraftSearch(nextQuery.search);
+    setDraftScope(nextQuery.scope);
     setDraftStatus(nextQuery.status);
     setDraftClientId(nextQuery.clientId);
+    setDraftCreatedFrom(nextQuery.createdFrom);
+    setDraftCreatedTo(nextQuery.createdTo);
     setPage(1);
     setQuery(nextQuery);
     setSearchParams(toBudgetsSearchParams(nextQuery), { replace: true });
@@ -274,7 +294,7 @@ export function BudgetsPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.status || query.clientId);
+  const hasFilters = Boolean(query.search || query.scope || query.status || query.clientId || query.createdFrom || query.createdTo);
 
   return (
     <PageWrapper
@@ -288,8 +308,12 @@ export function BudgetsPage() {
       title="Orçamentos"
     >
       <Card>
-        <form className="grid gap-3 lg:grid-cols-[1fr_190px_220px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_170px_180px_210px_145px_145px_auto]" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Orçamento, cliente, serviço ou item" value={draftSearch} />
+          <Select label="Visão" onChange={(event) => setDraftScope(event.target.value as BudgetScope | "")} value={draftScope}>
+            <option value="">Todos</option>
+            <option value="OPEN_BUDGETS">Orçamentos abertos</option>
+          </Select>
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as BudgetStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
             {statuses.map((status) => (
@@ -306,7 +330,9 @@ export function BudgetsPage() {
               </option>
             ))}
           </Select>
-          <div className="flex items-end gap-2">
+          <Input label="Criado de" onChange={(event) => setDraftCreatedFrom(event.target.value)} type="date" value={draftCreatedFrom} />
+          <Input label="Criado até" onChange={(event) => setDraftCreatedTo(event.target.value)} type="date" value={draftCreatedTo} />
+          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
             <Button className="min-w-28" title="Buscar orçamentos" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -493,8 +519,11 @@ export function BudgetsPage() {
 function readBudgetsSearchParams(searchParams: URLSearchParams): BudgetsQuery {
   return {
     search: getStringSearchParam(searchParams, "search"),
+    scope: getEnumSearchParam(searchParams, "scope", budgetScopeValues),
     status: getEnumSearchParam(searchParams, "status", budgetStatusValues),
-    clientId: getStringSearchParam(searchParams, "clientId")
+    clientId: getStringSearchParam(searchParams, "clientId"),
+    createdFrom: getDateSearchParam(searchParams, "createdFrom"),
+    createdTo: getDateSearchParam(searchParams, "createdTo")
   };
 }
 

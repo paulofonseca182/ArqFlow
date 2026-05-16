@@ -72,6 +72,7 @@ O módulo de Etapas de Projeto já está integrado ao fluxo de Projetos:
 O módulo de Orçamentos já possui uma primeira fatia vertical:
 
 - API REST com listagem, busca, filtro por status e cliente.
+- Escopo composto `OPEN_BUDGETS` em `/budgets?scope=OPEN_BUDGETS`, com filtro opcional por `createdFrom` e `createdTo`.
 - Criação e edição de orçamento com cliente obrigatório e itens.
 - Cálculo de `totalAmount`, `finalAmount` e total de cada item sempre no backend.
 - Validação backend de valores positivos, desconto não negativo e pelo menos 1 item.
@@ -127,6 +128,7 @@ O módulo de Relatórios foi escolhido como próxima fatia útil após a remoç�
 - Operação consolidada com tarefas abertas, atrasadas, urgentes, vencendo em 7 dias e visitas agendadas.
 - Atalhos nos indicadores para abrir Orçamentos, Financeiro, Tarefas e Visitas já filtrados.
 - Atalhos de recebíveis financeiros preservam o período ativo usando `dueFrom` e `dueTo`.
+- Atalhos compostos usam contratos explícitos do backend: `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS`.
 - Sem dependência nova de gráficos; a interface usa cards, tabelas e barras simples do design system.
 
 ## Tarefas
@@ -138,7 +140,8 @@ O módulo de Tarefas iniciou a organização operacional do escritório:
 - Status oficiais: Pendente, Em andamento, Concluída e Cancelada.
 - Prioridades oficiais: Baixa, Média, Alta e Urgente.
 - Prazo opcional com filtro por intervalo.
-- Filtro derivado de tarefas atrasadas via `overdue=true` na API e opção visual `Prazo: Atrasadas`.
+- Escopos compostos `OVERDUE_TASKS` e `DUE_SOON_TASKS` em `/tasks?scope=...`, combináveis com `dueFrom` e `dueTo`.
+- Filtro derivado legado de tarefas atrasadas via `overdue=true` mantido por compatibilidade.
 - Atraso de tarefa calculado dinamicamente pelo backend.
 - Tela `/tasks` conectada ao backend real.
 - Formulário com React Hook Form e Zod.
@@ -157,11 +160,12 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 - Tela `/visits` conectada ao backend real.
 - Formulário com React Hook Form e Zod.
 - Filtros por busca, status, tipo, cliente e projeto.
+- Escopo composto `UPCOMING_VISITS` em `/visits?scope=UPCOMING_VISITS`, com janela dos próximos 7 dias calculada no backend.
 - Ações rápidas com tooltips para editar, concluir, reabrir, cancelar e excluir.
 
 ## Ponto de retomada
 
-Próxima etapa: validar visualmente os atalhos de `/reports` no navegador e, depois, avaliar escopos compostos como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
+Escopos compostos de `/reports` foram implementados e validados visualmente com contratos explícitos no backend e filtros visíveis no frontend. A próxima etapa recomendada é refinar Relatórios com necessidades reais do escritório, sem iniciar novo módulo antes da hora.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 

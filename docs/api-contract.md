@@ -47,9 +47,12 @@ type PaginatedResponse<T> = {
 - `/projects/:projectId/steps`
 - `/steps/:stepId`
 - `/budgets`
+- `/budgets?scope=OPEN_BUDGETS&createdFrom=YYYY-MM-DD&createdTo=YYYY-MM-DD`
 - `/payments`
 - `/tasks`
 - `/tasks?overdue=true`
+- `/tasks?scope=OVERDUE_TASKS|DUE_SOON_TASKS&dueFrom=YYYY-MM-DD&dueTo=YYYY-MM-DD`
 - `/visits`
+- `/visits?scope=UPCOMING_VISITS&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD`
 - `/reports/overview?period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `/dashboard`

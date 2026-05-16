@@ -51,4 +51,5 @@
 - Relatórios consolidados em `/reports` com dados reais de clientes, comercial, projetos, financeiro, tarefas e visitas.
 - Filtros por período concluídos em Relatórios.
 - Atalhos filtrados concluídos para Orçamentos, Financeiro, Tarefas e Visitas.
-- Próxima evolução recomendada: validar os atalhos no navegador e avaliar escopos compostos ainda sem filtro exato.
+- Escopos compostos concluídos para orçamentos abertos, tarefas atrasadas, tarefas vencendo em 7 dias e visitas próximas.
+- Próxima evolução recomendada: refinar relatórios com detalhamento de indicadores, exportação simples ou filtros adicionais antes de abrir novos módulos.

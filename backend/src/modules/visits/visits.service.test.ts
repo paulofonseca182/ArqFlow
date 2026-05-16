@@ -41,6 +41,16 @@ describe("visits service", () => {
     });
   });
 
+  it("monta escopo de visitas próximas", () => {
+    expect(buildVisitWhere({ scope: "UPCOMING_VISITS" }, new Date(2026, 4, 13))).toEqual({
+      date: {
+        gte: new Date(2026, 4, 13),
+        lte: new Date(2026, 4, 20, 23, 59, 59, 999)
+      },
+      status: "SCHEDULED"
+    });
+  });
+
   it("monta busca por tipo, endereço, observações, cliente e projeto", () => {
     expect(buildVisitWhere({ search: "obra" })).toEqual({
       OR: [

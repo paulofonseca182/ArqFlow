@@ -62,6 +62,49 @@ describe("tasks service", () => {
     });
   });
 
+  it("monta escopo de tarefas vencendo em 7 dias", () => {
+    expect(buildTaskWhere({ scope: "DUE_SOON_TASKS" }, new Date(2026, 4, 13))).toEqual({
+      dueDate: {
+        gte: new Date(2026, 4, 13),
+        lte: new Date(2026, 4, 20, 23, 59, 59, 999)
+      },
+      status: {
+        notIn: ["COMPLETED", "CANCELLED"]
+      }
+    });
+  });
+
+  it("combina escopo de tarefas vencendo em 7 dias com período informado", () => {
+    expect(
+      buildTaskWhere(
+        {
+          dueFrom: new Date(2026, 4, 15),
+          dueTo: new Date(2026, 4, 31),
+          scope: "DUE_SOON_TASKS"
+        },
+        new Date(2026, 4, 13)
+      )
+    ).toEqual({
+      AND: [
+        {
+          dueDate: {
+            gte: new Date(2026, 4, 13),
+            lte: new Date(2026, 4, 20, 23, 59, 59, 999)
+          }
+        },
+        {
+          dueDate: {
+            gte: new Date(2026, 4, 15),
+            lte: new Date(2026, 4, 31, 23, 59, 59, 999)
+          }
+        }
+      ],
+      status: {
+        notIn: ["COMPLETED", "CANCELLED"]
+      }
+    });
+  });
+
   it("combina filtro de atraso com status solicitado", () => {
     expect(buildTaskWhere({ overdue: true, status: "IN_PROGRESS" }, new Date(2026, 4, 13))).toEqual({
       AND: [

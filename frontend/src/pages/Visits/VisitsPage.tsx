@@ -46,7 +46,7 @@ import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import type { Visit, VisitOption, VisitStatus, VisitType, VisitWriteInput } from "../../types/visit";
 import { visitStatusValues, visitTypeValues } from "../../types/visit";
-import { getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
+import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { VisitFormModal } from "./VisitFormModal";
 
 const pageSize = 20;
@@ -60,12 +60,17 @@ const emptyPagination: PaginationMeta = {
 };
 const fallbackStatuses: VisitOption<VisitStatus>[] = visitStatusValues.map((value) => ({ value, label: value }));
 const fallbackTypes: VisitOption<VisitType>[] = visitTypeValues.map((value) => ({ value, label: value }));
+const visitScopeValues = ["UPCOMING_VISITS"] as const;
+type VisitScope = (typeof visitScopeValues)[number];
 type VisitsQuery = {
   search: string;
   clientId: string;
   projectId: string;
   type: VisitType | "";
   status: VisitStatus | "";
+  scope: VisitScope | "";
+  dateFrom: string;
+  dateTo: string;
 };
 
 export function VisitsPage() {
@@ -83,6 +88,7 @@ export function VisitsPage() {
   const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
   const [draftType, setDraftType] = useState<VisitType | "">(initialQuery.type);
   const [draftStatus, setDraftStatus] = useState<VisitStatus | "">(initialQuery.status);
+  const [draftScope, setDraftScope] = useState<VisitScope | "">(initialQuery.scope);
   const [query, setQuery] = useState<VisitsQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -120,7 +126,10 @@ export function VisitsPage() {
         clientId: query.clientId || undefined,
         projectId: query.projectId || undefined,
         type: query.type || undefined,
-        status: query.status || undefined
+        status: query.status || undefined,
+        scope: query.scope || undefined,
+        dateFrom: query.dateFrom || undefined,
+        dateTo: query.dateTo || undefined
       });
 
       setVisits(result.data);
@@ -130,7 +139,7 @@ export function VisitsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.clientId, query.projectId, query.search, query.status, query.type]);
+  }, [page, query.clientId, query.dateFrom, query.dateTo, query.projectId, query.scope, query.search, query.status, query.type]);
 
   useEffect(() => {
     const nextQuery = readVisitsSearchParams(searchParams);
@@ -140,6 +149,7 @@ export function VisitsPage() {
     setDraftProjectId(nextQuery.projectId);
     setDraftType(nextQuery.type);
     setDraftStatus(nextQuery.status);
+    setDraftScope(nextQuery.scope);
     setPage(1);
     setQuery(nextQuery);
   }, [searchParamsKey]);
@@ -204,12 +214,15 @@ export function VisitsPage() {
       clientId: draftClientId,
       projectId: draftProjectId,
       type: draftType,
-      status: draftStatus
+      status: draftStatus,
+      scope: draftScope,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo
     });
   }
 
   function handleClearFilters() {
-    applyQuery({ search: "", clientId: "", projectId: "", type: "", status: "" });
+    applyQuery({ search: "", clientId: "", projectId: "", type: "", status: "", scope: "", dateFrom: "", dateTo: "" });
   }
 
   function applyQuery(nextQuery: VisitsQuery) {
@@ -218,6 +231,7 @@ export function VisitsPage() {
     setDraftProjectId(nextQuery.projectId);
     setDraftType(nextQuery.type);
     setDraftStatus(nextQuery.status);
+    setDraftScope(nextQuery.scope);
     setPage(1);
     setQuery(nextQuery);
     setSearchParams(toVisitsSearchParams(nextQuery), { replace: true });
@@ -308,7 +322,7 @@ export function VisitsPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.clientId || query.projectId || query.type || query.status);
+  const hasFilters = Boolean(query.search || query.clientId || query.projectId || query.type || query.status || query.scope || query.dateFrom || query.dateTo);
 
   return (
     <PageWrapper
@@ -323,7 +337,7 @@ export function VisitsPage() {
     >
       <Card>
         <form
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,2fr)_150px_150px_minmax(150px,1fr)_minmax(150px,1fr)] 2xl:grid-cols-[minmax(180px,1fr)_150px_150px_minmax(170px,220px)_minmax(170px,220px)_auto]"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_150px_170px_minmax(170px,220px)_minmax(170px,220px)_auto]"
           onSubmit={handleFilterSubmit}
         >
           <Input
@@ -348,6 +362,10 @@ export function VisitsPage() {
               </option>
             ))}
           </Select>
+          <Select label="Agenda" onChange={(event) => setDraftScope(event.target.value as VisitScope | "")} value={draftScope}>
+            <option value="">Todas</option>
+            <option value="UPCOMING_VISITS">Próximos 7 dias</option>
+          </Select>
           <Select label="Cliente" onChange={(event) => setDraftClientId(event.target.value)} value={draftClientId}>
             <option value="">Todos</option>
             {clients.map((client) => (
@@ -364,7 +382,7 @@ export function VisitsPage() {
               </option>
             ))}
           </Select>
-          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-5 2xl:col-span-1 2xl:justify-self-end">
+          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1 2xl:justify-self-end">
             <Button className="min-w-28" title="Buscar visitas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -377,6 +395,11 @@ export function VisitsPage() {
             </ActionIconButton>
           </div>
         </form>
+        {query.dateFrom || query.dateTo ? (
+          <p className="mt-3 text-xs text-text-muted">
+            Período aplicado pelo relatório: {query.dateFrom || "início"} a {query.dateTo || "fim"}.
+          </p>
+        ) : null}
       </Card>
 
       {error ? (
@@ -558,7 +581,10 @@ function readVisitsSearchParams(searchParams: URLSearchParams): VisitsQuery {
     clientId: getStringSearchParam(searchParams, "clientId"),
     projectId: getStringSearchParam(searchParams, "projectId"),
     type: getEnumSearchParam(searchParams, "type", visitTypeValues),
-    status: getEnumSearchParam(searchParams, "status", visitStatusValues)
+    status: getEnumSearchParam(searchParams, "status", visitStatusValues),
+    scope: getEnumSearchParam(searchParams, "scope", visitScopeValues),
+    dateFrom: getDateSearchParam(searchParams, "dateFrom"),
+    dateTo: getDateSearchParam(searchParams, "dateTo")
   };
 }
 

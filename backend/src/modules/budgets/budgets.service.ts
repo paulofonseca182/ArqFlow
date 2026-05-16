@@ -89,6 +89,14 @@ export function getBudgetsMeta() {
   };
 }
 
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function endOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
 export async function listBudgets(query: ListBudgetsQuery) {
   const { page, pageSize } = query;
   const where = buildBudgetWhere(query);
@@ -329,10 +337,13 @@ export async function deleteBudget(id: string) {
 
 export function buildBudgetWhere({
   clientId,
+  createdFrom,
+  createdTo,
   projectId,
   search,
+  scope,
   status
-}: Pick<ListBudgetsQuery, "clientId" | "projectId" | "search" | "status">): Prisma.BudgetWhereInput {
+}: Partial<Pick<ListBudgetsQuery, "clientId" | "createdFrom" | "createdTo" | "projectId" | "scope" | "search" | "status">>): Prisma.BudgetWhereInput {
   const where: Prisma.BudgetWhereInput = {};
 
   if (clientId) {
@@ -345,6 +356,29 @@ export function buildBudgetWhere({
 
   if (status) {
     where.status = status;
+  }
+
+  if (scope === "OPEN_BUDGETS" && !status) {
+    where.status = {
+      in: ["DRAFT", "SENT", "NEGOTIATION"]
+    };
+  }
+
+  if (scope === "OPEN_BUDGETS" && status) {
+    where.AND = [
+      {
+        status: {
+          in: ["DRAFT", "SENT", "NEGOTIATION"]
+        }
+      }
+    ];
+  }
+
+  if (createdFrom || createdTo) {
+    where.createdAt = {
+      ...(createdFrom ? { gte: startOfDay(createdFrom) } : {}),
+      ...(createdTo ? { lte: endOfDay(createdTo) } : {})
+    };
   }
 
   if (search) {
