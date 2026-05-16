@@ -11,3 +11,10 @@ O ArqFlow ainda esta em fundacao tecnica. O uso final sera documentado a cada mo
 5. Acompanhar etapas.
 6. Registrar financeiro, tarefas e visitas.
 7. Finalizar projeto.
+
+## Relatórios
+
+- Acesse `/reports` para ver uma visão consolidada do escritório.
+- Use mês atual, ano atual ou intervalo personalizado.
+- Clique nos indicadores com seta para abrir o módulo relacionado já filtrado.
+- Use `Limpar filtros` no módulo destino para voltar à listagem completa.

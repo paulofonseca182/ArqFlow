@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   Banknote,
@@ -49,6 +50,7 @@ import type {
   RegisterPaymentInput
 } from "../../types/financial";
 import { paymentMethodValues, paymentStatusValues } from "../../types/financial";
+import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import type { Project } from "../../types/project";
 import { GenerateInstallmentsModal } from "./GenerateInstallmentsModal";
 import { PaymentFormModal } from "./PaymentFormModal";
@@ -80,24 +82,31 @@ const fallbackFinancialMeta: FinancialMeta = {
   statuses: paymentStatusValues.map((value) => ({ value, label: value })),
   methods: paymentMethodValues.map((value) => ({ value, label: value }))
 };
+type FinancialQuery = {
+  search: string;
+  status: PaymentStatus | "";
+  projectId: string;
+  clientId: string;
+  dueFrom: string;
+  dueTo: string;
+};
 
 export function FinancialPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = readFinancialSearchParams(searchParams);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [meta, setMeta] = useState<FinancialMeta>(fallbackFinancialMeta);
   const [summary, setSummary] = useState(emptySummary);
   const [page, setPage] = useState(1);
-  const [draftSearch, setDraftSearch] = useState("");
-  const [draftStatus, setDraftStatus] = useState<PaymentStatus | "">("");
-  const [draftProjectId, setDraftProjectId] = useState("");
-  const [draftClientId, setDraftClientId] = useState("");
-  const [query, setQuery] = useState<{ search: string; status: PaymentStatus | ""; projectId: string; clientId: string }>({
-    search: "",
-    status: "",
-    projectId: "",
-    clientId: ""
-  });
+  const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftStatus, setDraftStatus] = useState<PaymentStatus | "">(initialQuery.status);
+  const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
+  const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
+  const [draftDueFrom, setDraftDueFrom] = useState(initialQuery.dueFrom);
+  const [draftDueTo, setDraftDueTo] = useState(initialQuery.dueTo);
+  const [query, setQuery] = useState<FinancialQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +132,7 @@ export function FinancialPage() {
   }, [projects]);
   const statusLabelByValue = useMemo(() => new Map(meta.statuses.map((status) => [status.value, status.label])), [meta.statuses]);
   const methodLabelByValue = useMemo(() => new Map(meta.methods.map((method) => [method.value, method.label])), [meta.methods]);
+  const searchParamsKey = searchParams.toString();
 
   const loadPayments = useCallback(async () => {
     setLoading(true);
@@ -135,7 +145,9 @@ export function FinancialPage() {
         search: query.search,
         status: query.status || undefined,
         projectId: query.projectId || undefined,
-        clientId: query.clientId || undefined
+        clientId: query.clientId || undefined,
+        dueFrom: query.dueFrom || undefined,
+        dueTo: query.dueTo || undefined
       });
 
       setPayments(result.data);
@@ -145,7 +157,7 @@ export function FinancialPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.clientId, query.projectId, query.search, query.status]);
+  }, [page, query.clientId, query.dueFrom, query.dueTo, query.projectId, query.search, query.status]);
 
   const loadSummary = useCallback(async () => {
     try {
@@ -154,6 +166,19 @@ export function FinancialPage() {
       setError(getErrorMessage(requestError));
     }
   }, []);
+
+  useEffect(() => {
+    const nextQuery = readFinancialSearchParams(searchParams);
+
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftProjectId(nextQuery.projectId);
+    setDraftClientId(nextQuery.clientId);
+    setDraftDueFrom(nextQuery.dueFrom);
+    setDraftDueTo(nextQuery.dueTo);
+    setPage(1);
+    setQuery(nextQuery);
+  }, [searchParamsKey]);
 
   useEffect(() => {
     let active = true;
@@ -197,22 +222,30 @@ export function FinancialPage() {
 
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setQuery({
+    applyQuery({
       search: draftSearch.trim(),
       status: draftStatus,
       projectId: draftProjectId,
-      clientId: draftClientId
+      clientId: draftClientId,
+      dueFrom: draftDueFrom,
+      dueTo: draftDueTo
     });
   }
 
   function handleClearFilters() {
-    setDraftSearch("");
-    setDraftStatus("");
-    setDraftProjectId("");
-    setDraftClientId("");
+    applyQuery({ search: "", status: "", projectId: "", clientId: "", dueFrom: "", dueTo: "" });
+  }
+
+  function applyQuery(nextQuery: FinancialQuery) {
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftProjectId(nextQuery.projectId);
+    setDraftClientId(nextQuery.clientId);
+    setDraftDueFrom(nextQuery.dueFrom);
+    setDraftDueTo(nextQuery.dueTo);
     setPage(1);
-    setQuery({ search: "", status: "", projectId: "", clientId: "" });
+    setQuery(nextQuery);
+    setSearchParams(toFinancialSearchParams(nextQuery), { replace: true });
   }
 
   function handleOpenCreate() {
@@ -318,7 +351,7 @@ export function FinancialPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.status || query.projectId || query.clientId);
+  const hasFilters = Boolean(query.search || query.status || query.projectId || query.clientId || query.dueFrom || query.dueTo);
 
   return (
     <PageWrapper
@@ -345,7 +378,10 @@ export function FinancialPage() {
       </section>
 
       <Card>
-        <form className="grid gap-3 xl:grid-cols-[1fr_180px_220px_220px_auto]" onSubmit={handleFilterSubmit}>
+        <form
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_190px_190px_145px_145px_auto]"
+          onSubmit={handleFilterSubmit}
+        >
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Parcela, projeto ou cliente" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as PaymentStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
@@ -371,7 +407,9 @@ export function FinancialPage() {
               </option>
             ))}
           </Select>
-          <div className="flex items-end gap-2">
+          <Input label="De" onChange={(event) => setDraftDueFrom(event.target.value)} type="date" value={draftDueFrom} />
+          <Input label="Até" onChange={(event) => setDraftDueTo(event.target.value)} type="date" value={draftDueTo} />
+          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
             <Button className="min-w-28" title="Buscar parcelas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -580,6 +618,32 @@ export function FinancialPage() {
       </Modal>
     </PageWrapper>
   );
+}
+
+function readFinancialSearchParams(searchParams: URLSearchParams): FinancialQuery {
+  const dueFrom = getDateSearchParam(searchParams, "dueFrom");
+  const dueTo = getDateSearchParam(searchParams, "dueTo");
+
+  return {
+    search: getStringSearchParam(searchParams, "search"),
+    status: getEnumSearchParam(searchParams, "status", paymentStatusValues),
+    projectId: getStringSearchParam(searchParams, "projectId"),
+    clientId: getStringSearchParam(searchParams, "clientId"),
+    dueFrom,
+    dueTo: dueFrom && dueTo && dueTo < dueFrom ? "" : dueTo
+  };
+}
+
+function toFinancialSearchParams(query: FinancialQuery) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  return searchParams;
 }
 
 function canRegisterPayment(payment: Payment) {

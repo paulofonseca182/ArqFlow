@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.1 - Atalhos filtrados em Relatórios
+
+- Indicadores de Relatórios agora abrem módulos relacionados com filtros pela URL.
+- Financeiro, Orçamentos, Tarefas e Visitas passam a hidratar filtros iniciais a partir de query params.
+- Filtro visual `Prazo: Atrasadas` adicionado em Tarefas.
+- API de Tarefas aceita `overdue=true` para listar atrasos com regra dinâmica do backend.
+- Helpers de query string e testes frontend adicionados.
+- README, API e registro do projeto atualizados.
+
 ## 0.5.0 - Dashboard e Relatórios
 
 - Dashboard ampliado com indicadores de tarefas, visitas e orçamentos abertos.
@@ -7,6 +16,7 @@
 - Endpoint `GET /reports/overview` adicionado.
 - Tela `/reports` substituiu o placeholder por relatórios reais.
 - Relatórios consolidam clientes, comercial, projetos, financeiro, tarefas e visitas.
+- Filtros de período adicionados em Relatórios: mês atual, ano atual e intervalo personalizado.
 - Testes de service para Relatórios adicionados.
 - README, API, Roadmap e registro do projeto atualizados.
 

@@ -763,6 +763,7 @@ Backend:
 backend/src/modules/reports/
   reports.routes.ts
   reports.controller.ts
+  reports.schema.ts
   reports.service.ts
   reports.service.test.ts
 ```
@@ -775,16 +776,18 @@ frontend/src/pages/Reports/
 
 frontend/src/services/reports.ts
 frontend/src/types/reports.ts
+frontend/src/utils/searchParams.ts
 ```
 
 Implementado no backend:
 
 - `GET /reports/overview`;
+- filtros `period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM`, com `from` e `to` obrigatórios para período personalizado;
 - consolidação real de clientes, orçamentos, projetos, financeiro, tarefas e visitas;
 - contagem de clientes totais e ativos;
 - conversão comercial por orçamentos aprovados versus recusados;
-- valores aprovados e valores em aberto de orçamentos;
-- reaproveitamento do resumo financeiro já calculado no backend;
+- valores aprovados e valores em aberto de orçamentos conforme o período ativo;
+- resumo financeiro do período, usando `paidAt` para recebido e `dueDate` para recebíveis/atrasos;
 - carteira de projetos por status e tipo;
 - progresso médio de projetos ativos a partir das etapas;
 - total contratado da carteira;
@@ -798,27 +801,33 @@ Implementado no frontend:
 - rota `/reports` substituiu o placeholder por uma tela real;
 - service Axios para consumir `/reports/overview`;
 - tipos TypeScript dedicados para o contrato de relatórios;
+- filtros de período para mês atual, ano atual e intervalo personalizado;
 - cards de clientes ativos, projetos ativos, receita recebida e valor a receber;
 - seção comercial com taxa de conversão, valores e distribuição por status;
 - seção de projetos com progresso médio, total contratado e distribuição por status;
 - seção operacional com tarefas e visitas;
 - tabela de recebíveis por projeto;
+- atalhos em indicadores para abrir módulos relacionados já filtrados;
+- atalhos de Financeiro preservam o período ativo quando o filtro usa vencimento (`dueFrom` e `dueTo`);
+- Orçamentos, Financeiro, Tarefas e Visitas passam a ler filtros da URL e preencher os campos visuais automaticamente;
 - atualização manual e estados de carregamento, erro e vazio.
 
 Regras consideradas:
 
 - relatórios não recalculam regra financeira crítica no frontend;
 - valores monetários e status dinâmicos vêm do backend;
+- datas do período são validadas no backend;
+- período personalizado exige data inicial e final;
 - progresso usa etapas concluídas sobre total;
 - atrasos de tarefas e pagamentos continuam dinâmicos;
+- atalhos só foram aplicados em métricas com filtro de destino representável hoje;
 - nenhuma dependência nova de gráficos foi adicionada.
 
 Ainda falta:
 
-- filtros por período;
 - exportação futura, se fizer sentido;
 - testes de frontend da tela de relatórios;
-- atalhos para abrir os módulos filtrados a partir dos indicadores.
+- ampliar escopos compostos como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
 
 ## Modulo de Tarefas - estado atual
 
@@ -870,13 +879,14 @@ Implementado no backend:
 - metadados de status e prioridades oficiais;
 - listagem paginada;
 - busca por título, descrição, responsável, notas, projeto e cliente do projeto;
-- filtros por projeto, status, prioridade e intervalo de prazo;
+- filtros por projeto, status, prioridade, intervalo de prazo e tarefas atrasadas;
 - criação de tarefa com projeto opcional;
 - validação de projeto existente quando `projectId` e informado;
 - edição de tarefa;
 - conclusão, reabertura e cancelamento por endpoints dedicados;
 - exclusão de tarefa;
 - atraso calculado dinamicamente pelo backend com `dueDate < hoje` e status diferente de concluída/cancelada;
+- filtro `overdue=true` aplica a mesma regra dinâmica na listagem;
 - testes de schema e service.
 
 Implementado no frontend:
@@ -884,7 +894,8 @@ Implementado no frontend:
 - rota `/tasks` substituiu o placeholder por uma tela real;
 - service Axios para consumir `/tasks`;
 - tipos TypeScript para tarefa, status, prioridade e projeto resumido;
-- tela com busca, filtros por status, prioridade e projeto;
+- tela com busca, filtros por status, prioridade, prazo e projeto;
+- opção visual `Prazo: Atrasadas`, usada pelos atalhos de Relatórios;
 - tabela com tarefa, projeto, responsável, prioridade, status, prazo e ações;
 - badges por status, prioridade e atraso;
 - modal de criação/edição com React Hook Form e Zod;
@@ -1456,12 +1467,14 @@ Usuário beneficiado:
 Fluxo implementado:
 
 1. Usuário acessa `/reports`.
-2. A tela chama `GET /reports/overview`.
+2. A tela chama `GET /reports/overview` com o período ativo.
 3. O backend consolida dados reais de clientes, orçamentos, projetos, financeiro, tarefas e visitas.
 4. A tela exibe cards executivos.
 5. A tela mostra blocos de Comercial, Projetos e Operação.
 6. A tela lista projetos com recebíveis pendentes ou atrasados.
 7. Usuário pode atualizar os relatórios manualmente.
+8. Usuário pode alternar entre mês atual, ano atual e intervalo personalizado.
+9. Usuário pode clicar em indicadores para abrir o módulo relacionado já filtrado.
 
 Campos exibidos:
 
@@ -1469,6 +1482,7 @@ Campos exibidos:
 - projetos ativos;
 - receita recebida;
 - valor a receber;
+- período ativo;
 - taxa de conversão comercial;
 - valores aprovados e em aberto;
 - progresso médio de projetos;
@@ -1476,11 +1490,15 @@ Campos exibidos:
 - tarefas abertas, atrasadas, urgentes e vencendo;
 - visitas agendadas e próximas;
 - recebíveis por projeto.
+- atalhos para orçamentos aprovados/recusados, financeiro a receber/atrasado, tarefas atrasadas/urgentes e visitas agendadas.
 
 Regras consideradas:
 
 - relatórios não recalculam financeiro no frontend;
 - conversão, atrasos, progresso e valores vêm do backend;
+- receita do período usa data de pagamento;
+- recebíveis e atrasos do período usam data de vencimento;
+- atalhos financeiros usam filtros por vencimento quando precisam preservar o período ativo;
 - a primeira versão não adiciona biblioteca de gráficos;
 - os indicadores usam os módulos já existentes como fonte da verdade.
 
@@ -1501,7 +1519,7 @@ Fluxo implementado:
 3. A tela carrega projetos via `/projects`.
 4. A tela lista tarefas via `/tasks`.
 5. Usuário pode buscar por tarefa, responsável, projeto ou cliente.
-6. Usuário pode filtrar por status, prioridade e projeto.
+6. Usuário pode filtrar por status, prioridade, prazo e projeto.
 7. Usuário pode criar tarefa sem projeto ou vinculada a um projeto.
 8. Usuário pode editar tarefa existente.
 9. Usuário pode concluir tarefa aberta.
@@ -1516,6 +1534,7 @@ Campos principais:
 - descrição;
 - responsável;
 - prazo;
+- escopo visual de prazo para listar somente tarefas atrasadas;
 - prioridade;
 - status;
 - observações.
@@ -1527,6 +1546,7 @@ Regras consideradas:
 - título deve ter pelo menos 2 caracteres;
 - status e prioridade usam domínio oficial;
 - prazo pode ficar vazio;
+- atalho de Relatórios para tarefas atrasadas usa filtro derivado do backend;
 - atraso é calculado pela API;
 - frontend não calcula regra crítica.
 
@@ -1695,9 +1715,10 @@ Cobertura atual:
 - relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas e visitas.
 - schema inicial de Tarefas;
 - tarefa com projeto opcional;
-- filtros de Tarefas por projeto, status, prioridade e prazo;
+- filtros de Tarefas por projeto, status, prioridade, prazo e atraso derivado;
 - busca de Tarefas por título, descrição, responsável, notas, projeto e cliente;
 - atraso dinâmico de tarefa;
+- helpers frontend de query string para atalhos e filtros vindos da URL;
 - schema inicial de Visitas;
 - visita com cliente obrigatório e projeto opcional;
 - filtros de Visitas por cliente, projeto, tipo, status e período;
@@ -1785,6 +1806,9 @@ Endpoints:
 GET /health
 GET /dashboard
 GET /reports/overview
+GET /reports/overview?period=CURRENT_MONTH
+GET /reports/overview?period=CURRENT_YEAR
+GET /reports/overview?period=CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD
 GET /clients/meta
 GET /clients
 GET /clients/:id
@@ -1810,6 +1834,7 @@ PATCH /financial/payments/:id/cancel
 POST /financial/installments
 GET /tasks/meta
 GET /tasks
+GET /tasks?overdue=true
 GET /tasks/:id
 POST /tasks
 PATCH /tasks/:id
@@ -1870,20 +1895,20 @@ Versionar:
 
 ## Proximo passo recomendado
 
-Validar visualmente `/` e `/reports` com dados reais. Depois, evoluir Relatórios com filtros de período e atalhos para abrir os módulos relacionados já filtrados.
+Validar visualmente os atalhos de `/reports` no navegador. Depois, avaliar escopos compostos que ainda não viraram atalho exato, como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
 
 Ponto de retomada para amanhã:
 
 - usar os agentes Arquiteto, Backend/API, Frontend/UI, Qualidade e Documentação;
-- testar Dashboard e Relatórios no navegador;
-- refinar filtros e períodos dos relatórios sem duplicar cálculo no frontend;
+- testar Relatórios, Financeiro, Tarefas, Orçamentos e Visitas no navegador a partir dos atalhos;
+- conferir se os filtros vindos da URL ficam visíveis nas telas destino;
 - manter `README.md` e `docs/registro-do-projeto.md` atualizados.
 
 Ordem sugerida:
 
 1. Rodar `npm run typecheck`, `npm run test` e `npm run lint`.
-2. Rodar o app e validar `/` e `/reports` visualmente.
-3. Ajustar filtros de período em `/reports`.
+2. Rodar o app e validar os atalhos de `/reports` visualmente.
+3. Ajustar detalhes visuais dos links e filtros nas telas destino, se necessário.
 4. Atualizar documentação antes de iniciar nova fatia.
 5. Só depois avaliar Configurações ou refinamentos dos módulos já entregues.
 

@@ -118,12 +118,15 @@ O Dashboard passou a consumir dados reais do backend:
 O módulo de Relatórios foi escolhido como próxima fatia útil após a remoção de Documentos e Briefings:
 
 - API `GET /reports/overview` com leitura consolidada dos módulos ativos.
+- Filtros de período: mês atual, ano atual e intervalo personalizado.
 - Tela `/reports` substituiu o placeholder por uma visão real.
 - Relatórios usam dados reais de clientes, orçamentos, projetos, financeiro, tarefas e visitas.
 - Conversão comercial calculada por orçamentos aprovados versus recusados.
-- Valor aprovado, valor em aberto, valor contratado, recebíveis e atrasos calculados no backend.
+- Valor aprovado, valor em aberto, valor contratado, recebíveis e atrasos calculados no backend conforme o período ativo.
 - Carteira de projetos por status, tipo, progresso médio e recebíveis por projeto.
 - Operação consolidada com tarefas abertas, atrasadas, urgentes, vencendo em 7 dias e visitas agendadas.
+- Atalhos nos indicadores para abrir Orçamentos, Financeiro, Tarefas e Visitas já filtrados.
+- Atalhos de recebíveis financeiros preservam o período ativo usando `dueFrom` e `dueTo`.
 - Sem dependência nova de gráficos; a interface usa cards, tabelas e barras simples do design system.
 
 ## Tarefas
@@ -135,6 +138,7 @@ O módulo de Tarefas iniciou a organização operacional do escritório:
 - Status oficiais: Pendente, Em andamento, Concluída e Cancelada.
 - Prioridades oficiais: Baixa, Média, Alta e Urgente.
 - Prazo opcional com filtro por intervalo.
+- Filtro derivado de tarefas atrasadas via `overdue=true` na API e opção visual `Prazo: Atrasadas`.
 - Atraso de tarefa calculado dinamicamente pelo backend.
 - Tela `/tasks` conectada ao backend real.
 - Formulário com React Hook Form e Zod.
@@ -157,7 +161,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-Próxima etapa: validar visualmente `/` e `/reports` com dados reais e, depois, refinar os filtros/períodos dos relatórios.
+Próxima etapa: validar visualmente os atalhos de `/reports` no navegador e, depois, avaliar escopos compostos como orçamentos abertos, tarefas vencendo em 7 dias e visitas próximas.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 

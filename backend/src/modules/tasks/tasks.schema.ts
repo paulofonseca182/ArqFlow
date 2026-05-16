@@ -4,6 +4,29 @@ import { taskPriorities, taskStatuses } from "../../shared/domain.js";
 
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
+const optionalBoolean = z.preprocess((value) => {
+  if (value === undefined || value === "") {
+    return undefined;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (["true", "1"].includes(normalizedValue)) {
+      return true;
+    }
+
+    if (["false", "0"].includes(normalizedValue)) {
+      return false;
+    }
+  }
+
+  return value;
+}, z.boolean().optional());
 const optionalProjectId = z
   .string()
   .cuid("projeto inválido")
@@ -21,7 +44,8 @@ export const listTasksQuerySchema = paginationQuerySchema
     status: z.enum(taskStatuses).optional(),
     priority: z.enum(taskPriorities).optional(),
     dueFrom: optionalDate,
-    dueTo: optionalDate
+    dueTo: optionalDate,
+    overdue: optionalBoolean
   })
   .superRefine(validateDueDateRange);
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from "lucide-react";
 import { ActionIconButton } from "../../components/ui/ActionIconButton";
 import { Badge } from "../../components/ui/Badge";
@@ -22,6 +23,7 @@ import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
 import type { ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
+import { getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { ApproveBudgetModal } from "./ApproveBudgetModal";
 import { BudgetFormModal } from "./BudgetFormModal";
 
@@ -37,8 +39,15 @@ const emptyPagination: PaginationMeta = {
   total: 0,
   totalPages: 1
 };
+type BudgetsQuery = {
+  search: string;
+  status: BudgetStatus | "";
+  clientId: string;
+};
 
 export function BudgetsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = readBudgetsSearchParams(searchParams);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
@@ -46,14 +55,10 @@ export function BudgetsPage() {
   const [projectTypes, setProjectTypes] = useState<ProjectOption<ProjectType>[]>(fallbackProjectTypes);
   const [projectStatuses, setProjectStatuses] = useState<ProjectOption<ProjectStatus>[]>(fallbackProjectStatuses);
   const [page, setPage] = useState(1);
-  const [draftSearch, setDraftSearch] = useState("");
-  const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">("");
-  const [draftClientId, setDraftClientId] = useState("");
-  const [query, setQuery] = useState<{ search: string; status: BudgetStatus | ""; clientId: string }>({
-    search: "",
-    status: "",
-    clientId: ""
-  });
+  const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">(initialQuery.status);
+  const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
+  const [query, setQuery] = useState<BudgetsQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +76,7 @@ export function BudgetsPage() {
   const [approvalError, setApprovalError] = useState<string | null>(null);
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
+  const searchParamsKey = searchParams.toString();
 
   const loadBudgets = useCallback(async () => {
     setLoading(true);
@@ -93,6 +99,16 @@ export function BudgetsPage() {
       setLoading(false);
     }
   }, [page, query.clientId, query.search, query.status]);
+
+  useEffect(() => {
+    const nextQuery = readBudgetsSearchParams(searchParams);
+
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftClientId(nextQuery.clientId);
+    setPage(1);
+    setQuery(nextQuery);
+  }, [searchParamsKey]);
 
   useEffect(() => {
     let active = true;
@@ -137,8 +153,7 @@ export function BudgetsPage() {
 
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setQuery({
+    applyQuery({
       search: draftSearch.trim(),
       status: draftStatus,
       clientId: draftClientId
@@ -146,11 +161,16 @@ export function BudgetsPage() {
   }
 
   function handleClearFilters() {
-    setDraftSearch("");
-    setDraftStatus("");
-    setDraftClientId("");
+    applyQuery({ search: "", status: "", clientId: "" });
+  }
+
+  function applyQuery(nextQuery: BudgetsQuery) {
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftClientId(nextQuery.clientId);
     setPage(1);
-    setQuery({ search: "", status: "", clientId: "" });
+    setQuery(nextQuery);
+    setSearchParams(toBudgetsSearchParams(nextQuery), { replace: true });
   }
 
   function handleOpenCreate() {
@@ -468,6 +488,26 @@ export function BudgetsPage() {
       />
     </PageWrapper>
   );
+}
+
+function readBudgetsSearchParams(searchParams: URLSearchParams): BudgetsQuery {
+  return {
+    search: getStringSearchParam(searchParams, "search"),
+    status: getEnumSearchParam(searchParams, "status", budgetStatusValues),
+    clientId: getStringSearchParam(searchParams, "clientId")
+  };
+}
+
+function toBudgetsSearchParams(query: BudgetsQuery) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  return searchParams;
 }
 
 function canSendBudget(budget: Budget) {

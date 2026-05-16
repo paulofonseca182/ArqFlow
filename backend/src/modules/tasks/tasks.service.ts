@@ -167,14 +167,18 @@ export async function deleteTask(id: string) {
   return { deleted: true };
 }
 
-export function buildTaskWhere({
-  dueFrom,
-  dueTo,
-  priority,
-  projectId,
-  search,
-  status
-}: Partial<Pick<ListTasksQuery, "dueFrom" | "dueTo" | "priority" | "projectId" | "search" | "status">>): Prisma.TaskWhereInput {
+export function buildTaskWhere(
+  {
+    dueFrom,
+    dueTo,
+    overdue,
+    priority,
+    projectId,
+    search,
+    status
+  }: Partial<Pick<ListTasksQuery, "dueFrom" | "dueTo" | "overdue" | "priority" | "projectId" | "search" | "status">>,
+  today = new Date()
+): Prisma.TaskWhereInput {
   const where: Prisma.TaskWhereInput = {};
 
   if (projectId) {
@@ -185,11 +189,31 @@ export function buildTaskWhere({
     where.status = status;
   }
 
+  if (overdue && !status) {
+    where.status = {
+      notIn: ["COMPLETED", "CANCELLED"]
+    };
+  }
+
+  if (overdue && status) {
+    where.AND = [
+      {
+        status: {
+          notIn: ["COMPLETED", "CANCELLED"]
+        }
+      }
+    ];
+  }
+
   if (priority) {
     where.priority = priority;
   }
 
-  if (dueFrom || dueTo) {
+  if (overdue) {
+    where.dueDate = {
+      lt: startOfDay(today)
+    };
+  } else if (dueFrom || dueTo) {
     where.dueDate = {
       ...(dueFrom ? { gte: startOfDay(dueFrom) } : {}),
       ...(dueTo ? { lte: endOfDay(dueTo) } : {})

@@ -46,6 +46,9 @@ type ApiError = {
 - `GET /reports/overview`
   - Retorna visão consolidada de clientes, comercial, projetos, financeiro, tarefas e visitas.
   - Inclui conversão de orçamentos, progresso médio, recebíveis por projeto e distribuição por status/tipo/prioridade.
+  - Aceita `period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM`.
+  - Quando `period=CUSTOM`, exige `from` e `to` em `YYYY-MM-DD`.
+  - Receita usa `paidAt`; recebíveis e atrasos usam `dueDate`; tarefas usam `dueDate`; visitas usam `date`.
 
 ## Clientes
 
@@ -90,6 +93,28 @@ type ApiError = {
 - `DELETE /projects/:id`
   - Exclui apenas projetos sem vinculos.
   - Retorna `PROJECT_HAS_RELATIONS` com detalhes de impacto quando houver registros vinculados.
+
+## Tarefas
+
+- `GET /tasks/meta`
+  - Retorna status e prioridades oficiais de tarefas.
+- `GET /tasks`
+  - Lista tarefas com `page`, `pageSize`, `search`, `status`, `priority`, `projectId`, `dueFrom`, `dueTo` e `overdue`.
+  - `overdue=true` filtra tarefas com `dueDate` menor que hoje e status diferente de `COMPLETED` ou `CANCELLED`.
+  - Busca por titulo, descricao, responsavel, notas, projeto e cliente do projeto.
+- `POST /tasks`
+  - Cria tarefa com projeto opcional.
+  - Quando `projectId` for informado, valida se o projeto existe.
+- `PATCH /tasks/:id`
+  - Atualiza tarefa parcialmente.
+- `PATCH /tasks/:id/complete`
+  - Marca tarefa como concluida.
+- `PATCH /tasks/:id/reopen`
+  - Reabre tarefa como pendente.
+- `PATCH /tasks/:id/cancel`
+  - Cancela tarefa aberta.
+- `DELETE /tasks/:id`
+  - Remove tarefa com confirmacao visual no frontend.
 
 ## Padrao de modulo backend
 

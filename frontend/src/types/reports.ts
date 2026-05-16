@@ -1,10 +1,33 @@
-import type { FinancialSummary } from "./financial";
-
 export type ReportStatusCount = {
   status: string;
   label: string;
   count: number;
   percentage: number;
+};
+
+export type ReportPeriodKey = "CURRENT_MONTH" | "CURRENT_YEAR" | "CUSTOM";
+
+export type ReportPeriod = {
+  key: ReportPeriodKey;
+  label: string;
+  from: string;
+  to: string;
+};
+
+export type ReportsOverviewParams = {
+  period: ReportPeriodKey;
+  from?: string;
+  to?: string;
+};
+
+export type ReportsFinancialSummary = {
+  receivedAmount: string;
+  receivableAmount: string;
+  overdueAmount: string;
+  paidPayments: number;
+  receivablePayments: number;
+  overduePayments: number;
+  averageProjectTicket: string;
 };
 
 export type ReportProjectReceivable = {
@@ -19,6 +42,7 @@ export type ReportProjectReceivable = {
 
 export type ReportsOverview = {
   generatedAt: string;
+  period: ReportPeriod;
   clients: {
     total: number;
     active: number;
@@ -34,7 +58,7 @@ export type ReportsOverview = {
     openAmount: string;
     byStatus: ReportStatusCount[];
   };
-  financial: FinancialSummary;
+  financial: ReportsFinancialSummary;
   projects: {
     total: number;
     active: number;

@@ -1,39 +1,67 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { AlertCircle, ArrowUpRight, Filter, RefreshCw } from "lucide-react";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { Input } from "../../components/ui/Input";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { ProgressBar } from "../../components/ui/ProgressBar";
+import { Select } from "../../components/ui/Select";
 import { StatCard } from "../../components/ui/StatCard";
 import { Table } from "../../components/ui/Table";
 import { ApiError } from "../../services/api";
 import { getReportsOverview } from "../../services/reports";
-import type { ReportStatusCount, ReportsOverview } from "../../types/reports";
+import type { ReportPeriodKey, ReportsOverview, ReportsOverviewParams, ReportStatusCount } from "../../types/reports";
+
+const defaultQuery: ReportsOverviewParams = {
+  period: "CURRENT_MONTH"
+};
 
 export function ReportsPage() {
   const [overview, setOverview] = useState<ReportsOverview | null>(null);
+  const [query, setQuery] = useState<ReportsOverviewParams>(defaultQuery);
+  const [draftPeriod, setDraftPeriod] = useState<ReportPeriodKey>("CURRENT_MONTH");
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const shortcuts = overview ? getReportShortcuts(overview) : null;
 
   const loadReports = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      setOverview(await getReportsOverview());
+      setOverview(await getReportsOverview(query));
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [query]);
 
   useEffect(() => {
     void loadReports();
   }, [loadReports]);
+
+  function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (draftPeriod === "CUSTOM" && (!draftFrom || !draftTo)) {
+      setError("Informe a data inicial e final para usar intervalo personalizado.");
+      return;
+    }
+
+    setQuery({
+      period: draftPeriod,
+      from: draftPeriod === "CUSTOM" ? draftFrom : undefined,
+      to: draftPeriod === "CUSTOM" ? draftTo : undefined
+    });
+  }
 
   return (
     <PageWrapper
@@ -55,6 +83,42 @@ export function ReportsPage() {
 
       {loading ? <LoadingState /> : null}
 
+      <Card>
+        <form className="grid gap-3 lg:grid-cols-[220px_180px_180px_auto]" onSubmit={handleFilterSubmit}>
+          <Select label="Período" onChange={(event) => setDraftPeriod(event.target.value as ReportPeriodKey)} value={draftPeriod}>
+            <option value="CURRENT_MONTH">Mês atual</option>
+            <option value="CURRENT_YEAR">Ano atual</option>
+            <option value="CUSTOM">Personalizado</option>
+          </Select>
+          <Input
+            disabled={draftPeriod !== "CUSTOM"}
+            label="De"
+            onChange={(event) => setDraftFrom(event.target.value)}
+            type="date"
+            value={draftFrom}
+          />
+          <Input
+            disabled={draftPeriod !== "CUSTOM"}
+            label="Até"
+            onChange={(event) => setDraftTo(event.target.value)}
+            type="date"
+            value={draftTo}
+          />
+          <div className="flex items-end">
+            <Button className="w-full lg:w-auto" disabled={loading} type="submit">
+              <Filter className="h-4 w-4" strokeWidth={1.75} />
+              Aplicar
+            </Button>
+          </div>
+        </form>
+        {overview ? (
+          <p className="mt-4 text-sm text-text-secondary">
+            Período ativo: <span className="text-text-primary">{overview.period.label}</span> · {formatDate(overview.period.from)} a{" "}
+            {formatDate(overview.period.to)}
+          </p>
+        ) : null}
+      </Card>
+
       {!loading && !overview ? (
         <EmptyState description="Não foi possível montar a visão consolidada neste momento." title="Relatórios indisponíveis" />
       ) : null}
@@ -64,16 +128,26 @@ export function ReportsPage() {
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               badge={<Badge tone="neutral">{overview.clients.total} total</Badge>}
-              label="Clientes ativos"
+              label="Clientes ativos no período"
               value={overview.clients.active.toString()}
             />
             <StatCard
               badge={<Badge tone="success">{overview.projects.finished} finalizados</Badge>}
-              label="Projetos ativos"
+              label="Projetos ativos no período"
               value={overview.projects.active.toString()}
             />
-            <StatCard badge={<Badge tone="success">Ano</Badge>} label="Receita recebida" value={formatMoney(overview.financial.revenueYear)} />
-            <StatCard badge={<Badge tone="warning">Aberto</Badge>} label="A receber" value={formatMoney(overview.financial.receivableAmount)} />
+            <StatCard
+              badge={<Badge tone="success">{overview.financial.paidPayments} pago(s)</Badge>}
+              label="Recebido no período"
+              value={formatMoney(overview.financial.receivedAmount)}
+            />
+            <StatCard
+              badge={<Badge tone="warning">{overview.financial.receivablePayments} aberta(s)</Badge>}
+              label="A receber no período"
+              title="Abrir parcelas a receber no Financeiro"
+              to={shortcuts?.financialReceivable}
+              value={formatMoney(overview.financial.receivableAmount)}
+            />
           </section>
 
           <section className="grid gap-4 lg:grid-cols-2">
@@ -89,10 +163,10 @@ export function ReportsPage() {
                 <ProgressBar label="Conversão aprovados x recusados" value={overview.commercial.conversionRate} />
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <MetricLine label="Aprovados" value={overview.commercial.approvedBudgets.toString()} />
-                <MetricLine label="Recusados" value={overview.commercial.refusedBudgets.toString()} />
+                <MetricLine label="Aprovados" to="/budgets?status=APPROVED" value={overview.commercial.approvedBudgets.toString()} />
+                <MetricLine label="Recusados" to="/budgets?status=REFUSED" value={overview.commercial.refusedBudgets.toString()} />
                 <MetricLine label="Abertos" value={overview.commercial.openBudgets.toString()} />
-                <MetricLine label="Valor aprovado" value={formatMoney(overview.commercial.approvedAmount)} />
+                <MetricLine label="Valor aprovado" to="/budgets?status=APPROVED" value={formatMoney(overview.commercial.approvedAmount)} />
                 <MetricLine label="Valor em aberto" value={formatMoney(overview.commercial.openAmount)} />
                 <MetricLine label="Total de orçamentos" value={overview.commercial.totalBudgets.toString()} />
               </div>
@@ -115,6 +189,8 @@ export function ReportsPage() {
                 <MetricLine label="Ativos" value={overview.projects.active.toString()} />
                 <MetricLine label="Finalizados" value={overview.projects.finished.toString()} />
                 <MetricLine label="Cancelados" value={overview.projects.cancelled.toString()} />
+                <MetricLine label="Ticket médio" value={formatMoney(overview.financial.averageProjectTicket)} />
+                <MetricLine label="Atrasado no período" to={shortcuts?.financialOverdue} value={formatMoney(overview.financial.overdueAmount)} />
               </div>
               <StatusList items={overview.projects.byStatus} />
             </Card>
@@ -131,10 +207,10 @@ export function ReportsPage() {
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <MetricLine label="Tarefas abertas" value={overview.operations.openTasks.toString()} />
-                <MetricLine label="Tarefas atrasadas" value={overview.operations.overdueTasks.toString()} />
-                <MetricLine label="Urgentes" value={overview.operations.urgentTasks.toString()} />
+                <MetricLine label="Tarefas atrasadas" to="/tasks?scope=OVERDUE" value={overview.operations.overdueTasks.toString()} />
+                <MetricLine label="Urgentes" to="/tasks?priority=URGENT" value={overview.operations.urgentTasks.toString()} />
                 <MetricLine label="Vencem em 7 dias" value={overview.operations.dueSoonTasks.toString()} />
-                <MetricLine label="Visitas agendadas" value={overview.operations.scheduledVisits.toString()} />
+                <MetricLine label="Visitas agendadas" to="/visits?status=SCHEDULED" value={overview.operations.scheduledVisits.toString()} />
                 <MetricLine label="Visitas em 7 dias" value={overview.operations.visitsNextSevenDays.toString()} />
               </div>
               <StatusList items={overview.operations.byTaskStatus} />
@@ -158,7 +234,13 @@ export function ReportsPage() {
                     {overview.projects.topReceivableProjects.map((project) => (
                       <tr key={project.id}>
                         <td className="min-w-56 px-4 py-4 align-top">
-                          <div className="font-medium text-text-primary">{project.name}</div>
+                          <Link
+                            className="font-medium text-text-primary transition hover:text-accent-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
+                            title="Abrir financeiro deste projeto"
+                            to={`/financial?projectId=${project.id}&status=RECEIVABLE`}
+                          >
+                            {project.name}
+                          </Link>
                           <div className="mt-1 text-xs text-text-muted">{project.clientName}</div>
                         </td>
                         <td className="px-4 py-4 align-top text-text-secondary">{formatMoney(project.contractedAmount)}</td>
@@ -204,13 +286,71 @@ function StatusList({ items }: { items: ReportStatusCount[] }) {
   );
 }
 
-function MetricLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2">
+function MetricLine({ label, to, value }: { label: string; to?: string; value: string }) {
+  const content = (
+    <>
       <div className="text-xs text-text-muted">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-text-primary">{value}</div>
-    </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-sm font-semibold text-text-primary">
+        <span>{value}</span>
+        {to ? <ArrowUpRight className="h-3.5 w-3.5 text-accent-bronze" strokeWidth={1.75} /> : null}
+      </div>
+    </>
   );
+
+  if (!to) {
+    return <div className="rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2">{content}</div>;
+  }
+
+  return (
+    <Link
+      className="rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2 transition hover:border-accent-bronze hover:bg-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
+      title={`Abrir ${label}`}
+      to={to}
+    >
+      {content}
+    </Link>
+  );
+}
+
+function getReportShortcuts(overview: ReportsOverview) {
+  const dueFrom = toDateParam(overview.period.from);
+  const dueTo = toDateParam(overview.period.to);
+
+  return {
+    financialOverdue: buildPath("/financial", {
+      dueFrom,
+      dueTo,
+      status: "OVERDUE"
+    }),
+    financialReceivable: buildPath("/financial", {
+      dueFrom,
+      dueTo,
+      status: "RECEIVABLE"
+    })
+  };
+}
+
+function buildPath(pathname: string, params: Record<string, string | undefined>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  const queryString = searchParams.toString();
+
+  return queryString ? `${pathname}?${queryString}` : pathname;
+}
+
+function toDateParam(value: string) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function formatMoney(value: string) {
@@ -225,6 +365,10 @@ function formatDateTime(value: string) {
     dateStyle: "short",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 }
 
 function getErrorMessage(error: unknown) {

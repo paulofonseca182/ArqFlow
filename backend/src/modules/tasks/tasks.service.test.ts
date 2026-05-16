@@ -51,6 +51,33 @@ describe("tasks service", () => {
     });
   });
 
+  it("monta filtro de tarefas atrasadas excluindo concluídas e canceladas", () => {
+    expect(buildTaskWhere({ overdue: true }, new Date(2026, 4, 13))).toEqual({
+      dueDate: {
+        lt: new Date(2026, 4, 13)
+      },
+      status: {
+        notIn: ["COMPLETED", "CANCELLED"]
+      }
+    });
+  });
+
+  it("combina filtro de atraso com status solicitado", () => {
+    expect(buildTaskWhere({ overdue: true, status: "IN_PROGRESS" }, new Date(2026, 4, 13))).toEqual({
+      AND: [
+        {
+          status: {
+            notIn: ["COMPLETED", "CANCELLED"]
+          }
+        }
+      ],
+      dueDate: {
+        lt: new Date(2026, 4, 13)
+      },
+      status: "IN_PROGRESS"
+    });
+  });
+
   it("calcula atraso de tarefa dinamicamente", () => {
     expect(isTaskOverdue({ dueDate: new Date(2026, 4, 10), status: "PENDING" }, new Date(2026, 4, 13))).toBe(true);
     expect(isTaskOverdue({ dueDate: new Date(2026, 4, 13), status: "PENDING" }, new Date(2026, 4, 13))).toBe(false);

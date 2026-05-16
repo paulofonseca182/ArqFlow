@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   Ban,
@@ -45,6 +46,7 @@ import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import type { Visit, VisitOption, VisitStatus, VisitType, VisitWriteInput } from "../../types/visit";
 import { visitStatusValues, visitTypeValues } from "../../types/visit";
+import { getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { VisitFormModal } from "./VisitFormModal";
 
 const pageSize = 20;
@@ -58,8 +60,17 @@ const emptyPagination: PaginationMeta = {
 };
 const fallbackStatuses: VisitOption<VisitStatus>[] = visitStatusValues.map((value) => ({ value, label: value }));
 const fallbackTypes: VisitOption<VisitType>[] = visitTypeValues.map((value) => ({ value, label: value }));
+type VisitsQuery = {
+  search: string;
+  clientId: string;
+  projectId: string;
+  type: VisitType | "";
+  status: VisitStatus | "";
+};
 
 export function VisitsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = readVisitsSearchParams(searchParams);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -67,24 +78,12 @@ export function VisitsPage() {
   const [statuses, setStatuses] = useState<VisitOption<VisitStatus>[]>(fallbackStatuses);
   const [types, setTypes] = useState<VisitOption<VisitType>[]>(fallbackTypes);
   const [page, setPage] = useState(1);
-  const [draftSearch, setDraftSearch] = useState("");
-  const [draftClientId, setDraftClientId] = useState("");
-  const [draftProjectId, setDraftProjectId] = useState("");
-  const [draftType, setDraftType] = useState<VisitType | "">("");
-  const [draftStatus, setDraftStatus] = useState<VisitStatus | "">("");
-  const [query, setQuery] = useState<{
-    search: string;
-    clientId: string;
-    projectId: string;
-    type: VisitType | "";
-    status: VisitStatus | "";
-  }>({
-    search: "",
-    clientId: "",
-    projectId: "",
-    type: "",
-    status: ""
-  });
+  const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
+  const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
+  const [draftType, setDraftType] = useState<VisitType | "">(initialQuery.type);
+  const [draftStatus, setDraftStatus] = useState<VisitStatus | "">(initialQuery.status);
+  const [query, setQuery] = useState<VisitsQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +99,7 @@ export function VisitsPage() {
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
   const typeLabelByValue = useMemo(() => new Map(types.map((type) => [type.value, type.label])), [types]);
+  const searchParamsKey = searchParams.toString();
   const filteredProjects = useMemo(() => {
     if (!draftClientId) {
       return projects;
@@ -131,6 +131,18 @@ export function VisitsPage() {
       setLoading(false);
     }
   }, [page, query.clientId, query.projectId, query.search, query.status, query.type]);
+
+  useEffect(() => {
+    const nextQuery = readVisitsSearchParams(searchParams);
+
+    setDraftSearch(nextQuery.search);
+    setDraftClientId(nextQuery.clientId);
+    setDraftProjectId(nextQuery.projectId);
+    setDraftType(nextQuery.type);
+    setDraftStatus(nextQuery.status);
+    setPage(1);
+    setQuery(nextQuery);
+  }, [searchParamsKey]);
 
   useEffect(() => {
     let active = true;
@@ -174,7 +186,7 @@ export function VisitsPage() {
   }, [loadVisits]);
 
   useEffect(() => {
-    if (!draftProjectId) {
+    if (!draftProjectId || projects.length === 0) {
       return;
     }
 
@@ -183,12 +195,11 @@ export function VisitsPage() {
     if (!projectStillAvailable) {
       setDraftProjectId("");
     }
-  }, [draftProjectId, filteredProjects]);
+  }, [draftProjectId, filteredProjects, projects.length]);
 
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setQuery({
+    applyQuery({
       search: draftSearch.trim(),
       clientId: draftClientId,
       projectId: draftProjectId,
@@ -198,13 +209,18 @@ export function VisitsPage() {
   }
 
   function handleClearFilters() {
-    setDraftSearch("");
-    setDraftClientId("");
-    setDraftProjectId("");
-    setDraftType("");
-    setDraftStatus("");
+    applyQuery({ search: "", clientId: "", projectId: "", type: "", status: "" });
+  }
+
+  function applyQuery(nextQuery: VisitsQuery) {
+    setDraftSearch(nextQuery.search);
+    setDraftClientId(nextQuery.clientId);
+    setDraftProjectId(nextQuery.projectId);
+    setDraftType(nextQuery.type);
+    setDraftStatus(nextQuery.status);
     setPage(1);
-    setQuery({ search: "", clientId: "", projectId: "", type: "", status: "" });
+    setQuery(nextQuery);
+    setSearchParams(toVisitsSearchParams(nextQuery), { replace: true });
   }
 
   function handleOpenCreate() {
@@ -534,6 +550,28 @@ export function VisitsPage() {
       />
     </PageWrapper>
   );
+}
+
+function readVisitsSearchParams(searchParams: URLSearchParams): VisitsQuery {
+  return {
+    search: getStringSearchParam(searchParams, "search"),
+    clientId: getStringSearchParam(searchParams, "clientId"),
+    projectId: getStringSearchParam(searchParams, "projectId"),
+    type: getEnumSearchParam(searchParams, "type", visitTypeValues),
+    status: getEnumSearchParam(searchParams, "status", visitStatusValues)
+  };
+}
+
+function toVisitsSearchParams(query: VisitsQuery) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  return searchParams;
 }
 
 function getVisitStatusTone(status: VisitStatus) {

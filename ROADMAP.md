@@ -49,4 +49,6 @@
 
 - Dashboard conectado a dados reais, incluindo indicadores financeiros e operacionais.
 - Relatórios consolidados em `/reports` com dados reais de clientes, comercial, projetos, financeiro, tarefas e visitas.
-- Próxima evolução recomendada: filtros por período nos relatórios e validação visual com dados reais.
+- Filtros por período concluídos em Relatórios.
+- Atalhos filtrados concluídos para Orçamentos, Financeiro, Tarefas e Visitas.
+- Próxima evolução recomendada: validar os atalhos no navegador e avaliar escopos compostos ainda sem filtro exato.

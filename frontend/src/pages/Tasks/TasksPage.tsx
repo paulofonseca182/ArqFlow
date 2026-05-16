@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   Ban,
@@ -32,6 +33,7 @@ import type { PaginationMeta } from "../../types/api";
 import type { Project } from "../../types/project";
 import type { Task, TaskOption, TaskPriority, TaskStatus, TaskWriteInput } from "../../types/task";
 import { taskPriorityValues, taskStatusValues } from "../../types/task";
+import { getBooleanSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { TaskFormModal } from "./TaskFormModal";
 
 const pageSize = 20;
@@ -43,26 +45,33 @@ const emptyPagination: PaginationMeta = {
   total: 0,
   totalPages: 1
 };
+const taskDeadlineScopeValues = ["OVERDUE"] as const;
 const fallbackStatuses: TaskOption<TaskStatus>[] = taskStatusValues.map((value) => ({ value, label: value }));
 const fallbackPriorities: TaskOption<TaskPriority>[] = taskPriorityValues.map((value) => ({ value, label: value }));
+type TaskDeadlineScope = (typeof taskDeadlineScopeValues)[number];
+type TasksQuery = {
+  search: string;
+  status: TaskStatus | "";
+  priority: TaskPriority | "";
+  projectId: string;
+  scope: TaskDeadlineScope | "";
+};
 
 export function TasksPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = readTasksSearchParams(searchParams);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [statuses, setStatuses] = useState<TaskOption<TaskStatus>[]>(fallbackStatuses);
   const [priorities, setPriorities] = useState<TaskOption<TaskPriority>[]>(fallbackPriorities);
   const [page, setPage] = useState(1);
-  const [draftSearch, setDraftSearch] = useState("");
-  const [draftStatus, setDraftStatus] = useState<TaskStatus | "">("");
-  const [draftPriority, setDraftPriority] = useState<TaskPriority | "">("");
-  const [draftProjectId, setDraftProjectId] = useState("");
-  const [query, setQuery] = useState<{ search: string; status: TaskStatus | ""; priority: TaskPriority | ""; projectId: string }>({
-    search: "",
-    status: "",
-    priority: "",
-    projectId: ""
-  });
+  const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftStatus, setDraftStatus] = useState<TaskStatus | "">(initialQuery.status);
+  const [draftPriority, setDraftPriority] = useState<TaskPriority | "">(initialQuery.priority);
+  const [draftDeadlineScope, setDraftDeadlineScope] = useState<TaskDeadlineScope | "">(initialQuery.scope);
+  const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
+  const [query, setQuery] = useState<TasksQuery>(initialQuery);
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +87,7 @@ export function TasksPage() {
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
   const priorityLabelByValue = useMemo(() => new Map(priorities.map((priority) => [priority.value, priority.label])), [priorities]);
+  const searchParamsKey = searchParams.toString();
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -90,7 +100,8 @@ export function TasksPage() {
         search: query.search,
         status: query.status || undefined,
         priority: query.priority || undefined,
-        projectId: query.projectId || undefined
+        projectId: query.projectId || undefined,
+        overdue: query.scope === "OVERDUE"
       });
 
       setTasks(result.data);
@@ -100,7 +111,19 @@ export function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.priority, query.projectId, query.search, query.status]);
+  }, [page, query.priority, query.projectId, query.scope, query.search, query.status]);
+
+  useEffect(() => {
+    const nextQuery = readTasksSearchParams(searchParams);
+
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftPriority(nextQuery.priority);
+    setDraftDeadlineScope(nextQuery.scope);
+    setDraftProjectId(nextQuery.projectId);
+    setPage(1);
+    setQuery(nextQuery);
+  }, [searchParamsKey]);
 
   useEffect(() => {
     let active = true;
@@ -140,22 +163,28 @@ export function TasksPage() {
 
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setQuery({
+    applyQuery({
       search: draftSearch.trim(),
       status: draftStatus,
       priority: draftPriority,
+      scope: draftDeadlineScope,
       projectId: draftProjectId
     });
   }
 
   function handleClearFilters() {
-    setDraftSearch("");
-    setDraftStatus("");
-    setDraftPriority("");
-    setDraftProjectId("");
+    applyQuery({ search: "", status: "", priority: "", projectId: "", scope: "" });
+  }
+
+  function applyQuery(nextQuery: TasksQuery) {
+    setDraftSearch(nextQuery.search);
+    setDraftStatus(nextQuery.status);
+    setDraftPriority(nextQuery.priority);
+    setDraftDeadlineScope(nextQuery.scope);
+    setDraftProjectId(nextQuery.projectId);
     setPage(1);
-    setQuery({ search: "", status: "", priority: "", projectId: "" });
+    setQuery(nextQuery);
+    setSearchParams(toTasksSearchParams(nextQuery), { replace: true });
   }
 
   function handleOpenCreate() {
@@ -243,7 +272,7 @@ export function TasksPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.status || query.priority || query.projectId);
+  const hasFilters = Boolean(query.search || query.status || query.priority || query.projectId || query.scope);
 
   return (
     <PageWrapper
@@ -257,7 +286,7 @@ export function TasksPage() {
       title="Tarefas"
     >
       <Card>
-        <form className="grid gap-3 xl:grid-cols-[1fr_180px_170px_220px_auto]" onSubmit={handleFilterSubmit}>
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(180px,1fr)_150px_150px_150px_210px_auto]" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Tarefa, responsável, projeto ou cliente" value={draftSearch} />
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as TaskStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
@@ -275,6 +304,10 @@ export function TasksPage() {
               </option>
             ))}
           </Select>
+          <Select label="Prazo" onChange={(event) => setDraftDeadlineScope(event.target.value as TaskDeadlineScope | "")} value={draftDeadlineScope}>
+            <option value="">Todos</option>
+            <option value="OVERDUE">Atrasadas</option>
+          </Select>
           <Select label="Projeto" onChange={(event) => setDraftProjectId(event.target.value)} value={draftProjectId}>
             <option value="">Todos</option>
             {projects.map((project) => (
@@ -283,7 +316,7 @@ export function TasksPage() {
               </option>
             ))}
           </Select>
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-max items-end justify-end gap-2 md:col-span-2 xl:col-span-3 2xl:col-span-1">
             <Button className="min-w-28" title="Buscar tarefas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -465,6 +498,44 @@ export function TasksPage() {
       />
     </PageWrapper>
   );
+}
+
+function readTasksSearchParams(searchParams: URLSearchParams): TasksQuery {
+  const scope = getEnumSearchParam(searchParams, "scope", taskDeadlineScopeValues);
+
+  return {
+    search: getStringSearchParam(searchParams, "search"),
+    status: getEnumSearchParam(searchParams, "status", taskStatusValues),
+    priority: getEnumSearchParam(searchParams, "priority", taskPriorityValues),
+    projectId: getStringSearchParam(searchParams, "projectId"),
+    scope: scope || (getBooleanSearchParam(searchParams, "overdue") ? "OVERDUE" : "")
+  };
+}
+
+function toTasksSearchParams(query: TasksQuery) {
+  const searchParams = new URLSearchParams();
+
+  if (query.search) {
+    searchParams.set("search", query.search);
+  }
+
+  if (query.status) {
+    searchParams.set("status", query.status);
+  }
+
+  if (query.priority) {
+    searchParams.set("priority", query.priority);
+  }
+
+  if (query.projectId) {
+    searchParams.set("projectId", query.projectId);
+  }
+
+  if (query.scope) {
+    searchParams.set("scope", query.scope);
+  }
+
+  return searchParams;
 }
 
 function getTaskStatusTone(task: Task) {

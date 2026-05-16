@@ -39,6 +39,16 @@ describe("tasks schema", () => {
     ).toBe(false);
   });
 
+  it("valida filtro derivado de tarefas atrasadas", () => {
+    const parsed = listTasksQuerySchema.parse({
+      overdue: "true"
+    });
+
+    expect(parsed.overdue).toBe(true);
+    expect(listTasksQuerySchema.parse({ overdue: "false" }).overdue).toBe(false);
+    expect(listTasksQuerySchema.safeParse({ overdue: "sim" }).success).toBe(false);
+  });
+
   it("exige ao menos um campo no update", () => {
     expect(updateTaskSchema.safeParse({}).success).toBe(false);
     expect(updateTaskSchema.safeParse({ status: "IN_PROGRESS" }).success).toBe(true);

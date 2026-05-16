@@ -49,6 +49,7 @@ type PaginatedResponse<T> = {
 - `/budgets`
 - `/payments`
 - `/tasks`
+- `/tasks?overdue=true`
 - `/visits`
-- `/reports/overview`
+- `/reports/overview?period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `/dashboard`
