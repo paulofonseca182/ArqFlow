@@ -54,5 +54,5 @@ type PaginatedResponse<T> = {
 - `/tasks?scope=OVERDUE_TASKS|DUE_SOON_TASKS&dueFrom=YYYY-MM-DD&dueTo=YYYY-MM-DD`
 - `/visits`
 - `/visits?scope=UPCOMING_VISITS&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD`
-- `/reports/overview?period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `/reports/overview?period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD&clientId=:clientId&projectId=:projectId`
 - `/dashboard`

@@ -11,6 +11,7 @@ type ListTasksParams = {
   page: number;
   pageSize: number;
   search?: string;
+  clientId?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
   projectId?: string;
@@ -32,6 +33,7 @@ export async function listTasks(params: ListTasksParams) {
       page: params.page,
       pageSize: params.pageSize,
       search: params.search || undefined,
+      clientId: params.clientId || undefined,
       status: params.status || undefined,
       priority: params.priority || undefined,
       projectId: params.projectId || undefined,

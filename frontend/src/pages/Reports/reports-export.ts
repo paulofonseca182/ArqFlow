@@ -7,6 +7,8 @@ export function buildReportsCsv(overview: ReportsOverview) {
     ["Grupo", "Indicador", "Valor", "Detalhe"],
     ["Período", "Nome", overview.period.label, `${formatDateParam(overview.period.from)} a ${formatDateParam(overview.period.to)}`],
     ["Período", "Gerado em", overview.generatedAt, ""],
+    ["Filtro", "Cliente", overview.filters.clientName ?? "Todos", overview.filters.clientId ?? ""],
+    ["Filtro", "Projeto", overview.filters.projectName ?? "Todos", overview.filters.projectId ?? ""],
     ["Clientes", "Clientes no período", overview.clients.total, ""],
     ["Clientes", "Clientes ativos", overview.clients.active, ""],
     ["Comercial", "Total de orçamentos", overview.commercial.totalBudgets, ""],
@@ -57,7 +59,13 @@ export function buildReportsCsv(overview: ReportsOverview) {
 }
 
 export function createReportExportFilename(overview: ReportsOverview) {
-  return `arqflow-relatorios-${overview.period.key.toLowerCase()}-${formatDateParam(overview.period.from)}-${formatDateParam(overview.period.to)}.csv`;
+  const scopeParts = [
+    overview.filters.clientName ? `cliente-${slugify(overview.filters.clientName)}` : "",
+    overview.filters.projectName ? `projeto-${slugify(overview.filters.projectName)}` : ""
+  ].filter(Boolean);
+  const scopeSuffix = scopeParts.length > 0 ? `-${scopeParts.join("-")}` : "";
+
+  return `arqflow-relatorios-${overview.period.key.toLowerCase()}-${formatDateParam(overview.period.from)}-${formatDateParam(overview.period.to)}${scopeSuffix}.csv`;
 }
 
 function appendStatusRows(rows: CsvRow[], group: string, items: ReportStatusCount[]) {
@@ -85,4 +93,13 @@ function formatDateParam(value: string) {
   const day = `${date.getDate()}`.padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AlertCircle, ArrowUpRight, Download, Filter, RefreshCw } from "lucide-react";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { Badge } from "../../components/ui/Badge";
@@ -14,8 +14,14 @@ import { Select } from "../../components/ui/Select";
 import { StatCard } from "../../components/ui/StatCard";
 import { Table } from "../../components/ui/Table";
 import { ApiError } from "../../services/api";
+import { listClients } from "../../services/clients";
+import { listProjects } from "../../services/projects";
 import { getReportsOverview } from "../../services/reports";
+import type { Client } from "../../types/client";
+import type { Project } from "../../types/project";
+import { reportPeriodValues } from "../../types/reports";
 import type { ReportPeriodKey, ReportsOverview, ReportsOverviewParams, ReportStatusCount } from "../../types/reports";
+import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { buildReportsCsv, createReportExportFilename } from "./reports-export";
 
 const defaultQuery: ReportsOverviewParams = {
@@ -23,14 +29,26 @@ const defaultQuery: ReportsOverviewParams = {
 };
 
 export function ReportsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = readReportsSearchParams(searchParams);
   const [overview, setOverview] = useState<ReportsOverview | null>(null);
-  const [query, setQuery] = useState<ReportsOverviewParams>(defaultQuery);
-  const [draftPeriod, setDraftPeriod] = useState<ReportPeriodKey>("CURRENT_MONTH");
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [query, setQuery] = useState<ReportsOverviewParams>(initialQuery);
+  const [draftPeriod, setDraftPeriod] = useState<ReportPeriodKey>(initialQuery.period);
+  const [draftFrom, setDraftFrom] = useState(initialQuery.from ?? "");
+  const [draftTo, setDraftTo] = useState(initialQuery.to ?? "");
+  const [draftClientId, setDraftClientId] = useState(initialQuery.clientId ?? "");
+  const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId ?? "");
   const [loading, setLoading] = useState(true);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const shortcuts = overview ? getReportShortcuts(overview) : null;
+  const filteredProjects = useMemo(
+    () => (draftClientId ? projects.filter((project) => project.clientId === draftClientId) : projects),
+    [draftClientId, projects]
+  );
+  const shortcuts = overview ? getReportShortcuts(overview, query) : null;
+  const searchParamsKey = searchParams.toString();
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -46,6 +64,51 @@ export function ReportsPage() {
   }, [query]);
 
   useEffect(() => {
+    const nextQuery = readReportsSearchParams(searchParams);
+
+    setDraftPeriod(nextQuery.period);
+    setDraftFrom(nextQuery.from ?? "");
+    setDraftTo(nextQuery.to ?? "");
+    setDraftClientId(nextQuery.clientId ?? "");
+    setDraftProjectId(nextQuery.projectId ?? "");
+    setQuery(nextQuery);
+  }, [searchParamsKey]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOptions() {
+      setOptionsLoading(true);
+
+      try {
+        const [clientsResult, projectsResult] = await Promise.all([
+          listClients({ page: 1, pageSize: 200 }),
+          listProjects({ page: 1, pageSize: 200 })
+        ]);
+
+        if (active) {
+          setClients(clientsResult.data);
+          setProjects(projectsResult.data);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setOptionsLoading(false);
+        }
+      }
+    }
+
+    void loadOptions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     void loadReports();
   }, [loadReports]);
 
@@ -57,11 +120,39 @@ export function ReportsPage() {
       return;
     }
 
-    setQuery({
+    applyQuery({
       period: draftPeriod,
       from: draftPeriod === "CUSTOM" ? draftFrom : undefined,
-      to: draftPeriod === "CUSTOM" ? draftTo : undefined
+      to: draftPeriod === "CUSTOM" ? draftTo : undefined,
+      clientId: draftClientId || undefined,
+      projectId: draftProjectId || undefined
     });
+  }
+
+  function handleClearFilters() {
+    applyQuery(defaultQuery);
+  }
+
+  function handleClientFilterChange(clientId: string) {
+    setDraftClientId(clientId);
+
+    if (draftProjectId && clientId) {
+      const currentProject = projects.find((project) => project.id === draftProjectId);
+
+      if (currentProject && currentProject.clientId !== clientId) {
+        setDraftProjectId("");
+      }
+    }
+  }
+
+  function applyQuery(nextQuery: ReportsOverviewParams) {
+    setDraftPeriod(nextQuery.period);
+    setDraftFrom(nextQuery.period === "CUSTOM" ? nextQuery.from ?? "" : "");
+    setDraftTo(nextQuery.period === "CUSTOM" ? nextQuery.to ?? "" : "");
+    setDraftClientId(nextQuery.clientId ?? "");
+    setDraftProjectId(nextQuery.projectId ?? "");
+    setQuery(nextQuery);
+    setSearchParams(toReportsSearchParams(nextQuery), { replace: true });
   }
 
   function handleExportReports() {
@@ -106,7 +197,7 @@ export function ReportsPage() {
       {loading ? <LoadingState /> : null}
 
       <Card>
-        <form className="grid min-w-0 gap-3 md:grid-cols-3" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" onSubmit={handleFilterSubmit}>
           <Select label="Período" onChange={(event) => setDraftPeriod(event.target.value as ReportPeriodKey)} value={draftPeriod}>
             <option value="CURRENT_MONTH">Mês atual</option>
             <option value="CURRENT_YEAR">Ano atual</option>
@@ -126,18 +217,45 @@ export function ReportsPage() {
             type="date"
             value={draftTo}
           />
-          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-3 md:justify-end">
+          <Select disabled={optionsLoading} label="Cliente" onChange={(event) => handleClientFilterChange(event.target.value)} value={draftClientId}>
+            <option value="">Todos</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </Select>
+          <Select disabled={optionsLoading} label="Projeto" onChange={(event) => setDraftProjectId(event.target.value)} value={draftProjectId}>
+            <option value="">Todos</option>
+            {filteredProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </Select>
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3 xl:justify-end 2xl:col-span-5">
             <Button className="w-full lg:w-auto" disabled={loading} type="submit">
               <Filter className="h-4 w-4" strokeWidth={1.75} />
               Aplicar
             </Button>
+            <Button className="w-full lg:w-auto" disabled={loading} onClick={handleClearFilters} type="button" variant="secondary">
+              Limpar filtros
+            </Button>
           </div>
         </form>
         {overview ? (
-          <p className="mt-4 text-sm text-text-secondary">
-            Período ativo: <span className="text-text-primary">{overview.period.label}</span> · {formatDate(overview.period.from)} a{" "}
-            {formatDate(overview.period.to)}
-          </p>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-text-secondary">
+            <span>
+              Período: <span className="text-text-primary">{overview.period.label}</span> · {formatDate(overview.period.from)} a{" "}
+              {formatDate(overview.period.to)}
+            </span>
+            <span>
+              Cliente: <span className="text-text-primary">{overview.filters.clientName ?? "Todos"}</span>
+            </span>
+            <span>
+              Projeto: <span className="text-text-primary">{overview.filters.projectName ?? "Todos"}</span>
+            </span>
+          </div>
         ) : null}
       </Card>
 
@@ -150,12 +268,12 @@ export function ReportsPage() {
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               badge={<Badge tone="neutral">{overview.clients.total} total</Badge>}
-              label="Clientes ativos no período"
+              label="Clientes ativos no escopo"
               value={overview.clients.active.toString()}
             />
             <StatCard
               badge={<Badge tone="success">{overview.projects.finished} finalizados</Badge>}
-              label="Projetos ativos no período"
+              label="Projetos ativos no escopo"
               value={overview.projects.active.toString()}
             />
             <StatCard
@@ -185,10 +303,10 @@ export function ReportsPage() {
                 <ProgressBar label="Conversão aprovados x recusados" value={overview.commercial.conversionRate} />
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <MetricLine label="Aprovados" to="/budgets?status=APPROVED" value={overview.commercial.approvedBudgets.toString()} />
-                <MetricLine label="Recusados" to="/budgets?status=REFUSED" value={overview.commercial.refusedBudgets.toString()} />
+                <MetricLine label="Aprovados" to={shortcuts?.budgetsApproved} value={overview.commercial.approvedBudgets.toString()} />
+                <MetricLine label="Recusados" to={shortcuts?.budgetsRefused} value={overview.commercial.refusedBudgets.toString()} />
                 <MetricLine label="Abertos" to={shortcuts?.budgetsOpen} value={overview.commercial.openBudgets.toString()} />
-                <MetricLine label="Valor aprovado" to="/budgets?status=APPROVED" value={formatMoney(overview.commercial.approvedAmount)} />
+                <MetricLine label="Valor aprovado" to={shortcuts?.budgetsApproved} value={formatMoney(overview.commercial.approvedAmount)} />
                 <MetricLine label="Valor em aberto" to={shortcuts?.budgetsOpen} value={formatMoney(overview.commercial.openAmount)} />
                 <MetricLine label="Total de orçamentos" value={overview.commercial.totalBudgets.toString()} />
               </div>
@@ -251,7 +369,7 @@ export function ReportsPage() {
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <MetricLine label="Tarefas abertas" value={overview.operations.openTasks.toString()} />
                 <MetricLine label="Tarefas atrasadas" to={shortcuts?.tasksOverdue} value={overview.operations.overdueTasks.toString()} />
-                <MetricLine label="Urgentes" to="/tasks?priority=URGENT" value={overview.operations.urgentTasks.toString()} />
+                <MetricLine label="Urgentes" to={shortcuts?.tasksUrgent} value={overview.operations.urgentTasks.toString()} />
                 <MetricLine label="Vencem em 7 dias" to={shortcuts?.tasksDueSoon} value={overview.operations.dueSoonTasks.toString()} />
                 <MetricLine label="Visitas agendadas" to={shortcuts?.visitsScheduled} value={overview.operations.scheduledVisits.toString()} />
                 <MetricLine label="Visitas em 7 dias" to={shortcuts?.visitsUpcoming} value={overview.operations.visitsNextSevenDays.toString()} />
@@ -280,7 +398,12 @@ export function ReportsPage() {
                           <Link
                             className="font-medium text-text-primary transition hover:text-accent-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
                             title="Abrir financeiro deste projeto"
-                            to={`/financial?projectId=${project.id}&status=RECEIVABLE`}
+                            to={buildPath("/financial", {
+                              dueFrom: toDateParam(overview.period.from),
+                              dueTo: toDateParam(overview.period.to),
+                              projectId: project.id,
+                              status: "RECEIVABLE"
+                            })}
                           >
                             {project.name}
                           </Link>
@@ -395,47 +518,106 @@ function MetricLine({ label, to, value }: { label: string; to?: string; value: s
   );
 }
 
-function getReportShortcuts(overview: ReportsOverview) {
+function getReportShortcuts(overview: ReportsOverview, query: ReportsOverviewParams) {
   const dueFrom = toDateParam(overview.period.from);
   const dueTo = toDateParam(overview.period.to);
+  const scopeParams = {
+    clientId: query.clientId,
+    projectId: query.projectId
+  };
 
   return {
+    budgetsApproved: buildPath("/budgets", {
+      ...scopeParams,
+      status: "APPROVED"
+    }),
     budgetsOpen: buildPath("/budgets", {
+      ...scopeParams,
       createdFrom: dueFrom,
       createdTo: dueTo,
       scope: "OPEN_BUDGETS"
     }),
+    budgetsRefused: buildPath("/budgets", {
+      ...scopeParams,
+      status: "REFUSED"
+    }),
     financialOverdue: buildPath("/financial", {
+      ...scopeParams,
       dueFrom,
       dueTo,
       status: "OVERDUE"
     }),
     financialReceivable: buildPath("/financial", {
+      ...scopeParams,
       dueFrom,
       dueTo,
       status: "RECEIVABLE"
     }),
     tasksDueSoon: buildPath("/tasks", {
+      ...scopeParams,
       dueFrom,
       dueTo,
       scope: "DUE_SOON_TASKS"
     }),
     tasksOverdue: buildPath("/tasks", {
+      ...scopeParams,
       dueFrom,
       dueTo,
       scope: "OVERDUE_TASKS"
     }),
+    tasksUrgent: buildPath("/tasks", {
+      ...scopeParams,
+      priority: "URGENT"
+    }),
     visitsScheduled: buildPath("/visits", {
+      ...scopeParams,
       dateFrom: dueFrom,
       dateTo: dueTo,
       status: "SCHEDULED"
     }),
     visitsUpcoming: buildPath("/visits", {
+      ...scopeParams,
       dateFrom: dueFrom,
       dateTo: dueTo,
       scope: "UPCOMING_VISITS"
     })
   };
+}
+
+function readReportsSearchParams(searchParams: URLSearchParams): ReportsOverviewParams {
+  const period = getEnumSearchParam(searchParams, "period", reportPeriodValues) || defaultQuery.period;
+
+  return {
+    period,
+    from: period === "CUSTOM" ? getDateSearchParam(searchParams, "from") || undefined : undefined,
+    to: period === "CUSTOM" ? getDateSearchParam(searchParams, "to") || undefined : undefined,
+    clientId: getStringSearchParam(searchParams, "clientId") || undefined,
+    projectId: getStringSearchParam(searchParams, "projectId") || undefined
+  };
+}
+
+function toReportsSearchParams(query: ReportsOverviewParams) {
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("period", query.period);
+
+  if (query.period === "CUSTOM" && query.from) {
+    searchParams.set("from", query.from);
+  }
+
+  if (query.period === "CUSTOM" && query.to) {
+    searchParams.set("to", query.to);
+  }
+
+  if (query.clientId) {
+    searchParams.set("clientId", query.clientId);
+  }
+
+  if (query.projectId) {
+    searchParams.set("projectId", query.projectId);
+  }
+
+  return searchParams;
 }
 
 function buildPath(pathname: string, params: Record<string, string | undefined>) {

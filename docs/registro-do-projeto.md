@@ -785,6 +785,9 @@ Implementado no backend:
 
 - `GET /reports/overview`;
 - filtros `period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM`, com `from` e `to` obrigatórios para período personalizado;
+- filtros opcionais `clientId` e `projectId`, aplicados no backend sobre clientes, orçamentos, projetos, financeiro, tarefas e visitas;
+- validação de que `projectId` pertence ao `clientId` quando ambos são enviados;
+- retorno de `filters` com nome e id do cliente/projeto ativos para UI e CSV;
 - consolidação real de clientes, orçamentos, projetos, financeiro, tarefas e visitas;
 - contagem de clientes totais e ativos;
 - conversão comercial por orçamentos aprovados versus recusados;
@@ -804,16 +807,20 @@ Implementado no frontend:
 - service Axios para consumir `/reports/overview`;
 - tipos TypeScript dedicados para o contrato de relatórios;
 - filtros de período para mês atual, ano atual e intervalo personalizado;
+- filtros de cliente e projeto com opções carregadas dos módulos reais;
+- URL de `/reports` preserva período, cliente e projeto para recarregar ou compartilhar o mesmo recorte;
 - cards de clientes ativos, projetos ativos, receita recebida e valor a receber;
 - seção comercial com taxa de conversão, valores e distribuição por status;
 - seção de projetos com progresso médio, total contratado e distribuição por status;
 - seção operacional com tarefas e visitas;
 - tabela de recebíveis por projeto;
 - atalhos em indicadores para abrir módulos relacionados já filtrados;
+- atalhos preservam cliente e/ou projeto ativo em Orçamentos, Financeiro, Tarefas e Visitas;
 - atalhos de Financeiro preservam o período ativo quando o filtro usa vencimento (`dueFrom` e `dueTo`);
 - Orçamentos, Financeiro, Tarefas e Visitas passam a ler filtros da URL e preencher os campos visuais automaticamente;
 - detalhamento adicional por tipo de projeto, prioridade de tarefas e tipo de visita;
 - exportação CSV do relatório carregado, com separador `;` e BOM UTF-8 para compatibilidade com Excel/LibreOffice;
+- CSV identifica o escopo ativo de cliente e projeto;
 - atualização manual e estados de carregamento, erro e vazio.
 
 Regras consideradas:
@@ -825,6 +832,7 @@ Regras consideradas:
 - progresso usa etapas concluídas sobre total;
 - atrasos de tarefas e pagamentos continuam dinâmicos;
 - atalhos só foram aplicados em métricas com filtro de destino representável hoje;
+- Tarefas passou a aceitar `clientId` na listagem para manter atalhos de Relatórios coerentes quando o relatório está filtrado por cliente;
 - exportação CSV apenas serializa o `overview` retornado pelo backend, sem recalcular valores financeiros no frontend;
 - nenhuma dependência nova de gráficos foi adicionada.
 
@@ -832,7 +840,7 @@ Ainda falta:
 
 - testes de frontend da tela de relatórios;
 - validar a exportação CSV com dados reais do escritório;
-- avaliar filtros adicionais por cliente/projeto se a rotina do escritório pedir.
+- avaliar detalhamento limitado de pagamentos, tarefas e visitas mais críticos se a rotina do escritório pedir.
 
 ## Modulo de Tarefas - estado atual
 
@@ -884,7 +892,7 @@ Implementado no backend:
 - metadados de status e prioridades oficiais;
 - listagem paginada;
 - busca por título, descrição, responsável, notas, projeto e cliente do projeto;
-- filtros por projeto, status, prioridade, intervalo de prazo e tarefas atrasadas;
+- filtros por cliente, projeto, status, prioridade, intervalo de prazo e tarefas atrasadas;
 - criação de tarefa com projeto opcional;
 - validação de projeto existente quando `projectId` e informado;
 - edição de tarefa;
@@ -899,7 +907,7 @@ Implementado no frontend:
 - rota `/tasks` substituiu o placeholder por uma tela real;
 - service Axios para consumir `/tasks`;
 - tipos TypeScript para tarefa, status, prioridade e projeto resumido;
-- tela com busca, filtros por status, prioridade, prazo e projeto;
+- tela com busca, filtros por cliente, status, prioridade, prazo e projeto;
 - opção visual `Prazo: Atrasadas`, usada pelos atalhos de Relatórios;
 - tabela com tarefa, projeto, responsável, prioridade, status, prazo e ações;
 - badges por status, prioridade e atraso;
@@ -1819,6 +1827,7 @@ GET /reports/overview
 GET /reports/overview?period=CURRENT_MONTH
 GET /reports/overview?period=CURRENT_YEAR
 GET /reports/overview?period=CUSTOM&from=YYYY-MM-DD&to=YYYY-MM-DD
+GET /reports/overview?period=CURRENT_MONTH&clientId=:clientId&projectId=:projectId
 GET /clients/meta
 GET /clients
 GET /clients/:id
@@ -1938,7 +1947,7 @@ Qualidade:
 
 ## Proximo passo recomendado
 
-Validar a exportação CSV de Relatórios com dados reais do escritório. Depois disso, bons candidatos para a próxima fatia são filtros adicionais por cliente/projeto ou detalhamento limitado de pagamentos, tarefas e visitas mais críticos, sempre mantendo o backend como fonte da verdade.
+Validar Relatórios filtrados por cliente/projeto com dados reais do escritório. Depois disso, bons candidatos para a próxima fatia são detalhamento limitado de pagamentos, tarefas e visitas mais críticos, sempre mantendo o backend como fonte da verdade.
 
 ## Pontos de atencao para Clientes
 

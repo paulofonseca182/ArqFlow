@@ -3,12 +3,16 @@ import { z } from "zod";
 export const reportPeriodValues = ["CURRENT_MONTH", "CURRENT_YEAR", "CUSTOM"] as const;
 
 const optionalDate = z.preprocess(parseOptionalDate, z.date().optional());
+const optionalClientId = z.string().cuid("cliente inválido").optional().or(z.literal("").transform(() => undefined));
+const optionalProjectId = z.string().cuid("projeto inválido").optional().or(z.literal("").transform(() => undefined));
 
 export const reportsOverviewQuerySchema = z
   .object({
     period: z.enum(reportPeriodValues).default("CURRENT_MONTH"),
     from: optionalDate,
-    to: optionalDate
+    to: optionalDate,
+    clientId: optionalClientId,
+    projectId: optionalProjectId
   })
   .superRefine(validateCustomPeriod);
 

@@ -48,6 +48,9 @@ type ApiError = {
   - Inclui conversão de orçamentos, progresso médio, recebíveis por projeto e distribuição por status/tipo/prioridade.
   - Aceita `period=CURRENT_MONTH|CURRENT_YEAR|CUSTOM`.
   - Quando `period=CUSTOM`, exige `from` e `to` em `YYYY-MM-DD`.
+  - Aceita `clientId` e `projectId` opcionais para escopar o relatório.
+  - Quando `clientId` e `projectId` são enviados juntos, o projeto precisa pertencer ao cliente.
+  - Retorna `filters` com cliente/projeto ativos para a UI e o CSV exibirem o escopo aplicado.
   - Receita usa `paidAt`; recebíveis e atrasos usam `dueDate`; tarefas usam `dueDate`; visitas usam `date`.
 
 ## Clientes
@@ -106,7 +109,8 @@ type ApiError = {
 - `GET /tasks/meta`
   - Retorna status e prioridades oficiais de tarefas.
 - `GET /tasks`
-  - Lista tarefas com `page`, `pageSize`, `search`, `status`, `priority`, `projectId`, `dueFrom`, `dueTo`, `overdue` e `scope`.
+  - Lista tarefas com `page`, `pageSize`, `search`, `clientId`, `status`, `priority`, `projectId`, `dueFrom`, `dueTo`, `overdue` e `scope`.
+  - `clientId` filtra tarefas vinculadas a projetos do cliente; tarefas gerais sem projeto não entram nesse escopo.
   - `overdue=true` filtra tarefas com `dueDate` menor que hoje e status diferente de `COMPLETED` ou `CANCELLED`.
   - `scope=OVERDUE_TASKS` aplica a mesma regra de atraso como contrato explícito para relatórios.
   - `scope=DUE_SOON_TASKS` filtra tarefas abertas com `dueDate` de hoje até os próximos 7 dias.

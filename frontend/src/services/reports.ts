@@ -7,7 +7,9 @@ export async function getReportsOverview(params: ReportsOverviewParams) {
     params: {
       period: params.period,
       from: params.period === "CUSTOM" ? params.from : undefined,
-      to: params.period === "CUSTOM" ? params.to : undefined
+      to: params.period === "CUSTOM" ? params.to : undefined,
+      clientId: params.clientId || undefined,
+      projectId: params.projectId || undefined
     }
   });
 

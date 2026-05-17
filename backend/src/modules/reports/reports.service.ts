@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
 import { calculateProjectProgress } from "../../shared/business-rules.js";
 import {
@@ -18,6 +19,7 @@ import {
   visitTypeLabels,
   visitTypes
 } from "../../shared/domain.js";
+import { AppError } from "../../shared/errors.js";
 import { buildProjectFinancialSummary, getEffectivePaymentStatus } from "../financial/financial.service.js";
 import type { ReportPeriodKey, ReportsOverviewQuery } from "./reports.schema.js";
 
@@ -37,10 +39,13 @@ type ReportPeriodSnapshot = {
 
 type ReportClientSnapshot = {
   createdAt: Date;
+  id: string;
+  name: string;
   status: string;
 };
 
 type ReportProjectSnapshot = {
+  clientId: string;
   createdAt: Date;
   id: string;
   name: string;
@@ -48,6 +53,7 @@ type ReportProjectSnapshot = {
   status: string;
   contractedAmount: { toString(): string } | number | string | null;
   client: {
+    id: string;
     name: string;
   };
   steps: Array<{
@@ -62,16 +68,20 @@ type ReportProjectSnapshot = {
 };
 
 type ReportBudgetSnapshot = {
+  clientId: string;
   createdAt: Date;
+  projectId: string | null;
   status: string;
   finalAmount: { toString(): string } | number | string;
 };
 
 type ReportPaymentSnapshot = {
   amount: { toString(): string } | number | string;
+  clientId: string;
   dueDate: Date;
   paidAmount: { toString(): string } | number | string;
   paidAt: Date | null;
+  projectId: string;
   status: string;
 };
 
@@ -79,23 +89,36 @@ type ReportTaskSnapshot = {
   createdAt: Date;
   dueDate: Date | null;
   priority: string;
+  projectId: string | null;
   status: string;
 };
 
 type ReportVisitSnapshot = {
   amount: { toString(): string } | number | string | null;
+  clientId: string;
   date: Date;
+  projectId: string | null;
   status: string;
   type: string;
+};
+
+type ReportAppliedFilters = {
+  clientId: string | null;
+  clientName: string | null;
+  projectId: string | null;
+  projectName: string | null;
 };
 
 export async function getReportsOverview(query: ReportsOverviewQuery) {
   const today = new Date();
   const period = resolveReportPeriod(query, today);
+  const filters = await resolveReportFilters(query);
   const [clients, projects, budgets, payments, tasks, visits] = await prisma.$transaction([
-      prisma.client.findMany({ select: { createdAt: true, status: true } }),
+      prisma.client.findMany({ where: buildReportClientWhere(query), select: { createdAt: true, id: true, name: true, status: true } }),
       prisma.project.findMany({
+        where: buildReportProjectWhere(query),
         select: {
+          clientId: true,
           createdAt: true,
           id: true,
           name: true,
@@ -104,6 +127,7 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
           contractedAmount: true,
           client: {
             select: {
+              id: true,
               name: true
             }
           },
@@ -122,16 +146,29 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
           }
         }
       }),
-      prisma.budget.findMany({ select: { createdAt: true, finalAmount: true, status: true } }),
-      prisma.payment.findMany({ select: { amount: true, dueDate: true, paidAmount: true, paidAt: true, status: true } }),
-      prisma.task.findMany({ select: { createdAt: true, dueDate: true, priority: true, status: true } }),
-      prisma.visit.findMany({ select: { amount: true, date: true, status: true, type: true } })
+      prisma.budget.findMany({
+        where: buildReportBudgetWhere(query),
+        select: { clientId: true, createdAt: true, finalAmount: true, projectId: true, status: true }
+      }),
+      prisma.payment.findMany({
+        where: buildReportPaymentWhere(query),
+        select: { amount: true, clientId: true, dueDate: true, paidAmount: true, paidAt: true, projectId: true, status: true }
+      }),
+      prisma.task.findMany({
+        where: buildReportTaskWhere(query),
+        select: { createdAt: true, dueDate: true, priority: true, projectId: true, status: true }
+      }),
+      prisma.visit.findMany({
+        where: buildReportVisitWhere(query),
+        select: { amount: true, clientId: true, date: true, projectId: true, status: true, type: true }
+      })
   ]);
 
   return buildReportsOverview(
     {
       budgets,
       clients,
+      filters,
       payments,
       period,
       projects,
@@ -146,6 +183,7 @@ export function buildReportsOverview(
   {
     budgets,
     clients,
+    filters,
     payments,
     period,
     projects,
@@ -154,6 +192,7 @@ export function buildReportsOverview(
   }: {
     budgets: ReportBudgetSnapshot[];
     clients: ReportClientSnapshot[];
+    filters?: ReportAppliedFilters;
     payments: ReportPaymentSnapshot[];
     period: ReportPeriodSnapshot;
     projects: ReportProjectSnapshot[];
@@ -204,6 +243,12 @@ export function buildReportsOverview(
   const financial = buildPeriodFinancialSummary(payments, projectsInPeriod, period, today);
 
   return {
+    filters: filters ?? {
+      clientId: null,
+      clientName: null,
+      projectId: null,
+      projectName: null
+    },
     generatedAt: today.toISOString(),
     period: mapReportPeriod(period),
     clients: {
@@ -302,6 +347,94 @@ function buildPeriodFinancialSummary(
     receivablePayments,
     overduePayments,
     averageProjectTicket: toMoneyString(averageProjectTicket)
+  };
+}
+
+async function resolveReportFilters(query: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Promise<ReportAppliedFilters> {
+  const [client, project] = await Promise.all([
+    query.clientId
+      ? prisma.client.findUnique({
+          where: { id: query.clientId },
+          select: { id: true, name: true }
+        })
+      : null,
+    query.projectId
+      ? prisma.project.findUnique({
+          where: { id: query.projectId },
+          select: {
+            clientId: true,
+            id: true,
+            name: true,
+            client: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        })
+      : null
+  ]);
+
+  if (query.clientId && !client) {
+    throw new AppError("CLIENT_NOT_FOUND", "Cliente não encontrado.", 404);
+  }
+
+  if (query.projectId && !project) {
+    throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
+  }
+
+  if (query.clientId && project && project.clientId !== query.clientId) {
+    throw new AppError("REPORT_SCOPE_PROJECT_CLIENT_MISMATCH", "O projeto informado não pertence ao cliente selecionado.", 422);
+  }
+
+  return {
+    clientId: client?.id ?? null,
+    clientName: client?.name ?? null,
+    projectId: project?.id ?? null,
+    projectName: project?.name ?? null
+  };
+}
+
+function buildReportClientWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.ClientWhereInput {
+  return {
+    ...(clientId ? { id: clientId } : {}),
+    ...(projectId ? { projects: { some: { id: projectId } } } : {})
+  };
+}
+
+function buildReportProjectWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.ProjectWhereInput {
+  return {
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { id: projectId } : {})
+  };
+}
+
+function buildReportBudgetWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.BudgetWhereInput {
+  return {
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { projectId } : {})
+  };
+}
+
+function buildReportPaymentWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.PaymentWhereInput {
+  return {
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { projectId } : {})
+  };
+}
+
+function buildReportTaskWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.TaskWhereInput {
+  return {
+    ...(projectId ? { projectId } : {}),
+    ...(clientId ? { project: { clientId } } : {})
+  };
+}
+
+function buildReportVisitWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.VisitWhereInput {
+  return {
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { projectId } : {})
   };
 }
 

@@ -169,6 +169,7 @@ export async function deleteTask(id: string) {
 
 export function buildTaskWhere(
   {
+    clientId,
     dueFrom,
     dueTo,
     overdue,
@@ -177,7 +178,7 @@ export function buildTaskWhere(
     search,
     scope,
     status
-  }: Partial<Pick<ListTasksQuery, "dueFrom" | "dueTo" | "overdue" | "priority" | "projectId" | "scope" | "search" | "status">>,
+  }: Partial<Pick<ListTasksQuery, "clientId" | "dueFrom" | "dueTo" | "overdue" | "priority" | "projectId" | "scope" | "search" | "status">>,
   today = new Date()
 ): Prisma.TaskWhereInput {
   const where: Prisma.TaskWhereInput = {};
@@ -186,6 +187,12 @@ export function buildTaskWhere(
 
   if (projectId) {
     where.projectId = projectId;
+  }
+
+  if (clientId) {
+    where.project = {
+      clientId
+    };
   }
 
   if (status) {

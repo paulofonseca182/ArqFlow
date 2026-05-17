@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.4 - Relatórios por cliente e projeto
+
+- Filtros por cliente e projeto adicionados em `/reports`.
+- `GET /reports/overview` agora aceita `clientId` e `projectId`, valida o vínculo entre eles e retorna o escopo aplicado.
+- Atalhos de Relatórios preservam cliente/projeto ao abrir Orçamentos, Financeiro, Tarefas e Visitas.
+- Tarefas passaram a aceitar filtro por `clientId` para manter os atalhos de Relatórios consistentes.
+- CSV de Relatórios identifica o cliente e o projeto ativos no arquivo exportado.
+- README, API, USER_GUIDE, CHANGELOG e registro do projeto atualizados.
+
 ## 0.5.3 - Relatórios com exportação e detalhamento
 
 - Botão `Exportar CSV` adicionado em `/reports` para baixar o relatório carregado.

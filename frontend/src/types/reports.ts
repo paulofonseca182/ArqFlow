@@ -5,7 +5,9 @@ export type ReportStatusCount = {
   percentage: number;
 };
 
-export type ReportPeriodKey = "CURRENT_MONTH" | "CURRENT_YEAR" | "CUSTOM";
+export const reportPeriodValues = ["CURRENT_MONTH", "CURRENT_YEAR", "CUSTOM"] as const;
+
+export type ReportPeriodKey = (typeof reportPeriodValues)[number];
 
 export type ReportPeriod = {
   key: ReportPeriodKey;
@@ -18,6 +20,15 @@ export type ReportsOverviewParams = {
   period: ReportPeriodKey;
   from?: string;
   to?: string;
+  clientId?: string;
+  projectId?: string;
+};
+
+export type ReportsOverviewFilters = {
+  clientId: string | null;
+  clientName: string | null;
+  projectId: string | null;
+  projectName: string | null;
 };
 
 export type ReportsFinancialSummary = {
@@ -41,6 +52,7 @@ export type ReportProjectReceivable = {
 };
 
 export type ReportsOverview = {
+  filters: ReportsOverviewFilters;
   generatedAt: string;
   period: ReportPeriod;
   clients: {

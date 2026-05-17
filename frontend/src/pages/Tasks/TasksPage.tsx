@@ -27,9 +27,11 @@ import { Select } from "../../components/ui/Select";
 import { Table } from "../../components/ui/Table";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
+import { listClients } from "../../services/clients";
 import { listProjects } from "../../services/projects";
 import { cancelTask, completeTask, createTask, deleteTask, getTasksMeta, listTasks, reopenTask, updateTask } from "../../services/tasks";
 import type { PaginationMeta } from "../../types/api";
+import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import type { Task, TaskOption, TaskPriority, TaskStatus, TaskWriteInput } from "../../types/task";
 import { taskPriorityValues, taskStatusValues } from "../../types/task";
@@ -51,6 +53,7 @@ const fallbackPriorities: TaskOption<TaskPriority>[] = taskPriorityValues.map((v
 type TaskDeadlineScope = (typeof taskDeadlineScopeValues)[number];
 type TasksQuery = {
   search: string;
+  clientId: string;
   status: TaskStatus | "";
   priority: TaskPriority | "";
   projectId: string;
@@ -63,12 +66,14 @@ export function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = readTasksSearchParams(searchParams);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [statuses, setStatuses] = useState<TaskOption<TaskStatus>[]>(fallbackStatuses);
   const [priorities, setPriorities] = useState<TaskOption<TaskPriority>[]>(fallbackPriorities);
   const [page, setPage] = useState(1);
   const [draftSearch, setDraftSearch] = useState(initialQuery.search);
+  const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
   const [draftStatus, setDraftStatus] = useState<TaskStatus | "">(initialQuery.status);
   const [draftPriority, setDraftPriority] = useState<TaskPriority | "">(initialQuery.priority);
   const [draftDeadlineScope, setDraftDeadlineScope] = useState<TaskDeadlineScope | "">(initialQuery.scope);
@@ -91,6 +96,10 @@ export function TasksPage() {
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
   const priorityLabelByValue = useMemo(() => new Map(priorities.map((priority) => [priority.value, priority.label])), [priorities]);
+  const filteredProjects = useMemo(
+    () => (draftClientId ? projects.filter((project) => project.clientId === draftClientId) : projects),
+    [draftClientId, projects]
+  );
   const searchParamsKey = searchParams.toString();
 
   const loadTasks = useCallback(async () => {
@@ -102,6 +111,7 @@ export function TasksPage() {
         page,
         pageSize,
         search: query.search,
+        clientId: query.clientId || undefined,
         status: query.status || undefined,
         priority: query.priority || undefined,
         projectId: query.projectId || undefined,
@@ -117,12 +127,13 @@ export function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.dueFrom, query.dueTo, query.priority, query.projectId, query.scope, query.search, query.status]);
+  }, [page, query.clientId, query.dueFrom, query.dueTo, query.priority, query.projectId, query.scope, query.search, query.status]);
 
   useEffect(() => {
     const nextQuery = readTasksSearchParams(searchParams);
 
     setDraftSearch(nextQuery.search);
+    setDraftClientId(nextQuery.clientId);
     setDraftStatus(nextQuery.status);
     setDraftPriority(nextQuery.priority);
     setDraftDeadlineScope(nextQuery.scope);
@@ -140,11 +151,16 @@ export function TasksPage() {
       setMetaLoading(true);
 
       try {
-        const [tasksMeta, projectsResult] = await Promise.all([getTasksMeta(), listProjects({ page: 1, pageSize: 100 })]);
+        const [tasksMeta, clientsResult, projectsResult] = await Promise.all([
+          getTasksMeta(),
+          listClients({ page: 1, pageSize: 200 }),
+          listProjects({ page: 1, pageSize: 200 })
+        ]);
 
         if (active) {
           setStatuses(tasksMeta.statuses);
           setPriorities(tasksMeta.priorities);
+          setClients(clientsResult.data);
           setProjects(projectsResult.data);
         }
       } catch (requestError) {
@@ -173,6 +189,7 @@ export function TasksPage() {
     event.preventDefault();
     applyQuery({
       search: draftSearch.trim(),
+      clientId: draftClientId,
       status: draftStatus,
       priority: draftPriority,
       scope: draftDeadlineScope,
@@ -183,11 +200,12 @@ export function TasksPage() {
   }
 
   function handleClearFilters() {
-    applyQuery({ search: "", status: "", priority: "", projectId: "", dueFrom: "", dueTo: "", scope: "" });
+    applyQuery({ search: "", clientId: "", status: "", priority: "", projectId: "", dueFrom: "", dueTo: "", scope: "" });
   }
 
   function applyQuery(nextQuery: TasksQuery) {
     setDraftSearch(nextQuery.search);
+    setDraftClientId(nextQuery.clientId);
     setDraftStatus(nextQuery.status);
     setDraftPriority(nextQuery.priority);
     setDraftDeadlineScope(nextQuery.scope);
@@ -284,7 +302,21 @@ export function TasksPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.status || query.priority || query.projectId || query.dueFrom || query.dueTo || query.scope);
+  function handleClientFilterChange(clientId: string) {
+    setDraftClientId(clientId);
+
+    if (draftProjectId && clientId) {
+      const currentProject = projects.find((project) => project.id === draftProjectId);
+
+      if (currentProject && currentProject.clientId !== clientId) {
+        setDraftProjectId("");
+      }
+    }
+  }
+
+  const hasFilters = Boolean(
+    query.search || query.clientId || query.status || query.priority || query.projectId || query.dueFrom || query.dueTo || query.scope
+  );
 
   return (
     <PageWrapper
@@ -298,8 +330,16 @@ export function TasksPage() {
       title="Tarefas"
     >
       <Card>
-        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7" onSubmit={handleFilterSubmit}>
+        <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8" onSubmit={handleFilterSubmit}>
           <Input label="Busca" onChange={(event) => setDraftSearch(event.target.value)} placeholder="Tarefa, responsável, projeto ou cliente" value={draftSearch} />
+          <Select label="Cliente" onChange={(event) => handleClientFilterChange(event.target.value)} value={draftClientId}>
+            <option value="">Todos</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </Select>
           <Select label="Status" onChange={(event) => setDraftStatus(event.target.value as TaskStatus | "")} value={draftStatus}>
             <option value="">Todos</option>
             {statuses.map((status) => (
@@ -323,7 +363,7 @@ export function TasksPage() {
           </Select>
           <Select label="Projeto" onChange={(event) => setDraftProjectId(event.target.value)} value={draftProjectId}>
             <option value="">Todos</option>
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
               </option>
@@ -331,7 +371,7 @@ export function TasksPage() {
           </Select>
           <Input label="Prazo de" onChange={(event) => setDraftDueFrom(event.target.value)} type="date" value={draftDueFrom} />
           <Input label="Prazo até" onChange={(event) => setDraftDueTo(event.target.value)} type="date" value={draftDueTo} />
-          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-4 xl:justify-end 2xl:col-span-7">
+          <div className="flex min-w-0 flex-wrap items-end gap-2 md:col-span-2 xl:col-span-4 xl:justify-end 2xl:col-span-8">
             <Button className="min-w-28" title="Buscar tarefas" type="submit">
               <Search className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
               Buscar
@@ -521,6 +561,7 @@ function readTasksSearchParams(searchParams: URLSearchParams): TasksQuery {
 
   return {
     search: getStringSearchParam(searchParams, "search"),
+    clientId: getStringSearchParam(searchParams, "clientId"),
     status: getEnumSearchParam(searchParams, "status", taskStatusValues),
     priority: getEnumSearchParam(searchParams, "priority", taskPriorityValues),
     projectId: getStringSearchParam(searchParams, "projectId"),
@@ -535,6 +576,10 @@ function toTasksSearchParams(query: TasksQuery) {
 
   if (query.search) {
     searchParams.set("search", query.search);
+  }
+
+  if (query.clientId) {
+    searchParams.set("clientId", query.clientId);
   }
 
   if (query.status) {

@@ -41,6 +41,7 @@ export const taskIdParamsSchema = z.object({
 
 export const listTasksQuerySchema = paginationQuerySchema
   .extend({
+    clientId: z.string().cuid().optional(),
     projectId: z.string().cuid().optional(),
     status: z.enum(taskStatuses).optional(),
     priority: z.enum(taskPriorities).optional(),

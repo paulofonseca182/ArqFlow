@@ -3,6 +3,12 @@ import type { ReportsOverview } from "../../types/reports";
 import { buildReportsCsv, createReportExportFilename } from "./reports-export";
 
 const overview: ReportsOverview = {
+  filters: {
+    clientId: "client-1",
+    clientName: "Ana Arquitetura",
+    projectId: "project-1",
+    projectName: "Casa Ana"
+  },
   generatedAt: "2026-05-16T12:00:00.000Z",
   period: {
     from: "2026-05-01T12:00:00.000Z",
@@ -78,11 +84,15 @@ describe("reports export", () => {
 
     expect(csv).toContain("Grupo;Indicador;Valor;Detalhe");
     expect(csv).toContain("Período;Nome;Mês atual;2026-05-01 a 2026-05-31");
+    expect(csv).toContain("Filtro;Cliente;Ana Arquitetura;client-1");
+    expect(csv).toContain("Filtro;Projeto;Casa Ana;project-1");
     expect(csv).toContain("Financeiro;A receber;500.00;BRL");
     expect(csv).toContain("Recebíveis por projeto;Casa Ana;500.00;Ana Arquitetura | atrasado 300.00");
   });
 
   it("gera nome previsível para o arquivo exportado", () => {
-    expect(createReportExportFilename(overview)).toBe("arqflow-relatorios-current_month-2026-05-01-2026-05-31.csv");
+    expect(createReportExportFilename(overview)).toBe(
+      "arqflow-relatorios-current_month-2026-05-01-2026-05-31-cliente-ana-arquitetura-projeto-casa-ana.csv"
+    );
   });
 });
