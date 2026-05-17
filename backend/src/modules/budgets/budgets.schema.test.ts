@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { approveBudgetSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetSchema } from "./budgets.schema.js";
 
 const validClientId = "clw0000000000000000000000";
+const validProjectId = "clw0000000000000000000001";
 
 const validBudget = {
   clientId: validClientId,
@@ -59,6 +60,7 @@ describe("budgets schema", () => {
   it("valida escopo composto de orçamentos abertos e período de criação", () => {
     expect(
       listBudgetsQuerySchema.safeParse({
+        projectId: validProjectId,
         scope: "OPEN_BUDGETS",
         createdFrom: "2026-05-01",
         createdTo: "2026-05-31"

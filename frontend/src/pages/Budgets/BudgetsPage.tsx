@@ -16,12 +16,12 @@ import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
 import { approveBudget, createBudget, deleteBudget, getBudgetsMeta, listBudgets, sendBudget, updateBudget } from "../../services/budgets";
 import { listClients } from "../../services/clients";
-import { getProjectsMeta } from "../../services/projects";
+import { getProjectsMeta, listProjects } from "../../services/projects";
 import type { PaginationMeta } from "../../types/api";
 import type { Budget, BudgetApproveInput, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
 import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
-import type { ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
+import type { Project, ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { ApproveBudgetModal } from "./ApproveBudgetModal";
@@ -46,6 +46,7 @@ type BudgetsQuery = {
   scope: BudgetScope | "";
   status: BudgetStatus | "";
   clientId: string;
+  projectId: string;
   createdFrom: string;
   createdTo: string;
 };
@@ -55,6 +56,7 @@ export function BudgetsPage() {
   const initialQuery = readBudgetsSearchParams(searchParams);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [statuses, setStatuses] = useState<BudgetOption<BudgetStatus>[]>(fallbackStatuses);
   const [projectTypes, setProjectTypes] = useState<ProjectOption<ProjectType>[]>(fallbackProjectTypes);
@@ -64,6 +66,7 @@ export function BudgetsPage() {
   const [draftScope, setDraftScope] = useState<BudgetScope | "">(initialQuery.scope);
   const [draftStatus, setDraftStatus] = useState<BudgetStatus | "">(initialQuery.status);
   const [draftClientId, setDraftClientId] = useState(initialQuery.clientId);
+  const [draftProjectId, setDraftProjectId] = useState(initialQuery.projectId);
   const [draftCreatedFrom, setDraftCreatedFrom] = useState(initialQuery.createdFrom);
   const [draftCreatedTo, setDraftCreatedTo] = useState(initialQuery.createdTo);
   const [query, setQuery] = useState<BudgetsQuery>(initialQuery);
@@ -84,6 +87,10 @@ export function BudgetsPage() {
   const [approvalError, setApprovalError] = useState<string | null>(null);
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
+  const filteredProjects = useMemo(
+    () => (draftClientId ? projects.filter((project) => project.clientId === draftClientId) : projects),
+    [draftClientId, projects]
+  );
   const searchParamsKey = searchParams.toString();
 
   const loadBudgets = useCallback(async () => {
@@ -98,6 +105,7 @@ export function BudgetsPage() {
         scope: query.scope || undefined,
         status: query.status || undefined,
         clientId: query.clientId || undefined,
+        projectId: query.projectId || undefined,
         createdFrom: query.createdFrom || undefined,
         createdTo: query.createdTo || undefined
       });
@@ -109,7 +117,7 @@ export function BudgetsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query.clientId, query.createdFrom, query.createdTo, query.scope, query.search, query.status]);
+  }, [page, query.clientId, query.createdFrom, query.createdTo, query.projectId, query.scope, query.search, query.status]);
 
   useEffect(() => {
     const nextQuery = readBudgetsSearchParams(searchParams);
@@ -118,6 +126,7 @@ export function BudgetsPage() {
     setDraftScope(nextQuery.scope);
     setDraftStatus(nextQuery.status);
     setDraftClientId(nextQuery.clientId);
+    setDraftProjectId(nextQuery.projectId);
     setDraftCreatedFrom(nextQuery.createdFrom);
     setDraftCreatedTo(nextQuery.createdTo);
     setPage(1);
@@ -131,15 +140,17 @@ export function BudgetsPage() {
       setMetaLoading(true);
 
       try {
-        const [budgetsMeta, clientsResult, projectsMeta] = await Promise.all([
+        const [budgetsMeta, clientsResult, projectsResult, projectsMeta] = await Promise.all([
           getBudgetsMeta(),
           listClients({ page: 1, pageSize: 100 }),
+          listProjects({ page: 1, pageSize: 100 }),
           getProjectsMeta()
         ]);
 
         if (active) {
           setStatuses(budgetsMeta.statuses);
           setClients(clientsResult.data);
+          setProjects(projectsResult.data);
           setProjectTypes(projectsMeta.types);
           setProjectStatuses(projectsMeta.statuses);
         }
@@ -172,13 +183,14 @@ export function BudgetsPage() {
       scope: draftScope,
       status: draftStatus,
       clientId: draftClientId,
+      projectId: draftProjectId,
       createdFrom: draftCreatedFrom,
       createdTo: draftCreatedTo
     });
   }
 
   function handleClearFilters() {
-    applyQuery({ search: "", scope: "", status: "", clientId: "", createdFrom: "", createdTo: "" });
+    applyQuery({ search: "", scope: "", status: "", clientId: "", projectId: "", createdFrom: "", createdTo: "" });
   }
 
   function applyQuery(nextQuery: BudgetsQuery) {
@@ -186,6 +198,7 @@ export function BudgetsPage() {
     setDraftScope(nextQuery.scope);
     setDraftStatus(nextQuery.status);
     setDraftClientId(nextQuery.clientId);
+    setDraftProjectId(nextQuery.projectId);
     setDraftCreatedFrom(nextQuery.createdFrom);
     setDraftCreatedTo(nextQuery.createdTo);
     setPage(1);
@@ -294,7 +307,19 @@ export function BudgetsPage() {
     }
   }
 
-  const hasFilters = Boolean(query.search || query.scope || query.status || query.clientId || query.createdFrom || query.createdTo);
+  function handleClientFilterChange(clientId: string) {
+    setDraftClientId(clientId);
+
+    if (draftProjectId && clientId) {
+      const currentProject = projects.find((project) => project.id === draftProjectId);
+
+      if (currentProject && currentProject.clientId !== clientId) {
+        setDraftProjectId("");
+      }
+    }
+  }
+
+  const hasFilters = Boolean(query.search || query.scope || query.status || query.clientId || query.projectId || query.createdFrom || query.createdTo);
 
   return (
     <PageWrapper
@@ -322,11 +347,19 @@ export function BudgetsPage() {
               </option>
             ))}
           </Select>
-          <Select label="Cliente" onChange={(event) => setDraftClientId(event.target.value)} value={draftClientId}>
+          <Select label="Cliente" onChange={(event) => handleClientFilterChange(event.target.value)} value={draftClientId}>
             <option value="">Todos</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.name}
+              </option>
+            ))}
+          </Select>
+          <Select label="Projeto" onChange={(event) => setDraftProjectId(event.target.value)} value={draftProjectId}>
+            <option value="">Todos</option>
+            {filteredProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
               </option>
             ))}
           </Select>
@@ -522,6 +555,7 @@ function readBudgetsSearchParams(searchParams: URLSearchParams): BudgetsQuery {
     scope: getEnumSearchParam(searchParams, "scope", budgetScopeValues),
     status: getEnumSearchParam(searchParams, "status", budgetStatusValues),
     clientId: getStringSearchParam(searchParams, "clientId"),
+    projectId: getStringSearchParam(searchParams, "projectId"),
     createdFrom: getDateSearchParam(searchParams, "createdFrom"),
     createdTo: getDateSearchParam(searchParams, "createdTo")
   };

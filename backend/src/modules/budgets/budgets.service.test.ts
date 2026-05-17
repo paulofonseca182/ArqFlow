@@ -58,6 +58,20 @@ describe("budgets service", () => {
     });
   });
 
+  it("combina escopo de orçamentos abertos com projeto", () => {
+    expect(
+      buildBudgetWhere({
+        projectId: "clw0000000000000000000001",
+        scope: "OPEN_BUDGETS"
+      })
+    ).toEqual({
+      projectId: "clw0000000000000000000001",
+      status: {
+        in: ["DRAFT", "SENT", "NEGOTIATION"]
+      }
+    });
+  });
+
   it("monta busca por título, serviço, cliente, projeto e item", () => {
     expect(buildBudgetWhere({ search: "interiores" })).toEqual({
       OR: [

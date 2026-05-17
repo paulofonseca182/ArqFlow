@@ -2077,6 +2077,25 @@ Resultado:
 - filtros e botões de ação não geraram overflow global;
 - conteúdos largos dentro de tabelas continuam usando scroll horizontal próprio, que é esperado para dados tabulares.
 
+## Correção dos atalhos filtrados de Relatórios
+
+Foi feita uma revisão com os agentes de Frontend/UI, Backend/API, Regras de Negócio e Qualidade para garantir que os atalhos de `/reports` mantenham o mesmo recorte calculado no relatório.
+
+O que foi corrigido:
+
+- `/reports` deixou de carregar clientes/projetos com `pageSize: 200` e passou a respeitar o limite global do backend (`pageSize <= 100`);
+- `/tasks` recebeu o mesmo ajuste de paginação para evitar erro `Dados inválidos` ao carregar filtros auxiliares;
+- `/budgets` passou a ler `projectId` da URL, preservar o parâmetro nos filtros e enviar `projectId` para a API;
+- `/budgets` agora exibe filtro visível de Projeto, evitando que um atalho de Relatórios aplique um recorte oculto;
+- testes de Orçamentos passaram a cobrir `OPEN_BUDGETS` combinado com `projectId`.
+
+Critério de aceite:
+
+- abrir `/reports` com `clientId` e `projectId` deve preencher os filtros de Cliente e Projeto;
+- clicar em cards de Orçamentos, Financeiro, Tarefas e Visitas deve preservar `clientId`, `projectId`, período/status/escopo na URL de destino;
+- Orçamentos deve aplicar visualmente e na API o filtro de Projeto recebido pelo atalho;
+- Relatórios e Tarefas não devem mais mostrar `Dados inválidos` por causa de `pageSize` acima do limite do backend.
+
 ## Sugestao de commit para o estado atual
 
 ```txt

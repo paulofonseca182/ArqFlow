@@ -82,8 +82,8 @@ export function ReportsPage() {
 
       try {
         const [clientsResult, projectsResult] = await Promise.all([
-          listClients({ page: 1, pageSize: 200 }),
-          listProjects({ page: 1, pageSize: 200 })
+          listClients({ page: 1, pageSize: 100 }),
+          listProjects({ page: 1, pageSize: 100 })
         ]);
 
         if (active) {

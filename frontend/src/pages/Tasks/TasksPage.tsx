@@ -153,8 +153,8 @@ export function TasksPage() {
       try {
         const [tasksMeta, clientsResult, projectsResult] = await Promise.all([
           getTasksMeta(),
-          listClients({ page: 1, pageSize: 200 }),
-          listProjects({ page: 1, pageSize: 200 })
+          listClients({ page: 1, pageSize: 100 }),
+          listProjects({ page: 1, pageSize: 100 })
         ]);
 
         if (active) {
