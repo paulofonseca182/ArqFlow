@@ -25,8 +25,9 @@ O ArqFlow segue uma interface dark premium:
 - Texto discreto: `#8A8B8D`
 - Bronze destaque: `#B67E5D`
 - Bronze escuro: `#7A4E38`
-- Azul tecnico: `#558CCA`
-- Azul escuro: `#244B78`
+- Grafite de ação: `#1F1F1F`
+- Cinza de hover: `#2A2A2A`
+- Preto ativo: `#0F0F0F`
 - Verde sucesso: `#3BA66B`
 - Amarelo alerta: `#D6A84F`
 - Vermelho atraso: `#D95C5C`
@@ -58,5 +59,5 @@ O ArqFlow segue uma interface dark premium:
 - Tabelas devem aceitar filtros simples no topo da tela.
 - A sidebar mantem a marca ArqFlow no topo.
 - Bronze deve ser usado para detalhes de marca, foco, bordas ativas e destaques discretos.
-- Azul deve ficar concentrado em ações principais, estados ativos e botões importantes.
+- A escala preto/grafite/cinza neutra deve ficar concentrada em ações principais, estados ativos e botões importantes.
 - Inputs e selects usam fundo escuro, borda suave e foco em bronze.

@@ -6,9 +6,9 @@ export default {
     extend: {
       colors: {
         brand: {
-          500: "#244B78",
-          600: "#558CCA",
-          700: "#183756"
+          500: "#1F1F1F",
+          600: "#2A2A2A",
+          700: "#0F0F0F"
         },
         accent: {
           bronze: "#B67E5D",

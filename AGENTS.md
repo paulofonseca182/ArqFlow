@@ -272,16 +272,19 @@ O ArqFlow deve ter interface:
 ## Paleta sugerida
 
 ```txt
-Preto absoluto: #000000
-Grafite profundo: #0B0B0B
-Card escuro: #141414
-Card secundário: #1A1A1A
-Borda sutil: #2A2A2A
-Texto principal: #F5F5F5
-Texto secundário: #A8A8A8
-Texto suave: #6F6F6F
-Azul institucional: #103253
-Bronze destaque: #B87333
+Fundo principal: #090B0D
+Fundo secundário/sidebar/cards: #15181C
+Card elevado/modal: #171A1E
+Bordas principais: #4A4340
+Bordas suaves: #2D2B2B
+Texto principal: #F3F3F3
+Texto secundário: #B1B2B3
+Texto discreto/muted: #8A8B8D
+Grafite de ação: #1F1F1F
+Cinza de hover: #2A2A2A
+Preto ativo: #0F0F0F
+Destaque bronze: #B67E5D
+Bronze escuro: #7A4E38
 Verde sucesso: #3BA66B
 Amarelo alerta: #D6A84F
 Vermelho atraso: #D95C5C

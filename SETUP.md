@@ -28,6 +28,8 @@ CORS_ORIGIN="http://localhost:5173"
 ```bash
 npm run typecheck
 npm run test
+npm run lint
+npm run build
 npm run dev
 ```
 

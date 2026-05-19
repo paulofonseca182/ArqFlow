@@ -18,7 +18,9 @@ Esta base define a estrutura técnica inicial do projeto antes da Fase 1:
 A Fase 0.1 alinha a base ao `AGENTS.md`:
 
 - UI dark premium.
-- Paleta premium atualizada com fundo grafite, bronze de destaque e azul técnico para ações.
+- Logotipo oficial aplicado na sidebar no lugar da marca textual.
+- Favicon oficial configurado em PNG.
+- Paleta premium atualizada com fundo grafite, bronze de destaque e escala preto/cinza neutra para ações.
 - Componentes obrigatórios iniciais.
 - Padrão backend `routes/controller/service/schema`.
 - Contratos de domínio centralizados.
@@ -185,6 +187,7 @@ npm run dev
 npm run typecheck
 npm run test
 npm run lint
+npm run build
 ```
 
 > Em ambientes sem shim global do pnpm, use `corepack pnpm`.

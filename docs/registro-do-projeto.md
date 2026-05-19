@@ -90,7 +90,7 @@ A Fase 0.1 ajustou a base para ficar coerente com o `AGENTS.md`.
 Foram feitos:
 
 - alinhamento visual para dark premium;
-- atualização da paleta premium com fundo grafite, bronze de destaque e azul técnico;
+- atualização da paleta premium com fundo grafite, bronze de destaque e escala preto/cinza neutra;
 - criação de componentes UI obrigatórios;
 - criação do padrão backend `routes/controller/service/schema`;
 - centralização de contratos de domínio e status;
@@ -1108,6 +1108,8 @@ O frontend foi estruturado com React, Vite, TypeScript e Tailwind.
 
 Foi aplicada a identidade visual dark premium definida no `AGENTS.md` e refinada com a nova paleta premium do ArqFlow.
 
+O logotipo oficial foi incorporado em `frontend/public/brand/logotipo.png` e passou a substituir a marca textual na `Sidebar`, com altura fixa, largura automática, limite máximo e `alt` acessível para preservar proporção e legibilidade. O favicon oficial foi configurado em `frontend/public/favicon.png` e referenciado no `frontend/index.html`.
+
 Paleta visual atual:
 
 - fundo principal `#090B0D`;
@@ -1116,7 +1118,7 @@ Paleta visual atual:
 - bordas `#4A4340` e `#2D2B2B`;
 - textos `#F3F3F3`, `#B1B2B3` e `#8A8B8D`;
 - bronze `#B67E5D` e `#7A4E38` para marca, foco e detalhes;
-- azul `#244B78` e `#558CCA` para ações principais e estados ativos.
+- escala preto/grafite/cinza neutra `#1F1F1F`, `#2A2A2A` e `#0F0F0F` para ações principais e estados ativos.
 
 Componentes de layout:
 

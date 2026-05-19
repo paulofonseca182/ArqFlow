@@ -14,7 +14,7 @@ body {
   min-width: 320px;
   margin: 0;
   background:
-    linear-gradient(180deg, rgba(36, 75, 120, 0.12), rgba(9, 11, 13, 0) 340px),
+    linear-gradient(180deg, rgba(31, 31, 31, 0.18), rgba(9, 11, 13, 0) 340px),
     #090b0d;
 }
 

@@ -4,8 +4,14 @@ import { navigation } from "./navigation";
 export function Sidebar() {
   return (
     <aside className="hidden h-screen w-64 border-r border-surface-500 bg-surface-900 shadow-panel lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-      <div className="flex h-16 items-center gap-2 border-b border-surface-500 px-6">
-        <span className="text-xl font-semibold text-text-primary">ArqFlow</span>
+      <div className="flex h-16 items-center border-b border-surface-500 px-5">
+        <NavLink
+          aria-label="ArqFlow - Dashboard"
+          className="flex min-w-0 items-center rounded-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
+          to="/"
+        >
+          <img alt="ArqFlow" className="h-10 w-auto max-w-[168px] object-contain" src="/brand/logotipo.png" />
+        </NavLink>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         {navigation.map((item) => (
