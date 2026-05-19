@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { visitStatusValues, visitTypeValues } from "../../types/visit";
 import type { Visit, VisitWriteInput } from "../../types/visit";
+import { parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 
 export type VisitFormFields = {
   clientId: string;
@@ -16,7 +17,7 @@ export type VisitFormFields = {
 
 const optionalText = z.string().trim().transform((value) => value || undefined);
 const optionalProjectId = z.string().trim().transform((value) => value || null);
-const optionalMoney = z.preprocess(parseOptionalMoneyInput, z.number().positive("Informe um valor maior que zero.").optional());
+const optionalMoney = z.preprocess(parseOptionalCurrencyInput, z.number().positive("Informe um valor maior que zero.").optional());
 const optionalTime = z
   .string()
   .trim()
@@ -45,7 +46,7 @@ export function getVisitFormDefaults(visit?: Visit | null): VisitFormFields {
     date: toDateInputValue(visit?.date),
     time: visit?.time ?? "",
     address: visit?.address ?? "",
-    amount: toMoneyInputValue(visit?.amount),
+    amount: toCurrencyInputValue(visit?.amount),
     status: visit?.status ?? "SCHEDULED",
     notes: visit?.notes ?? ""
   };
@@ -65,33 +66,10 @@ export function normalizeVisitPayload(data: VisitFormPayload): VisitWriteInput {
   };
 }
 
-function parseOptionalMoneyInput(value: unknown) {
-  if (value === "" || value === null || value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value === "string") {
-    return Number(value.replace(/\./g, "").replace(",", "."));
-  }
-
-  return value;
-}
-
 function toDateInputValue(value?: string | null) {
   if (!value) {
     return "";
   }
 
   return value.slice(0, 10);
-}
-
-function toMoneyInputValue(value?: string | null) {
-  if (!value) {
-    return "";
-  }
-
-  return new Intl.NumberFormat("pt-BR", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2
-  }).format(Number(value));
 }

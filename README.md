@@ -104,6 +104,15 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - Formulários com React Hook Form e Zod para parcela manual, geração de parcelas e registro de pagamento.
 - Alertas quando a soma das parcelas ultrapassa o valor contratado do projeto.
 
+## Padrão de Moeda
+
+Os campos monetários do ArqFlow usam máscara de entrada em Real brasileiro:
+
+- Digitação por centavos, formando `R$ 0,05`, `R$ 0,55`, `R$ 5,55` e assim por diante.
+- Inputs monetários padronizados em Projetos, Orçamentos, Financeiro/Parcelas, registro de pagamento e Visitas Técnicas.
+- Conversão para número antes do envio ao backend, preservando as regras de validação financeiras.
+- Exibição de valores financeiros em formato `pt-BR`/BRL nos indicadores e tabelas.
+
 ## Dashboard
 
 O Dashboard passou a consumir dados reais do backend:

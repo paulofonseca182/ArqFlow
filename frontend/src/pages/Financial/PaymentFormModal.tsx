@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
+import { CurrencyInput } from "../../components/ui/CurrencyInput";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
@@ -115,7 +116,7 @@ export function PaymentFormModal({
             ))}
           </Select>
           <Input error={errors.description?.message} label="Descrição" placeholder="Parcela 1/2" {...form.register("description")} />
-          <Input error={errors.amount?.message} label="Valor" placeholder="2500,00" {...form.register("amount")} />
+          <CurrencyInput error={errors.amount?.message} label="Valor" {...form.register("amount")} />
           <Input error={errors.installment?.message} label="Número da parcela" placeholder="1" {...form.register("installment")} />
           <Input error={errors.dueDate?.message} label="Vencimento" type="date" {...form.register("dueDate")} />
           <Select error={errors.paymentMethod?.message} label="Forma de pagamento" {...form.register("paymentMethod")}>

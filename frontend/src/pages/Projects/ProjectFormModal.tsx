@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
+import { CurrencyInput } from "../../components/ui/CurrencyInput";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
@@ -128,7 +129,7 @@ export function ProjectFormModal({
           </Select>
           <Input error={errors.startsAt?.message} label="Início" type="date" {...form.register("startsAt")} />
           <Input error={errors.expectedDeliveryDate?.message} label="Entrega prevista" type="date" {...form.register("expectedDeliveryDate")} />
-          <Input error={errors.contractedAmount?.message} label="Valor contratado" placeholder="42000,00" {...form.register("contractedAmount")} />
+          <CurrencyInput error={errors.contractedAmount?.message} label="Valor contratado" {...form.register("contractedAmount")} />
           <Input error={errors.area?.message} label="Área" placeholder="80" {...form.register("area")} />
           <Input className="md:col-span-2" error={errors.workAddress?.message} label="Endereço da obra" placeholder="Endereço principal da obra" {...form.register("workAddress")} />
         </div>

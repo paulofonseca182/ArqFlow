@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
+import { CurrencyInput } from "../../components/ui/CurrencyInput";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
@@ -158,7 +159,7 @@ export function VisitFormModal({
           </Select>
           <Input error={errors.date?.message} label="Data" type="date" {...form.register("date")} />
           <Input error={errors.time?.message} label="Horário" type="time" {...form.register("time")} />
-          <Input error={errors.amount?.message} inputMode="decimal" label="Valor" placeholder="250,00" {...form.register("amount")} />
+          <CurrencyInput error={errors.amount?.message} label="Valor" {...form.register("amount")} />
           <Input error={errors.address?.message} label="Endereço" placeholder="Rua, número, bairro" {...form.register("address")} />
         </div>
 

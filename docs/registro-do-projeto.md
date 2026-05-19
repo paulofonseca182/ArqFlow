@@ -1688,6 +1688,7 @@ backend/src/modules/financial/financial.service.test.ts
 backend/src/modules/dashboard/dashboard.service.test.ts
 backend/src/modules/reports/reports.service.test.ts
 frontend/src/pages/Reports/reports-export.test.ts
+frontend/src/utils/currency.test.ts
 backend/src/modules/tasks/tasks.schema.test.ts
 backend/src/modules/tasks/tasks.service.test.ts
 backend/src/modules/visits/visits.schema.test.ts
@@ -2107,6 +2108,26 @@ Critério de aceite:
 - clicar em cards de Orçamentos, Financeiro, Tarefas e Visitas deve preservar `clientId`, `projectId`, período/status/escopo na URL de destino;
 - Orçamentos deve aplicar visualmente e na API o filtro de Projeto recebido pelo atalho;
 - Relatórios e Tarefas não devem mais mostrar `Dados inválidos` por causa de `pageSize` acima do limite do backend.
+
+## Padrão de moeda em Real
+
+Foi criada uma padronização de entrada e exibição monetária no frontend.
+
+O que foi feito:
+
+- criado `frontend/src/utils/currency.ts` com formatação BRL, máscara por centavos e conversão segura para número;
+- criado `frontend/src/components/ui/CurrencyInput.tsx` para reutilizar a máscara em todos os inputs monetários;
+- aplicados inputs monetários em Projetos, Orçamentos, Financeiro/Parcelas, registro de pagamento e Visitas Técnicas;
+- defaults de edição agora reabrem valores persistidos em formato `R$ 0,00`;
+- payloads continuam sendo normalizados para número antes de chegar ao backend;
+- alertas do Dashboard e valor contratado na tabela de Projetos passam a exibir moeda em formato BRL;
+- adicionado teste unitário para a máscara e a conversão de moeda.
+
+Regra de uso:
+
+- quantidade e área não devem usar máscara de moeda;
+- valores financeiros digitados no frontend devem seguir o padrão de centavos, por exemplo `5` -> `R$ 0,05`, `55` -> `R$ 0,55`, `555` -> `R$ 5,55`;
+- o backend continua sendo a fonte da verdade para bloquear valores zero, negativos ou inconsistentes.
 
 ## Sugestao de commit para o estado atual
 

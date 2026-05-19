@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { budgetStatusValues } from "../../types/budget";
 import type { Budget, BudgetWriteInput } from "../../types/budget";
+import { parseCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 
 export type BudgetFormItemFields = {
   description: string;
@@ -22,31 +23,26 @@ export type BudgetFormFields = {
 
 const optionalText = z.string().trim().transform((value) => value || undefined);
 const optionalDate = z.string().trim().transform((value) => value || undefined);
-const moneyNumber = z
+const quantityNumber = z
   .string()
   .trim()
   .transform((value) => Number(value.replace(/\./g, "").replace(",", ".")))
   .refine((value) => Number.isFinite(value) && value > 0, {
     message: "Informe um valor maior que zero."
   });
-const discountNumber = z
-  .string()
-  .trim()
-  .transform((value) => {
-    if (!value) {
-      return 0;
-    }
+const currencyNumber = z.preprocess(parseCurrencyInput, z.number().positive("Informe um valor maior que zero."));
+const discountNumber = z.preprocess((value) => {
+  if (value === "" || value === null || value === undefined) {
+    return 0;
+  }
 
-    return Number(value.replace(/\./g, "").replace(",", "."));
-  })
-  .refine((value) => Number.isFinite(value) && value >= 0, {
-    message: "Desconto não pode ser negativo."
-  });
+  return parseCurrencyInput(value);
+}, z.number().min(0, "Desconto não pode ser negativo."));
 
 const budgetItemSchema = z.object({
   description: z.string().trim().min(2, "Informe a descrição do item."),
-  quantity: moneyNumber,
-  unitAmount: moneyNumber
+  quantity: quantityNumber,
+  unitAmount: currencyNumber
 });
 
 export const budgetFormSchema = z.object({
@@ -69,7 +65,7 @@ export function getBudgetFormDefaults(budget?: Budget | null): BudgetFormFields 
     title: budget?.title ?? "",
     serviceType: budget?.serviceType ?? "",
     description: budget?.description ?? "",
-    discount: budget?.discount ?? "",
+    discount: toCurrencyInputValue(budget?.discount),
     paymentMethod: budget?.paymentMethod ?? "",
     expiresAt: toDateInputValue(budget?.expiresAt),
     status: budget?.status ?? "DRAFT",
@@ -77,7 +73,7 @@ export function getBudgetFormDefaults(budget?: Budget | null): BudgetFormFields 
       budget?.items.map((item) => ({
         description: item.description,
         quantity: item.quantity,
-        unitAmount: item.unitAmount
+        unitAmount: toCurrencyInputValue(item.unitAmount)
       })) ?? [getEmptyBudgetItem()]
   };
 }

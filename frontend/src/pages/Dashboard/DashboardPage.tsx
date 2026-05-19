@@ -12,6 +12,7 @@ import { StatCard } from "../../components/ui/StatCard";
 import { ApiError } from "../../services/api";
 import { getDashboardSummary } from "../../services/dashboard";
 import type { DashboardAlert, DashboardAlertSeverity, DashboardSummary } from "../../types/dashboard";
+import { formatCurrency } from "../../utils/currency";
 
 const emptyDashboard: DashboardSummary = {
   alerts: [],
@@ -382,7 +383,7 @@ function DashboardAlertItem({ alert, shortcuts }: { alert: DashboardAlert; short
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="font-medium text-text-primary">{alert.title}</h4>
-        <Badge tone={getAlertTone(alert.severity)}>{alert.count ?? alert.amount ?? "Atenção"}</Badge>
+        <Badge tone={getAlertTone(alert.severity)}>{alert.count ?? (alert.amount ? formatMoney(alert.amount) : "Atenção")}</Badge>
       </div>
       <p className="mt-2 text-sm text-text-secondary">{alert.message}</p>
     </>
@@ -486,10 +487,7 @@ function toDateInputValue(date: Date) {
 }
 
 function formatMoney(value: string) {
-  return new Intl.NumberFormat("pt-BR", {
-    currency: "BRL",
-    style: "currency"
-  }).format(Number(value));
+  return formatCurrency(value);
 }
 
 function formatDate(value?: string | null) {

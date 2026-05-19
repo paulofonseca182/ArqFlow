@@ -3,6 +3,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { AlertCircle, Plus, Trash2 } from "lucide-react";
 import { ActionIconButton } from "../../components/ui/ActionIconButton";
 import { Button } from "../../components/ui/Button";
+import { CurrencyInput } from "../../components/ui/CurrencyInput";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
@@ -126,7 +127,7 @@ export function BudgetFormModal({
               </option>
             ))}
           </Select>
-          <Input error={errors.discount?.message} label="Desconto" placeholder="0,00" {...form.register("discount")} />
+          <CurrencyInput error={errors.discount?.message} label="Desconto" {...form.register("discount")} />
           <Input error={errors.expiresAt?.message} label="Validade" type="date" {...form.register("expiresAt")} />
           <Input className="md:col-span-2" error={errors.paymentMethod?.message} label="Forma de pagamento" placeholder="Pix, transferência ou parcelado" {...form.register("paymentMethod")} />
         </div>
@@ -160,10 +161,9 @@ export function BudgetFormModal({
                   placeholder="1"
                   {...form.register(`items.${index}.quantity` as const)}
                 />
-                <Input
+                <CurrencyInput
                   error={errors.items?.[index]?.unitAmount?.message}
                   label="Valor unitário"
-                  placeholder="2500,00"
                   {...form.register(`items.${index}.unitAmount` as const)}
                 />
                 <div className="flex min-w-0 flex-wrap items-end md:col-span-3 md:justify-end">

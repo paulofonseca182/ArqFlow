@@ -9,6 +9,7 @@ import type {
   RegisterPaymentInput
 } from "../../types/financial";
 import type { Project } from "../../types/project";
+import { parseCurrencyInput, parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 
 export type PaymentFormFields = {
   projectId: string;
@@ -38,26 +39,11 @@ const optionalText = z.string().trim().transform((value) => value || undefined);
 const optionalMethod = z
   .union([z.enum(paymentMethodValues), z.literal("")])
   .transform((value) => (value === "" ? undefined : value));
-const moneyNumber = z
-  .string()
-  .trim()
-  .transform((value) => Number(value.replace(/\./g, "").replace(",", ".")))
-  .refine((value) => Number.isFinite(value) && value > 0, {
-    message: "Informe um valor maior que zero."
-  });
-const optionalMoneyNumber = z
-  .string()
-  .trim()
-  .transform((value) => {
-    if (!value) {
-      return undefined;
-    }
-
-    return Number(value.replace(/\./g, "").replace(",", "."));
-  })
-  .refine((value) => value === undefined || (Number.isFinite(value) && value > 0), {
-    message: "Informe um valor maior que zero."
-  });
+const moneyNumber = z.preprocess(parseCurrencyInput, z.number().positive("Informe um valor maior que zero."));
+const optionalMoneyNumber = z.preprocess(
+  parseOptionalCurrencyInput,
+  z.number().positive("Informe um valor maior que zero.").optional()
+);
 const optionalInstallmentNumber = z
   .string()
   .trim()
@@ -104,7 +90,7 @@ export function getPaymentFormDefaults(payment?: Payment | null): PaymentFormFie
   return {
     projectId: payment?.projectId ?? "",
     description: payment?.description ?? "",
-    amount: payment?.amount ?? "",
+    amount: toCurrencyInputValue(payment?.amount),
     installment: payment?.installment?.toString() ?? "",
     dueDate: toDateInputValue(payment?.dueDate),
     paymentMethod: payment?.paymentMethod ?? "",
@@ -179,5 +165,5 @@ function getRemainingAmount(payment: Payment) {
   const paidAmount = Number(payment.paidAmount);
   const remaining = Math.max(amount - paidAmount, 0);
 
-  return remaining > 0 ? remaining.toFixed(2) : payment.amount;
+  return toCurrencyInputValue(remaining > 0 ? remaining : payment.amount);
 }

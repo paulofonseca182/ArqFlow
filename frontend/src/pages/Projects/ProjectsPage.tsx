@@ -58,6 +58,7 @@ import type {
 } from "../../types/project";
 import { projectStepStatusValues } from "../../types/projectStep";
 import type { ProjectStep, ProjectStepStatus } from "../../types/projectStep";
+import { formatCurrency } from "../../utils/currency";
 import { ProjectFormModal } from "./ProjectFormModal";
 
 const pageSize = 20;
@@ -474,7 +475,7 @@ export function ProjectsPage() {
 
       {projects.length > 0 ? (
         <div className="space-y-3">
-          <Table headers={["Projeto", "Cliente", "Tipo", "Status", "Progresso", "Entrega", "Ações"]}>
+          <Table headers={["Projeto", "Cliente", "Tipo", "Status", "Valor", "Progresso", "Entrega", "Ações"]}>
             {projects.map((project) => (
               <tr className="min-w-[980px]" key={project.id}>
                 <td className="min-w-60 px-4 py-4 align-top">
@@ -486,6 +487,7 @@ export function ProjectsPage() {
                 <td className="px-4 py-4 align-top">
                   <Badge tone={getProjectStatusTone(project.status)}>{statusLabelByValue.get(project.status) ?? project.status}</Badge>
                 </td>
+                <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatCurrency(project.contractedAmount)}</td>
                 <td className="min-w-40 px-4 py-4 align-top">
                   <ProgressBar value={project.progress} />
                 </td>

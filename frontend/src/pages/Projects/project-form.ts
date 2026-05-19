@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
 import type { Project, ProjectWriteInput } from "../../types/project";
+import { parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 
 export type ProjectFormFields = {
   clientId: string;
@@ -34,6 +35,10 @@ const optionalPositiveNumber = z
   .refine((value) => value === undefined || (Number.isFinite(value) && value > 0), {
     message: "Informe um valor maior que zero."
   });
+const optionalCurrencyNumber = z.preprocess(
+  parseOptionalCurrencyInput,
+  z.number().positive("Informe um valor maior que zero.").optional()
+);
 
 export const projectFormSchema = z
   .object({
@@ -43,7 +48,7 @@ export const projectFormSchema = z
     status: z.enum(projectStatusValues),
     workAddress: optionalText,
     area: optionalPositiveNumber,
-    contractedAmount: optionalPositiveNumber,
+    contractedAmount: optionalCurrencyNumber,
     startsAt: optionalDate,
     expectedDeliveryDate: optionalDate,
     description: optionalText,
@@ -71,7 +76,7 @@ export function getProjectFormDefaults(project?: Project | null): ProjectFormFie
     status: project?.status ?? "CONTRACT_IN_PROGRESS",
     workAddress: project?.workAddress ?? "",
     area: project?.area ?? "",
-    contractedAmount: project?.contractedAmount ?? "",
+    contractedAmount: toCurrencyInputValue(project?.contractedAmount),
     startsAt: toDateInputValue(project?.startsAt),
     expectedDeliveryDate: toDateInputValue(project?.expectedDeliveryDate),
     description: project?.description ?? "",

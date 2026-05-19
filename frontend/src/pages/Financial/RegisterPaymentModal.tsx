@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/Button";
+import { CurrencyInput } from "../../components/ui/CurrencyInput";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import type { Payment, RegisterPaymentInput } from "../../types/financial";
+import { formatCurrency } from "../../utils/currency";
 import {
   getRegisterPaymentDefaults,
   normalizeRegisterPaymentPayload,
@@ -89,22 +91,15 @@ export function RegisterPaymentModal({ apiError, onClose, onSubmit, open, paymen
         <div className="rounded-ui border border-surface-600 bg-surface-900/70 px-4 py-3 text-sm text-text-secondary">
           <div className="font-medium text-text-primary">{payment?.description ?? "Parcela"}</div>
           <div className="mt-1">
-            Valor: {formatMoney(payment?.amount ?? "0")} · já pago: {formatMoney(payment?.paidAmount ?? "0")}
+            Valor: {formatCurrency(payment?.amount ?? "0")} · já pago: {formatCurrency(payment?.paidAmount ?? "0")}
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Input autoFocus error={errors.paidAmount?.message} label="Valor pago" placeholder="2500,00" {...form.register("paidAmount")} />
+          <CurrencyInput autoFocus error={errors.paidAmount?.message} label="Valor pago" {...form.register("paidAmount")} />
           <Input error={errors.paidAt?.message} label="Data de pagamento" type="date" {...form.register("paidAt")} />
         </div>
       </form>
     </Modal>
   );
-}
-
-function formatMoney(value: string) {
-  return new Intl.NumberFormat("pt-BR", {
-    currency: "BRL",
-    style: "currency"
-  }).format(Number(value));
 }
