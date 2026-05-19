@@ -36,6 +36,52 @@ export type DashboardDelivery = {
   progress: number;
 };
 
+export type DashboardPaymentDetail = {
+  id: string;
+  description: string;
+  clientId: string;
+  clientName: string;
+  projectId: string;
+  projectName: string;
+  amount: string;
+  paidAmount: string;
+  remainingAmount: string;
+  dueDate: string;
+  status: string;
+  statusLabel: string;
+};
+
+export type DashboardTaskDetail = {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  priority: string;
+  priorityLabel: string;
+  status: string;
+  statusLabel: string;
+  projectId: string | null;
+  projectName: string | null;
+  clientId: string | null;
+  clientName: string | null;
+  criticalReason: string;
+};
+
+export type DashboardVisitDetail = {
+  id: string;
+  type: string;
+  typeLabel: string;
+  status: string;
+  statusLabel: string;
+  date: string;
+  time: string | null;
+  address: string | null;
+  amount: string;
+  clientId: string;
+  clientName: string;
+  projectId: string | null;
+  projectName: string | null;
+};
+
 export type DashboardSummary = {
   generatedAt: string;
   metrics: {
@@ -66,4 +112,10 @@ export type DashboardSummary = {
     openBudgets: number;
   };
   alerts: DashboardAlert[];
+  details: {
+    overduePayments: DashboardPaymentDetail[];
+    dueSoonPayments: DashboardPaymentDetail[];
+    criticalTasks: DashboardTaskDetail[];
+    upcomingVisits: DashboardVisitDetail[];
+  };
 };

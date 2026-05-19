@@ -1,8 +1,16 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
 import { calculateProjectProgress } from "../../shared/business-rules.js";
-import { projectStatusLabels, projectStatuses } from "../../shared/domain.js";
-import { buildProjectFinancialSummary, getFinancialSummary } from "../financial/financial.service.js";
+import {
+  paymentStatusLabels,
+  projectStatusLabels,
+  projectStatuses,
+  taskPriorityLabels,
+  taskStatusLabels,
+  visitStatusLabels,
+  visitTypeLabels
+} from "../../shared/domain.js";
+import { buildProjectFinancialSummary, getEffectivePaymentStatus, getFinancialSummary } from "../financial/financial.service.js";
 
 type FinancialSummary = Awaited<ReturnType<typeof getFinancialSummary>>;
 
@@ -63,12 +71,98 @@ const dashboardProjectSelect = {
 
 type DashboardProjectRecord = Prisma.ProjectGetPayload<{ select: typeof dashboardProjectSelect }>;
 
+const dashboardPaymentDetailSelect = {
+  id: true,
+  description: true,
+  amount: true,
+  paidAmount: true,
+  dueDate: true,
+  status: true,
+  clientId: true,
+  projectId: true,
+  client: {
+    select: {
+      id: true,
+      name: true
+    }
+  },
+  project: {
+    select: {
+      id: true,
+      name: true
+    }
+  }
+} satisfies Prisma.PaymentSelect;
+
+const dashboardTaskDetailSelect = {
+  id: true,
+  title: true,
+  dueDate: true,
+  priority: true,
+  status: true,
+  projectId: true,
+  project: {
+    select: {
+      id: true,
+      name: true,
+      client: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  }
+} satisfies Prisma.TaskSelect;
+
+const dashboardVisitDetailSelect = {
+  id: true,
+  type: true,
+  date: true,
+  time: true,
+  address: true,
+  amount: true,
+  status: true,
+  clientId: true,
+  projectId: true,
+  client: {
+    select: {
+      id: true,
+      name: true
+    }
+  },
+  project: {
+    select: {
+      id: true,
+      name: true
+    }
+  }
+} satisfies Prisma.VisitSelect;
+
+type DashboardPaymentDetailRecord = Prisma.PaymentGetPayload<{ select: typeof dashboardPaymentDetailSelect }>;
+type DashboardTaskDetailRecord = Prisma.TaskGetPayload<{ select: typeof dashboardTaskDetailSelect }>;
+type DashboardVisitDetailRecord = Prisma.VisitGetPayload<{ select: typeof dashboardVisitDetailSelect }>;
+
 export async function getDashboardSummary() {
   const financial = await getFinancialSummary();
   const today = startOfDay(new Date());
   const sevenDaysFromToday = addDays(today, 7);
-  const [clientsTotal, projects, tasksTotal, openTasks, overdueTasks, tasksDueSoon, scheduledVisits, visitsToday, visitsNextSevenDays, openBudgets] =
-    await prisma.$transaction([
+  const [
+    clientsTotal,
+    projects,
+    tasksTotal,
+    openTasks,
+    overdueTasks,
+    tasksDueSoon,
+    scheduledVisits,
+    visitsToday,
+    visitsNextSevenDays,
+    openBudgets,
+    overduePaymentDetails,
+    dueSoonPaymentDetails,
+    criticalTaskDetails,
+    upcomingVisitDetails
+  ] = await prisma.$transaction([
     prisma.client.count(),
     prisma.project.findMany({
       select: dashboardProjectSelect,
@@ -88,8 +182,35 @@ export async function getDashboardSummary() {
     }),
     prisma.visit.count({ where: { status: "SCHEDULED" } }),
     prisma.visit.count({ where: { date: { gte: today, lte: endOfDay(today) }, status: "SCHEDULED" } }),
-    prisma.visit.count({ where: { date: { gte: today, lte: sevenDaysFromToday }, status: "SCHEDULED" } }),
-    prisma.budget.count({ where: { status: { in: ["DRAFT", "SENT", "NEGOTIATION"] } } })
+    prisma.visit.count({ where: { date: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: "SCHEDULED" } }),
+    prisma.budget.count({ where: { status: { in: ["DRAFT", "SENT", "NEGOTIATION"] } } }),
+    prisma.payment.findMany({
+      where: { dueDate: { lt: today }, status: { notIn: ["PAID", "CANCELLED"] } },
+      select: dashboardPaymentDetailSelect,
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      take: 5
+    }),
+    prisma.payment.findMany({
+      where: { dueDate: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: { notIn: ["PAID", "CANCELLED"] } },
+      select: dashboardPaymentDetailSelect,
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      take: 5
+    }),
+    prisma.task.findMany({
+      where: {
+        OR: [{ priority: "URGENT" }, { dueDate: { lt: today } }],
+        status: { notIn: ["COMPLETED", "CANCELLED"] }
+      },
+      select: dashboardTaskDetailSelect,
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 5
+    }),
+    prisma.visit.findMany({
+      where: { date: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: "SCHEDULED" },
+      select: dashboardVisitDetailSelect,
+      orderBy: [{ date: "asc" }, { updatedAt: "desc" }],
+      take: 5
+    })
   ]);
   const projectSummary = buildProjectDashboard(projects);
   const operations = {
@@ -125,7 +246,13 @@ export async function getDashboardSummary() {
     financial,
     projects: projectSummary,
     operations,
-    alerts
+    alerts,
+    details: {
+      overduePayments: overduePaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, today)),
+      dueSoonPayments: dueSoonPaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, today)),
+      criticalTasks: criticalTaskDetails.map((task) => mapDashboardTaskDetail(task, today)),
+      upcomingVisits: upcomingVisitDetails.map(mapDashboardVisitDetail)
+    }
   };
 }
 
@@ -283,8 +410,83 @@ function getOverContractedProjects(projects: DashboardProjectRecord[]) {
     .filter((project) => project.hasOverContractedAlert);
 }
 
+function mapDashboardPaymentDetail(payment: DashboardPaymentDetailRecord, today: Date) {
+  const amount = toNumber(payment.amount);
+  const paidAmount = toNumber(payment.paidAmount);
+  const remainingAmount = roundMoney(Math.max(amount - paidAmount, 0));
+  const status = getEffectivePaymentStatus(payment, today);
+
+  return {
+    id: payment.id,
+    description: payment.description,
+    clientId: payment.clientId,
+    clientName: payment.client.name,
+    projectId: payment.projectId,
+    projectName: payment.project.name,
+    amount: toMoneyString(amount),
+    paidAmount: toMoneyString(paidAmount),
+    remainingAmount: toMoneyString(remainingAmount),
+    dueDate: payment.dueDate.toISOString(),
+    status,
+    statusLabel: paymentStatusLabels[status]
+  };
+}
+
+function mapDashboardTaskDetail(task: DashboardTaskDetailRecord, today: Date) {
+  const criticalReason = task.dueDate && startOfDay(task.dueDate) < startOfDay(today) ? "Atrasada" : "Urgente";
+
+  return {
+    id: task.id,
+    title: task.title,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    priority: task.priority,
+    priorityLabel: taskPriorityLabels[task.priority as keyof typeof taskPriorityLabels] ?? task.priority,
+    status: task.status,
+    statusLabel: taskStatusLabels[task.status as keyof typeof taskStatusLabels] ?? task.status,
+    projectId: task.projectId,
+    projectName: task.project?.name ?? null,
+    clientId: task.project?.client.id ?? null,
+    clientName: task.project?.client.name ?? null,
+    criticalReason
+  };
+}
+
+function mapDashboardVisitDetail(visit: DashboardVisitDetailRecord) {
+  return {
+    id: visit.id,
+    type: visit.type,
+    typeLabel: visitTypeLabels[visit.type as keyof typeof visitTypeLabels] ?? visit.type,
+    status: visit.status,
+    statusLabel: visitStatusLabels[visit.status as keyof typeof visitStatusLabels] ?? visit.status,
+    date: visit.date.toISOString(),
+    time: visit.time,
+    address: visit.address,
+    amount: toMoneyString(toNumber(visit.amount)),
+    clientId: visit.clientId,
+    clientName: visit.client.name,
+    projectId: visit.projectId,
+    projectName: visit.project?.name ?? null
+  };
+}
+
 function isActiveProjectStatus(status: string) {
   return status !== "FINISHED" && status !== "CANCELLED";
+}
+
+function toNumber(value: { toString(): string } | number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return Number(value.toString());
+}
+
+function toMoneyString(value: number) {
+  return roundMoney(value).toFixed(2);
+}
+
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function startOfDay(date: Date) {

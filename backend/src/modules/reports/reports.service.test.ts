@@ -19,19 +19,27 @@ describe("reports service", () => {
         payments: [
           {
             amount: "1000",
+            client: { id: "client-1", name: "Ana" },
             clientId: "client-1",
+            description: "Parcela Casa Ana",
             dueDate: new Date(2026, 4, 10),
+            id: "payment-1",
             paidAmount: "200",
             paidAt: new Date(2026, 4, 12),
+            project: { id: "project-1", name: "Casa Ana" },
             projectId: "project-1",
             status: "RECEIVABLE"
           },
           {
             amount: "500",
+            client: { id: "client-3", name: "Carla" },
             clientId: "client-3",
+            description: "Parcela Apartamento Carla",
             dueDate: new Date(2026, 3, 10),
+            id: "payment-2",
             paidAmount: "500",
             paidAt: new Date(2026, 3, 11),
+            project: { id: "project-3", name: "Apartamento Carla" },
             projectId: "project-3",
             status: "PAID"
           }
@@ -88,15 +96,90 @@ describe("reports service", () => {
           }
         ],
         tasks: [
-          { createdAt: new Date(2026, 4, 1), dueDate: new Date(2026, 4, 10), priority: "URGENT", projectId: "project-1", status: "PENDING" },
-          { createdAt: new Date(2026, 4, 1), dueDate: new Date(2026, 4, 17), priority: "MEDIUM", projectId: "project-1", status: "IN_PROGRESS" },
-          { createdAt: new Date(2026, 4, 1), dueDate: null, priority: "LOW", projectId: null, status: "COMPLETED" },
-          { createdAt: new Date(2026, 3, 1), dueDate: new Date(2026, 3, 10), priority: "URGENT", projectId: "project-3", status: "PENDING" }
+          {
+            createdAt: new Date(2026, 4, 1),
+            dueDate: new Date(2026, 4, 10),
+            id: "task-1",
+            priority: "URGENT",
+            project: { id: "project-1", name: "Casa Ana", client: { id: "client-1", name: "Ana" } },
+            projectId: "project-1",
+            status: "PENDING",
+            title: "Revisar briefing"
+          },
+          {
+            createdAt: new Date(2026, 4, 1),
+            dueDate: new Date(2026, 4, 17),
+            id: "task-2",
+            priority: "MEDIUM",
+            project: { id: "project-1", name: "Casa Ana", client: { id: "client-1", name: "Ana" } },
+            projectId: "project-1",
+            status: "IN_PROGRESS",
+            title: "Enviar prancha"
+          },
+          {
+            createdAt: new Date(2026, 4, 1),
+            dueDate: null,
+            id: "task-3",
+            priority: "LOW",
+            project: null,
+            projectId: null,
+            status: "COMPLETED",
+            title: "Organizar arquivos"
+          },
+          {
+            createdAt: new Date(2026, 3, 1),
+            dueDate: new Date(2026, 3, 10),
+            id: "task-4",
+            priority: "URGENT",
+            project: { id: "project-3", name: "Apartamento Carla", client: { id: "client-3", name: "Carla" } },
+            projectId: "project-3",
+            status: "PENDING",
+            title: "Validar medidas"
+          }
         ],
         visits: [
-          { amount: "250", clientId: "client-1", date: new Date(2026, 4, 16), projectId: "project-1", status: "SCHEDULED", type: "TECHNICAL_VISIT" },
-          { amount: "150", clientId: "client-2", date: new Date(2026, 4, 20), projectId: "project-2", status: "COMPLETED", type: "CLIENT_MEETING" },
-          { amount: "500", clientId: "client-3", date: new Date(2026, 3, 20), projectId: "project-3", status: "SCHEDULED", type: "OTHER" }
+          {
+            address: "Rua A",
+            amount: "250",
+            client: { id: "client-1", name: "Ana" },
+            clientId: "client-1",
+            date: new Date(2026, 4, 16),
+            id: "visit-1",
+            notes: null,
+            project: { id: "project-1", name: "Casa Ana" },
+            projectId: "project-1",
+            status: "SCHEDULED",
+            time: "09:00",
+            type: "TECHNICAL_VISIT"
+          },
+          {
+            address: "Rua B",
+            amount: "150",
+            client: { id: "client-2", name: "Bruno" },
+            clientId: "client-2",
+            date: new Date(2026, 4, 20),
+            id: "visit-2",
+            notes: null,
+            project: { id: "project-2", name: "Loja Bruno" },
+            projectId: "project-2",
+            status: "COMPLETED",
+            time: null,
+            type: "CLIENT_MEETING"
+          },
+          {
+            address: null,
+            amount: "500",
+            client: { id: "client-3", name: "Carla" },
+            clientId: "client-3",
+            date: new Date(2026, 3, 20),
+            id: "visit-3",
+            notes: null,
+            project: { id: "project-3", name: "Apartamento Carla" },
+            projectId: "project-3",
+            status: "SCHEDULED",
+            time: null,
+            type: "OTHER"
+          }
         ]
       },
       new Date(2026, 4, 15)
@@ -116,6 +199,7 @@ describe("reports service", () => {
     expect(overview.financial.receivedAmount).toBe("200.00");
     expect(overview.financial.receivableAmount).toBe("800.00");
     expect(overview.financial.overdueAmount).toBe("800.00");
+    expect(overview.financial.dueSoonAmount).toBe("0.00");
     expect(overview.financial.averageProjectTicket).toBe("900.00");
     expect(overview.projects.active).toBe(1);
     expect(overview.projects.averageProgress).toBe(50);
@@ -137,5 +221,25 @@ describe("reports service", () => {
     expect(overview.operations.urgentTasks).toBe(1);
     expect(overview.operations.visitsNextSevenDays).toBe(1);
     expect(overview.operations.visitsAmount).toBe("400.00");
+    expect(overview.details.overduePayments).toMatchObject([
+      {
+        description: "Parcela Casa Ana",
+        remainingAmount: "800.00",
+        status: "OVERDUE"
+      }
+    ]);
+    expect(overview.details.dueSoonPayments).toEqual([]);
+    expect(overview.details.criticalTasks).toMatchObject([
+      {
+        criticalReason: "Atrasada",
+        title: "Revisar briefing"
+      }
+    ]);
+    expect(overview.details.upcomingVisits).toMatchObject([
+      {
+        clientName: "Ana",
+        typeLabel: "Visita técnica"
+      }
+    ]);
   });
 });

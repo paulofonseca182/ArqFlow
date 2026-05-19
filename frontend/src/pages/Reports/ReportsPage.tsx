@@ -290,6 +290,69 @@ export function ReportsPage() {
             />
           </section>
 
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <DetailCard
+              emptyMessage="Nenhuma parcela atrasada neste escopo."
+              items={overview.details.overduePayments.map((payment) => ({
+                description: `${payment.clientName} - ${payment.projectName}`,
+                id: payment.id,
+                meta: `Vencimento ${formatDate(payment.dueDate)}`,
+                title: payment.description,
+                to: buildPath("/financial", { projectId: payment.projectId, status: "OVERDUE" }),
+                value: formatMoney(payment.remainingAmount)
+              }))}
+              title="Pagamentos atrasados"
+              to={shortcuts?.financialOverdue}
+              tone="danger"
+            />
+            <DetailCard
+              emptyMessage="Nenhuma parcela vencendo nos próximos 7 dias."
+              items={overview.details.dueSoonPayments.map((payment) => ({
+                description: `${payment.clientName} - ${payment.projectName}`,
+                id: payment.id,
+                meta: `Vencimento ${formatDate(payment.dueDate)}`,
+                title: payment.description,
+                to: buildPath("/financial", {
+                  dueFrom: todayDateParam(),
+                  dueTo: addDaysDateParam(new Date(), 7),
+                  projectId: payment.projectId
+                }),
+                value: formatMoney(payment.remainingAmount)
+              }))}
+              title="Pagamentos vencendo"
+              to={shortcuts?.financialDueSoon}
+              tone="warning"
+            />
+            <DetailCard
+              emptyMessage="Nenhuma tarefa crítica neste escopo."
+              items={overview.details.criticalTasks.map((task) => ({
+                description: task.projectName ?? "Tarefa geral",
+                id: task.id,
+                meta: task.dueDate ? `${task.criticalReason} - ${formatDate(task.dueDate)}` : task.criticalReason,
+                title: task.title,
+                to: task.criticalReason === "Atrasada" ? shortcuts?.tasksOverdue : shortcuts?.tasksUrgent,
+                value: task.priorityLabel
+              }))}
+              title="Tarefas críticas"
+              to={shortcuts?.tasksOverdue}
+              tone="warning"
+            />
+            <DetailCard
+              emptyMessage="Nenhuma visita próxima neste escopo."
+              items={overview.details.upcomingVisits.map((visit) => ({
+                description: `${visit.clientName}${visit.projectName ? ` - ${visit.projectName}` : ""}`,
+                id: visit.id,
+                meta: `${formatDate(visit.date)}${visit.time ? ` às ${visit.time}` : ""}`,
+                title: visit.typeLabel,
+                to: shortcuts?.visitsUpcoming,
+                value: visit.statusLabel
+              }))}
+              title="Visitas próximas"
+              to={shortcuts?.visitsUpcoming}
+              tone="neutral"
+            />
+          </section>
+
           <section className="grid gap-4 lg:grid-cols-2">
             <Card>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -518,9 +581,95 @@ function MetricLine({ label, to, value }: { label: string; to?: string; value: s
   );
 }
 
+type DetailCardItem = {
+  id: string;
+  title: string;
+  description: string;
+  meta: string;
+  value: string;
+  to?: string;
+};
+
+function DetailCard({
+  emptyMessage,
+  items,
+  title,
+  to,
+  tone
+}: {
+  emptyMessage: string;
+  items: DetailCardItem[];
+  title: string;
+  to?: string;
+  tone: "danger" | "neutral" | "warning";
+}) {
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-text-primary">{title}</h3>
+          <p className="mt-2 text-sm text-text-secondary">Principais itens do escopo atual.</p>
+        </div>
+        <Badge tone={items.length > 0 ? tone : "neutral"}>{items.length}</Badge>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {items.length === 0 ? (
+          <p className="rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2 text-sm text-text-muted">{emptyMessage}</p>
+        ) : (
+          items.map((item) => {
+            const content = (
+              <>
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-text-primary">{item.title}</div>
+                    <div className="mt-1 truncate text-xs text-text-muted">{item.description}</div>
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-text-secondary">{item.value}</span>
+                </div>
+                <div className="mt-2 text-xs text-text-muted">{item.meta}</div>
+              </>
+            );
+
+            if (!item.to) {
+              return (
+                <div className="rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2" key={item.id}>
+                  {content}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                className="block rounded-ui border border-surface-500 bg-surface-elevated px-3 py-2 transition hover:border-accent-bronze hover:bg-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
+                key={item.id}
+                title={`Abrir ${item.title}`}
+                to={item.to}
+              >
+                {content}
+              </Link>
+            );
+          })
+        )}
+      </div>
+
+      {to ? (
+        <Link
+          className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-accent-bronze outline-none transition hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent-bronze/70"
+          to={to}
+        >
+          Abrir lista completa
+          <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+        </Link>
+      ) : null}
+    </Card>
+  );
+}
+
 function getReportShortcuts(overview: ReportsOverview, query: ReportsOverviewParams) {
   const dueFrom = toDateParam(overview.period.from);
   const dueTo = toDateParam(overview.period.to);
+  const nextSevenDays = addDaysDateParam(new Date(), 7);
   const scopeParams = {
     clientId: query.clientId,
     projectId: query.projectId
@@ -552,6 +701,11 @@ function getReportShortcuts(overview: ReportsOverview, query: ReportsOverviewPar
       dueFrom,
       dueTo,
       status: "RECEIVABLE"
+    }),
+    financialDueSoon: buildPath("/financial", {
+      ...scopeParams,
+      dueFrom: todayDateParam(),
+      dueTo: nextSevenDays
     }),
     tasksDueSoon: buildPath("/tasks", {
       ...scopeParams,
@@ -636,6 +790,23 @@ function buildPath(pathname: string, params: Record<string, string | undefined>)
 
 function toDateParam(value: string) {
   const date = new Date(value);
+
+  return toDateInputValue(date);
+}
+
+function todayDateParam() {
+  return toDateInputValue(new Date());
+}
+
+function addDaysDateParam(date: Date, days: number) {
+  const nextDate = new Date(date);
+
+  nextDate.setDate(nextDate.getDate() + days);
+
+  return toDateInputValue(nextDate);
+}
+
+function toDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");

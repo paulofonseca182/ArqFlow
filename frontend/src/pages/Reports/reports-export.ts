@@ -21,9 +21,11 @@ export function buildReportsCsv(overview: ReportsOverview) {
     ["Financeiro", "Recebido", overview.financial.receivedAmount, "BRL"],
     ["Financeiro", "A receber", overview.financial.receivableAmount, "BRL"],
     ["Financeiro", "Atrasado", overview.financial.overdueAmount, "BRL"],
+    ["Financeiro", "Vencendo em 7 dias", overview.financial.dueSoonAmount, "BRL"],
     ["Financeiro", "Parcelas pagas", overview.financial.paidPayments, ""],
     ["Financeiro", "Parcelas abertas", overview.financial.receivablePayments, ""],
     ["Financeiro", "Parcelas atrasadas", overview.financial.overduePayments, ""],
+    ["Financeiro", "Parcelas vencendo em 7 dias", overview.financial.dueSoonPayments, ""],
     ["Financeiro", "Ticket médio por projeto", overview.financial.averageProjectTicket, "BRL"],
     ["Projetos", "Total", overview.projects.total, ""],
     ["Projetos", "Ativos", overview.projects.active, ""],
@@ -53,6 +55,39 @@ export function buildReportsCsv(overview: ReportsOverview) {
 
   overview.projects.topReceivableProjects.forEach((project) => {
     rows.push(["Recebíveis por projeto", project.name, project.pendingAmount, `${project.clientName} | atrasado ${project.overdueAmount}`]);
+  });
+
+  overview.details.overduePayments.forEach((payment) => {
+    rows.push([
+      "Detalhes - pagamentos atrasados",
+      payment.description,
+      payment.remainingAmount,
+      `${payment.clientName} | ${payment.projectName} | vencimento ${formatDateParam(payment.dueDate)}`
+    ]);
+  });
+  overview.details.dueSoonPayments.forEach((payment) => {
+    rows.push([
+      "Detalhes - pagamentos vencendo",
+      payment.description,
+      payment.remainingAmount,
+      `${payment.clientName} | ${payment.projectName} | vencimento ${formatDateParam(payment.dueDate)}`
+    ]);
+  });
+  overview.details.criticalTasks.forEach((task) => {
+    rows.push([
+      "Detalhes - tarefas críticas",
+      task.title,
+      task.criticalReason,
+      `${task.projectName ?? "Tarefa geral"} | ${task.dueDate ? formatDateParam(task.dueDate) : "sem prazo"}`
+    ]);
+  });
+  overview.details.upcomingVisits.forEach((visit) => {
+    rows.push([
+      "Detalhes - visitas próximas",
+      visit.typeLabel,
+      visit.clientName,
+      `${visit.projectName ?? "Sem projeto"} | ${formatDateParam(visit.date)}${visit.time ? ` ${visit.time}` : ""}`
+    ]);
   });
 
   return rows.map((row) => row.map(escapeCsvValue).join(";")).join("\r\n");

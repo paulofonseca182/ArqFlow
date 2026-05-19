@@ -6,6 +6,7 @@ import {
   budgetStatuses,
   clientStatusLabels,
   clientStatuses,
+  paymentStatusLabels,
   projectStatusLabels,
   projectStatuses,
   projectTypeLabels,
@@ -76,29 +77,61 @@ type ReportBudgetSnapshot = {
 };
 
 type ReportPaymentSnapshot = {
+  id: string;
   amount: { toString(): string } | number | string;
+  client: {
+    id: string;
+    name: string;
+  };
   clientId: string;
+  description: string;
   dueDate: Date;
   paidAmount: { toString(): string } | number | string;
   paidAt: Date | null;
+  project: {
+    id: string;
+    name: string;
+  };
   projectId: string;
   status: string;
 };
 
 type ReportTaskSnapshot = {
   createdAt: Date;
+  id: string;
+  title: string;
   dueDate: Date | null;
   priority: string;
+  project: {
+    id: string;
+    name: string;
+    client: {
+      id: string;
+      name: string;
+    };
+  } | null;
   projectId: string | null;
   status: string;
 };
 
 type ReportVisitSnapshot = {
+  address: string | null;
   amount: { toString(): string } | number | string | null;
+  client: {
+    id: string;
+    name: string;
+  };
   clientId: string;
   date: Date;
+  id: string;
+  notes: string | null;
+  project: {
+    id: string;
+    name: string;
+  } | null;
   projectId: string | null;
   status: string;
+  time: string | null;
   type: string;
 };
 
@@ -152,15 +185,49 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
       }),
       prisma.payment.findMany({
         where: buildReportPaymentWhere(query),
-        select: { amount: true, clientId: true, dueDate: true, paidAmount: true, paidAt: true, projectId: true, status: true }
+        select: {
+          amount: true,
+          client: { select: { id: true, name: true } },
+          clientId: true,
+          description: true,
+          dueDate: true,
+          id: true,
+          paidAmount: true,
+          paidAt: true,
+          project: { select: { id: true, name: true } },
+          projectId: true,
+          status: true
+        }
       }),
       prisma.task.findMany({
         where: buildReportTaskWhere(query),
-        select: { createdAt: true, dueDate: true, priority: true, projectId: true, status: true }
+        select: {
+          createdAt: true,
+          dueDate: true,
+          id: true,
+          priority: true,
+          project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } },
+          projectId: true,
+          status: true,
+          title: true
+        }
       }),
       prisma.visit.findMany({
         where: buildReportVisitWhere(query),
-        select: { amount: true, clientId: true, date: true, projectId: true, status: true, type: true }
+        select: {
+          address: true,
+          amount: true,
+          client: { select: { id: true, name: true } },
+          clientId: true,
+          date: true,
+          id: true,
+          notes: true,
+          project: { select: { id: true, name: true } },
+          projectId: true,
+          status: true,
+          time: true,
+          type: true
+        }
       })
   ]);
 
@@ -241,6 +308,7 @@ export function buildReportsOverview(
   );
   const decidedBudgets = approvedBudgets.length + refusedBudgets.length;
   const financial = buildPeriodFinancialSummary(payments, projectsInPeriod, period, today);
+  const details = buildReportDetails({ payments, tasks: tasksInPeriod, visits: visitsInPeriod, period }, today);
 
   return {
     filters: filters ?? {
@@ -296,7 +364,8 @@ export function buildReportsOverview(
       byTaskPriority: countByValues(taskPriorities, taskPriorityLabels, tasksInPeriod, (task) => task.priority),
       byVisitStatus: countByValues(visitStatuses, visitStatusLabels, visitsInPeriod, (visit) => visit.status),
       byVisitType: countByValues(visitTypes, visitTypeLabels, visitsInPeriod, (visit) => visit.type)
-    }
+    },
+    details
   };
 }
 
@@ -312,6 +381,10 @@ function buildPeriodFinancialSummary(
   let paidPayments = 0;
   let receivablePayments = 0;
   let overduePayments = 0;
+  let dueSoonAmount = 0;
+  let dueSoonPayments = 0;
+  const todayStart = startOfDay(today);
+  const dueSoonLimit = addDays(todayStart, 7);
 
   for (const payment of payments) {
     const amount = toNumber(payment.amount);
@@ -333,6 +406,16 @@ function buildPeriodFinancialSummary(
       overdueAmount += remainingAmount;
       overduePayments += 1;
     }
+
+    if (
+      !["PAID", "CANCELLED"].includes(payment.status) &&
+      isInPeriod(payment.dueDate, period) &&
+      startOfDay(payment.dueDate) >= todayStart &&
+      startOfDay(payment.dueDate) <= dueSoonLimit
+    ) {
+      dueSoonAmount += remainingAmount;
+      dueSoonPayments += 1;
+    }
   }
 
   const ticketAmounts = projects.map((project) => toNumber(project.contractedAmount)).filter((value) => value > 0);
@@ -343,11 +426,167 @@ function buildPeriodFinancialSummary(
     receivedAmount: toMoneyString(receivedAmount),
     receivableAmount: toMoneyString(receivableAmount),
     overdueAmount: toMoneyString(overdueAmount),
+    dueSoonAmount: toMoneyString(dueSoonAmount),
     paidPayments,
     receivablePayments,
     overduePayments,
+    dueSoonPayments,
     averageProjectTicket: toMoneyString(averageProjectTicket)
   };
+}
+
+function buildReportDetails(
+  {
+    payments,
+    period,
+    tasks,
+    visits
+  }: {
+    payments: ReportPaymentSnapshot[];
+    period: ReportPeriodSnapshot;
+    tasks: ReportTaskSnapshot[];
+    visits: ReportVisitSnapshot[];
+  },
+  today: Date
+) {
+  const todayStart = startOfDay(today);
+  const dueSoonLimit = addDays(todayStart, 7);
+  const overduePayments = payments
+    .filter((payment) => getEffectivePaymentStatus(payment, today) === "OVERDUE" && isInPeriod(payment.dueDate, period))
+    .sort(compareByDate((payment) => payment.dueDate))
+    .slice(0, 5)
+    .map((payment) => mapReportPaymentDetail(payment, today));
+  const dueSoonPayments = payments
+    .filter(
+      (payment) =>
+        !["PAID", "CANCELLED"].includes(payment.status) &&
+        isInPeriod(payment.dueDate, period) &&
+        startOfDay(payment.dueDate) >= todayStart &&
+        startOfDay(payment.dueDate) <= dueSoonLimit
+    )
+    .sort(compareByDate((payment) => payment.dueDate))
+    .slice(0, 5)
+    .map((payment) => mapReportPaymentDetail(payment, today));
+  const criticalTasks = tasks
+    .map((task) => ({ task, reason: getTaskCriticalReason(task, today) }))
+    .filter((item): item is { task: ReportTaskSnapshot; reason: string } => Boolean(item.reason))
+    .sort((first, second) => compareCriticalTasks(first.task, second.task, today))
+    .slice(0, 5)
+    .map(({ reason, task }) => mapReportTaskDetail(task, reason));
+  const upcomingVisits = visits
+    .filter(
+      (visit) =>
+        visit.status === "SCHEDULED" &&
+        startOfDay(visit.date) >= todayStart &&
+        startOfDay(visit.date) <= dueSoonLimit &&
+        isInPeriod(visit.date, period)
+    )
+    .sort(compareByDate((visit) => visit.date))
+    .slice(0, 5)
+    .map(mapReportVisitDetail);
+
+  return {
+    overduePayments,
+    dueSoonPayments,
+    criticalTasks,
+    upcomingVisits
+  };
+}
+
+function mapReportPaymentDetail(payment: ReportPaymentSnapshot, today: Date) {
+  const amount = toNumber(payment.amount);
+  const paidAmount = toNumber(payment.paidAmount);
+  const remainingAmount = roundMoney(Math.max(amount - paidAmount, 0));
+  const status = getEffectivePaymentStatus(payment, today);
+
+  return {
+    id: payment.id,
+    description: payment.description,
+    clientId: payment.clientId,
+    clientName: payment.client.name,
+    projectId: payment.projectId,
+    projectName: payment.project.name,
+    amount: toMoneyString(amount),
+    paidAmount: toMoneyString(paidAmount),
+    remainingAmount: toMoneyString(remainingAmount),
+    dueDate: payment.dueDate.toISOString(),
+    status,
+    statusLabel: paymentStatusLabels[status]
+  };
+}
+
+function mapReportTaskDetail(task: ReportTaskSnapshot, criticalReason: string) {
+  return {
+    id: task.id,
+    title: task.title,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    priority: task.priority,
+    priorityLabel: taskPriorityLabels[task.priority as keyof typeof taskPriorityLabels] ?? task.priority,
+    status: task.status,
+    statusLabel: taskStatusLabels[task.status as keyof typeof taskStatusLabels] ?? task.status,
+    projectId: task.projectId,
+    projectName: task.project?.name ?? null,
+    clientId: task.project?.client.id ?? null,
+    clientName: task.project?.client.name ?? null,
+    criticalReason
+  };
+}
+
+function mapReportVisitDetail(visit: ReportVisitSnapshot) {
+  return {
+    id: visit.id,
+    type: visit.type,
+    typeLabel: visitTypeLabels[visit.type as keyof typeof visitTypeLabels] ?? visit.type,
+    status: visit.status,
+    statusLabel: visitStatusLabels[visit.status as keyof typeof visitStatusLabels] ?? visit.status,
+    date: visit.date.toISOString(),
+    time: visit.time,
+    address: visit.address,
+    amount: toMoneyString(toNumber(visit.amount)),
+    clientId: visit.clientId,
+    clientName: visit.client.name,
+    projectId: visit.projectId,
+    projectName: visit.project?.name ?? null
+  };
+}
+
+function getTaskCriticalReason(task: ReportTaskSnapshot, today: Date) {
+  if (!isOpenTaskStatus(task.status)) {
+    return null;
+  }
+
+  if (task.dueDate && startOfDay(task.dueDate) < startOfDay(today)) {
+    return "Atrasada";
+  }
+
+  if (task.priority === "URGENT") {
+    return "Urgente";
+  }
+
+  return null;
+}
+
+function compareCriticalTasks(first: ReportTaskSnapshot, second: ReportTaskSnapshot, today: Date) {
+  const firstOverdue = first.dueDate && startOfDay(first.dueDate) < startOfDay(today);
+  const secondOverdue = second.dueDate && startOfDay(second.dueDate) < startOfDay(today);
+
+  if (firstOverdue !== secondOverdue) {
+    return firstOverdue ? -1 : 1;
+  }
+
+  if (first.priority === "URGENT" && second.priority !== "URGENT") {
+    return -1;
+  }
+
+  if (first.priority !== "URGENT" && second.priority === "URGENT") {
+    return 1;
+  }
+
+  return Number(first.dueDate ?? first.createdAt) - Number(second.dueDate ?? second.createdAt);
+}
+
+function compareByDate<T>(getDate: (item: T) => Date) {
+  return (first: T, second: T) => Number(getDate(first)) - Number(getDate(second));
 }
 
 async function resolveReportFilters(query: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Promise<ReportAppliedFilters> {

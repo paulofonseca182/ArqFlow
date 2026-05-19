@@ -33,12 +33,81 @@ const overview: ReportsOverview = {
   },
   financial: {
     averageProjectTicket: "1000.00",
+    dueSoonAmount: "200.00",
+    dueSoonPayments: 1,
     overdueAmount: "300.00",
     overduePayments: 1,
     paidPayments: 2,
     receivableAmount: "500.00",
     receivablePayments: 3,
     receivedAmount: "700.00"
+  },
+  details: {
+    criticalTasks: [
+      {
+        clientId: "client-1",
+        clientName: "Ana Arquitetura",
+        criticalReason: "Atrasada",
+        dueDate: "2026-05-12T12:00:00.000Z",
+        id: "task-1",
+        priority: "URGENT",
+        priorityLabel: "Urgente",
+        projectId: "project-1",
+        projectName: "Casa Ana",
+        status: "PENDING",
+        statusLabel: "Pendente",
+        title: "Revisar medidas"
+      }
+    ],
+    dueSoonPayments: [
+      {
+        amount: "500.00",
+        clientId: "client-1",
+        clientName: "Ana Arquitetura",
+        description: "Parcela 2",
+        dueDate: "2026-05-20T12:00:00.000Z",
+        id: "payment-2",
+        paidAmount: "300.00",
+        projectId: "project-1",
+        projectName: "Casa Ana",
+        remainingAmount: "200.00",
+        status: "PARTIALLY_PAID",
+        statusLabel: "Parcialmente pago"
+      }
+    ],
+    overduePayments: [
+      {
+        amount: "300.00",
+        clientId: "client-1",
+        clientName: "Ana Arquitetura",
+        description: "Parcela 1",
+        dueDate: "2026-05-10T12:00:00.000Z",
+        id: "payment-1",
+        paidAmount: "0.00",
+        projectId: "project-1",
+        projectName: "Casa Ana",
+        remainingAmount: "300.00",
+        status: "OVERDUE",
+        statusLabel: "Atrasado"
+      }
+    ],
+    upcomingVisits: [
+      {
+        address: "Rua A",
+        amount: "250.00",
+        clientId: "client-1",
+        clientName: "Ana Arquitetura",
+        date: "2026-05-18T12:00:00.000Z",
+        id: "visit-1",
+        projectId: "project-1",
+        projectName: "Casa Ana",
+        status: "SCHEDULED",
+        statusLabel: "Agendada",
+        time: "10:00",
+        type: "TECHNICAL_VISIT",
+        typeLabel: "Visita técnica"
+      }
+    ]
   },
   operations: {
     byTaskPriority: [{ count: 1, label: "Urgente", percentage: 100, status: "URGENT" }],
@@ -87,7 +156,10 @@ describe("reports export", () => {
     expect(csv).toContain("Filtro;Cliente;Ana Arquitetura;client-1");
     expect(csv).toContain("Filtro;Projeto;Casa Ana;project-1");
     expect(csv).toContain("Financeiro;A receber;500.00;BRL");
+    expect(csv).toContain("Financeiro;Vencendo em 7 dias;200.00;BRL");
     expect(csv).toContain("Recebíveis por projeto;Casa Ana;500.00;Ana Arquitetura | atrasado 300.00");
+    expect(csv).toContain("Detalhes - pagamentos atrasados;Parcela 1;300.00;Ana Arquitetura | Casa Ana | vencimento 2026-05-10");
+    expect(csv).toContain("Detalhes - tarefas críticas;Revisar medidas;Atrasada;Casa Ana | 2026-05-12");
   });
 
   it("gera nome previsível para o arquivo exportado", () => {

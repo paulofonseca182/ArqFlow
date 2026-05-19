@@ -116,6 +116,8 @@ O Dashboard passou a consumir dados reais do backend:
 - Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado.
 - Indicadores operacionais de tarefas abertas, tarefas atrasadas, visitas agendadas e orçamentos abertos.
 - Alertas também consideram tarefas atrasadas e visitas dos próximos 7 dias.
+- Detalhamento executivo dos principais pagamentos atrasados, pagamentos vencendo, tarefas críticas e visitas próximas.
+- Cards e alertas com atalhos para abrir Financeiro, Tarefas, Visitas e Orçamentos já filtrados.
 - Tela inicial conectada à API, com estados de carregamento, erro e atualização manual.
 
 ## Relatórios
@@ -137,6 +139,8 @@ O módulo de Relatórios foi escolhido como próxima fatia útil após a remoç�
 - Atalhos de recebíveis financeiros preservam o período ativo usando `dueFrom` e `dueTo`.
 - Atalhos compostos usam contratos explícitos do backend: `OPEN_BUDGETS`, `OVERDUE_TASKS`, `DUE_SOON_TASKS` e `UPCOMING_VISITS`.
 - Detalhamento adicional por tipo de projeto, prioridade de tarefas e tipo de visita.
+- Detalhamento limitado dos principais pagamentos atrasados, pagamentos vencendo nos próximos 7 dias, tarefas críticas e visitas próximas.
+- Tarefa crítica significa tarefa aberta com prioridade urgente ou prazo vencido.
 - Exportação CSV do relatório carregado, usando somente dados já calculados pelo backend.
 - CSV identifica o escopo ativo de cliente e projeto no arquivo exportado.
 - Sem dependência nova de gráficos; a interface usa cards, tabelas e barras simples do design system.

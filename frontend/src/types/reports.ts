@@ -35,9 +35,11 @@ export type ReportsFinancialSummary = {
   receivedAmount: string;
   receivableAmount: string;
   overdueAmount: string;
+  dueSoonAmount: string;
   paidPayments: number;
   receivablePayments: number;
   overduePayments: number;
+  dueSoonPayments: number;
   averageProjectTicket: string;
 };
 
@@ -49,6 +51,52 @@ export type ReportProjectReceivable = {
   receivedAmount: string;
   pendingAmount: string;
   overdueAmount: string;
+};
+
+export type ReportPaymentDetail = {
+  id: string;
+  description: string;
+  clientId: string;
+  clientName: string;
+  projectId: string;
+  projectName: string;
+  amount: string;
+  paidAmount: string;
+  remainingAmount: string;
+  dueDate: string;
+  status: string;
+  statusLabel: string;
+};
+
+export type ReportTaskDetail = {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  priority: string;
+  priorityLabel: string;
+  status: string;
+  statusLabel: string;
+  projectId: string | null;
+  projectName: string | null;
+  clientId: string | null;
+  clientName: string | null;
+  criticalReason: string;
+};
+
+export type ReportVisitDetail = {
+  id: string;
+  type: string;
+  typeLabel: string;
+  status: string;
+  statusLabel: string;
+  date: string;
+  time: string | null;
+  address: string | null;
+  amount: string;
+  clientId: string;
+  clientName: string;
+  projectId: string | null;
+  projectName: string | null;
 };
 
 export type ReportsOverview = {
@@ -96,5 +144,11 @@ export type ReportsOverview = {
     byTaskPriority: ReportStatusCount[];
     byVisitStatus: ReportStatusCount[];
     byVisitType: ReportStatusCount[];
+  };
+  details: {
+    overduePayments: ReportPaymentDetail[];
+    dueSoonPayments: ReportPaymentDetail[];
+    criticalTasks: ReportTaskDetail[];
+    upcomingVisits: ReportVisitDetail[];
   };
 };

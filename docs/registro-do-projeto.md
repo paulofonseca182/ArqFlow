@@ -723,6 +723,7 @@ Implementado no backend:
 - próximas entregas a partir de projetos ativos com data futura;
 - agrupamento de projetos por status oficial;
 - alertas para pagamentos atrasados, vencimentos próximos, entregas próximas, tarefas atrasadas, visitas próximas e parcelas acima do contratado;
+- listas resumidas dos principais pagamentos atrasados, pagamentos vencendo, tarefas críticas e visitas próximas;
 - testes para progresso médio, próximas entregas e alertas.
 
 Implementado no frontend:
@@ -735,6 +736,7 @@ Implementado no frontend:
 - cards operacionais reais de Tarefas abertas, Tarefas atrasadas, Visitas agendadas e Orçamentos abertos;
 - seção de Próximas entregas com progresso médio e progresso por projeto;
 - seção de Alertas com badges por severidade;
+- seção de Indicadores críticos com itens resumidos e links para as listas filtradas;
 - ação de atualização manual;
 - estado de carregamento e erro.
 
@@ -746,12 +748,14 @@ Regras consideradas:
 - progresso vem das etapas concluídas;
 - projetos finalizados e cancelados não entram como ativos;
 - alertas são calculados no backend.
+- tarefa crítica no Dashboard é tarefa aberta com prioridade urgente ou prazo vencido;
+- detalhes do Dashboard são limitados aos principais itens para manter a tela leve e operacional.
 
 Ainda falta:
 
 - testes de frontend do Dashboard;
 - gráficos futuros, caso façam sentido;
-- atalhos de navegação dos alertas para os módulos relacionados.
+- ampliar testes de contrato do Dashboard para listas detalhadas.
 
 ## Modulo de Relatórios - estado atual
 
@@ -800,6 +804,8 @@ Implementado no backend:
 - tarefas abertas, atrasadas, urgentes e vencendo em 7 dias;
 - visitas agendadas, concluídas e próximas;
 - distribuição por status, prioridade e tipo.
+- detalhes limitados dos principais pagamentos atrasados, pagamentos vencendo nos próximos 7 dias, tarefas críticas e visitas próximas;
+- resumo financeiro do período também informa valor e quantidade de parcelas vencendo nos próximos 7 dias.
 
 Implementado no frontend:
 
@@ -814,11 +820,13 @@ Implementado no frontend:
 - seção de projetos com progresso médio, total contratado e distribuição por status;
 - seção operacional com tarefas e visitas;
 - tabela de recebíveis por projeto;
+- cards de Indicadores críticos com pagamentos atrasados, pagamentos vencendo, tarefas críticas e visitas próximas;
 - atalhos em indicadores para abrir módulos relacionados já filtrados;
 - atalhos preservam cliente e/ou projeto ativo em Orçamentos, Financeiro, Tarefas e Visitas;
 - atalhos de Financeiro preservam o período ativo quando o filtro usa vencimento (`dueFrom` e `dueTo`);
 - Orçamentos, Financeiro, Tarefas e Visitas passam a ler filtros da URL e preencher os campos visuais automaticamente;
 - detalhamento adicional por tipo de projeto, prioridade de tarefas e tipo de visita;
+- exportação CSV inclui os detalhes críticos retornados pelo backend;
 - exportação CSV do relatório carregado, com separador `;` e BOM UTF-8 para compatibilidade com Excel/LibreOffice;
 - CSV identifica o escopo ativo de cliente e projeto;
 - atualização manual e estados de carregamento, erro e vazio.
@@ -832,6 +840,8 @@ Regras consideradas:
 - progresso usa etapas concluídas sobre total;
 - atrasos de tarefas e pagamentos continuam dinâmicos;
 - atalhos só foram aplicados em métricas com filtro de destino representável hoje;
+- tarefa crítica em Relatórios significa tarefa aberta com prioridade urgente ou prazo vencido;
+- detalhes críticos respeitam período, cliente e projeto ativos, e são limitados aos principais 5 itens por grupo;
 - Tarefas passou a aceitar `clientId` na listagem para manter atalhos de Relatórios coerentes quando o relatório está filtrado por cliente;
 - exportação CSV apenas serializa o `overview` retornado pelo backend, sem recalcular valores financeiros no frontend;
 - nenhuma dependência nova de gráficos foi adicionada.
@@ -840,7 +850,7 @@ Ainda falta:
 
 - testes de frontend da tela de relatórios;
 - validar a exportação CSV com dados reais do escritório;
-- avaliar detalhamento limitado de pagamentos, tarefas e visitas mais críticos se a rotina do escritório pedir.
+- avaliar se os detalhes críticos precisam de paginação própria no futuro.
 
 ## Modulo de Tarefas - estado atual
 
@@ -1729,8 +1739,8 @@ Cobertura atual:
 - bloqueio de valor pago acima da parcela;
 - resumo financeiro por projeto e alerta acima do contratado.
 - dashboard com progresso médio, próximas entregas, alertas reais e indicadores operacionais.
-- relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas e visitas.
-- exportação CSV de Relatórios com teste de helper puro.
+- relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas, visitas e detalhes críticos.
+- exportação CSV de Relatórios com teste de helper puro incluindo detalhes críticos.
 - schema inicial de Tarefas;
 - tarefa com projeto opcional;
 - filtros de Tarefas por projeto, status, prioridade, prazo e atraso derivado;
