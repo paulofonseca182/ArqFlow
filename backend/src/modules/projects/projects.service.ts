@@ -1,7 +1,16 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
 import { calculateProjectProgress } from "../../shared/business-rules.js";
-import { projectStatusLabels, projectStatuses, projectTypeLabels, projectTypes } from "../../shared/domain.js";
+import {
+  manualProjectReasonLabels,
+  manualProjectReasons,
+  projectOriginLabels,
+  projectOrigins,
+  projectStatusLabels,
+  projectStatuses,
+  projectTypeLabels,
+  projectTypes
+} from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
 import { getPaginationMeta } from "../../shared/pagination.js";
 import type { CreateProjectInput, ListProjectsQuery, UpdateProjectInput } from "./projects.schema.js";
@@ -11,6 +20,14 @@ export function getProjectsMeta() {
     statuses: projectStatuses.map((value) => ({
       value,
       label: projectStatusLabels[value]
+    })),
+    origins: projectOrigins.map((value) => ({
+      value,
+      label: projectOriginLabels[value]
+    })),
+    manualReasons: manualProjectReasons.map((value) => ({
+      value,
+      label: manualProjectReasonLabels[value]
     })),
     types: projectTypes.map((value) => ({
       value,
@@ -22,6 +39,7 @@ export function getProjectsMeta() {
 const projectSelect = {
   id: true,
   clientId: true,
+  budgetId: true,
   name: true,
   type: true,
   workAddress: true,
@@ -33,6 +51,10 @@ const projectSelect = {
   description: true,
   notes: true,
   internalNotes: true,
+  origin: true,
+  manualReason: true,
+  approvedAt: true,
+  convertedAt: true,
   pinned: true,
   createdAt: true,
   updatedAt: true,
@@ -43,6 +65,14 @@ const projectSelect = {
       email: true,
       phone: true,
       whatsapp: true
+    }
+  },
+  budget: {
+    select: {
+      id: true,
+      title: true,
+      finalAmount: true,
+      status: true
     }
   },
   steps: {
@@ -100,9 +130,15 @@ export async function getProjectById(id: string) {
 export async function createProject(input: CreateProjectInput) {
   await ensureClientExists(input.clientId);
   assertProjectDates(input.startsAt, input.expectedDeliveryDate);
+  assertManualProjectCreation(input.origin, input.manualReason);
 
   const project = await prisma.project.create({
-    data: input,
+    data: {
+      ...input,
+      approvedAt: null,
+      budgetId: null,
+      convertedAt: null
+    },
     select: projectSelect
   });
 
@@ -198,10 +234,11 @@ export async function getProjectDeleteImpact(id: string) {
 
 export function buildProjectWhere({
   clientId,
+  origin,
   search,
   status,
   type
-}: Pick<ListProjectsQuery, "clientId" | "search" | "status" | "type">): Prisma.ProjectWhereInput {
+}: Pick<ListProjectsQuery, "clientId" | "origin" | "search" | "status" | "type">): Prisma.ProjectWhereInput {
   const where: Prisma.ProjectWhereInput = {};
 
   if (clientId) {
@@ -210,6 +247,10 @@ export function buildProjectWhere({
 
   if (status) {
     where.status = status;
+  }
+
+  if (origin) {
+    where.origin = origin;
   }
 
   if (type) {
@@ -235,6 +276,7 @@ function mapProject(project: ProjectRecord) {
   return {
     id: project.id,
     clientId: project.clientId,
+    budgetId: project.budgetId,
     name: project.name,
     type: project.type,
     workAddress: project.workAddress,
@@ -246,10 +288,20 @@ function mapProject(project: ProjectRecord) {
     description: project.description,
     notes: project.notes,
     internalNotes: project.internalNotes,
+    origin: project.origin,
+    manualReason: project.manualReason,
+    approvedAt: project.approvedAt?.toISOString() ?? null,
+    convertedAt: project.convertedAt?.toISOString() ?? null,
     pinned: project.pinned,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
     progress: calculateProjectProgress(totalSteps, completedSteps),
+    budget: project.budget
+      ? {
+          ...project.budget,
+          finalAmount: project.budget.finalAmount.toString()
+        }
+      : null,
     client: project.client,
     _count: project._count
   };
@@ -269,6 +321,20 @@ async function ensureClientExists(clientId: string) {
 function assertProjectDates(startsAt?: Date | null, expectedDeliveryDate?: Date | null) {
   if (startsAt && expectedDeliveryDate && expectedDeliveryDate < startsAt) {
     throw new AppError("INVALID_PROJECT_DATES", "Data de entrega não pode ser anterior à data de início.", 422);
+  }
+}
+
+function assertManualProjectCreation(origin: string, manualReason?: string | null) {
+  if (origin === "BUDGET_APPROVAL") {
+    throw new AppError(
+      "PROJECT_MUST_BE_CREATED_FROM_APPROVED_BUDGET",
+      "Projeto por orçamento aprovado deve ser gerado a partir do orçamento.",
+      409
+    );
+  }
+
+  if (!manualReason) {
+    throw new AppError("PROJECT_MANUAL_REASON_REQUIRED", "Projeto manual exige motivo.", 422);
   }
 }
 

@@ -127,10 +127,13 @@ const overview: ReportsOverview = {
   projects: {
     active: 1,
     averageProgress: 40,
+    budgetOriginProjects: 1,
     byStatus: [{ count: 1, label: "Contrato assinado", percentage: 100, status: "CONTRACT_SIGNED" }],
+    byOrigin: [{ count: 1, label: "Or\u00e7amento aprovado", percentage: 100, status: "BUDGET_APPROVAL" }],
     byType: [{ count: 1, label: "Residencial", percentage: 100, status: "RESIDENTIAL" }],
     cancelled: 0,
     finished: 0,
+    manualProjects: 0,
     topReceivableProjects: [
       {
         clientName: "Ana Arquitetura",
@@ -157,6 +160,8 @@ describe("reports export", () => {
     expect(csv).toContain("Filtro;Projeto;Casa Ana;project-1");
     expect(csv).toContain("Financeiro;A receber;500.00;BRL");
     expect(csv).toContain("Financeiro;Vencendo em 7 dias;200.00;BRL");
+    expect(csv).toContain("Projetos;Vindos de");
+    expect(csv).toContain("Projetos por origem;Or");
     expect(csv).toContain("Recebíveis por projeto;Casa Ana;500.00;Ana Arquitetura | atrasado 300.00");
     expect(csv).toContain("Detalhes - pagamentos atrasados;Parcela 1;300.00;Ana Arquitetura | Casa Ana | vencimento 2026-05-10");
     expect(csv).toContain("Detalhes - tarefas críticas;Revisar medidas;Atrasada;Casa Ana | 2026-05-12");

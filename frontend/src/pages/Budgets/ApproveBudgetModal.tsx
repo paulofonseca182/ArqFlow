@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
-import type { Budget, BudgetApproveInput } from "../../types/budget";
+import type { Budget, BudgetGenerateProjectInput } from "../../types/budget";
 import type { ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
 import { approveBudgetFormSchema, getApproveBudgetFormDefaults, normalizeApproveBudgetPayload } from "./approve-budget-form";
 import type { ApproveBudgetFormFields } from "./approve-budget-form";
@@ -19,7 +19,7 @@ type ApproveBudgetModalProps = {
   approving: boolean;
   apiError?: string | null;
   onClose: () => void;
-  onSubmit: (payload: BudgetApproveInput) => Promise<void>;
+  onSubmit: (payload: BudgetGenerateProjectInput) => Promise<void>;
 };
 
 export function ApproveBudgetModal({
@@ -80,14 +80,14 @@ export function ApproveBudgetModal({
             Cancelar
           </Button>
           <Button disabled={approving} form="approve-budget-form" type="submit">
-            {approving ? "Convertendo..." : "Aprovar e converter"}
+            {approving ? "Gerando..." : "Gerar projeto"}
           </Button>
         </>
       }
       onClose={onClose}
       open={open}
       size="lg"
-      title="Aprovar orçamento"
+      title="Gerar projeto"
     >
       <form className="max-h-[70vh] space-y-5 overflow-y-auto pr-1" id="approve-budget-form" noValidate onSubmit={form.handleSubmit(handleFormSubmit)}>
         {formError || apiError ? (
@@ -99,7 +99,7 @@ export function ApproveBudgetModal({
 
         {budget ? (
           <div className="rounded-ui border border-surface-600 bg-surface-900/60 px-3 py-2 text-sm text-text-secondary">
-            <span className="text-text-primary">{budget.title}</span> será aprovado e vinculado ao novo projeto com valor contratado de{" "}
+            <span className="text-text-primary">{budget.title}</span> será usado como origem do novo projeto com valor contratado de{" "}
             <span className="text-text-primary">{formatMoney(budget.finalAmount)}</span>.
           </div>
         ) : null}

@@ -4,13 +4,14 @@ import {
   approveBudget,
   createBudget,
   deleteBudget,
+  generateProjectFromBudget,
   getBudgetById,
   getBudgetsMeta,
   listBudgets,
   sendBudget,
   updateBudget
 } from "./budgets.service.js";
-import type { ApproveBudgetInput, CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
+import type { CreateBudgetInput, GenerateProjectFromBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
 
 export const getBudgetsMetaController: RequestHandler = (_request, response) => {
   response.json(ok(getBudgetsMeta()));
@@ -47,7 +48,13 @@ export const sendBudgetController: RequestHandler = async (request, response) =>
 };
 
 export const approveBudgetController: RequestHandler = async (request, response) => {
-  const result = await approveBudget(request.params.id, request.body as ApproveBudgetInput);
+  const result = await approveBudget(request.params.id);
+
+  response.json(ok(result));
+};
+
+export const generateProjectFromBudgetController: RequestHandler = async (request, response) => {
+  const result = await generateProjectFromBudget(request.params.id, request.body as GenerateProjectFromBudgetInput);
 
   response.json(ok(result));
 };

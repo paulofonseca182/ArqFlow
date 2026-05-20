@@ -125,8 +125,11 @@ export type ReportsOverview = {
     finished: number;
     cancelled: number;
     totalContractedAmount: string;
+    budgetOriginProjects: number;
+    manualProjects: number;
     averageProgress: number;
     byStatus: ReportStatusCount[];
+    byOrigin: ReportStatusCount[];
     byType: ReportStatusCount[];
     topReceivableProjects: ReportProjectReceivable[];
   };

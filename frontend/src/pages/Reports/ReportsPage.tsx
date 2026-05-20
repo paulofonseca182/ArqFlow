@@ -392,10 +392,13 @@ export function ReportsPage() {
                 <MetricLine label="Ativos" value={overview.projects.active.toString()} />
                 <MetricLine label="Finalizados" value={overview.projects.finished.toString()} />
                 <MetricLine label="Cancelados" value={overview.projects.cancelled.toString()} />
+                <MetricLine label="Vindos de orçamento" value={overview.projects.budgetOriginProjects.toString()} />
+                <MetricLine label="Manuais/exceção" value={overview.projects.manualProjects.toString()} />
                 <MetricLine label="Ticket médio" value={formatMoney(overview.financial.averageProjectTicket)} />
                 <MetricLine label="Atrasado no período" to={shortcuts?.financialOverdue} value={formatMoney(overview.financial.overdueAmount)} />
               </div>
               <StatusList items={overview.projects.byStatus} />
+              <StatusList items={overview.projects.byOrigin} />
             </Card>
           </section>
 

@@ -58,6 +58,7 @@ describe("reports service", () => {
             createdAt: new Date(2026, 4, 5),
             id: "project-1",
             name: "Casa Ana",
+            origin: "BUDGET_APPROVAL",
             payments: [
               {
                 amount: "1000",
@@ -77,6 +78,7 @@ describe("reports service", () => {
             createdAt: new Date(2026, 4, 8),
             id: "project-2",
             name: "Loja Bruno",
+            origin: "MANUAL",
             payments: [],
             status: "FINISHED",
             steps: [{ status: "COMPLETED" }],
@@ -89,6 +91,7 @@ describe("reports service", () => {
             createdAt: new Date(2026, 3, 8),
             id: "project-3",
             name: "Apartamento Carla",
+            origin: "LEGACY",
             payments: [],
             status: "CONTRACT_SIGNED",
             steps: [],
@@ -203,6 +206,14 @@ describe("reports service", () => {
     expect(overview.financial.averageProjectTicket).toBe("900.00");
     expect(overview.projects.active).toBe(1);
     expect(overview.projects.averageProgress).toBe(50);
+    expect(overview.projects.budgetOriginProjects).toBe(1);
+    expect(overview.projects.manualProjects).toBe(1);
+    expect(overview.projects.byOrigin).toEqual([
+      { count: 1, label: "Or\u00e7amento aprovado", percentage: 50, status: "BUDGET_APPROVAL" },
+      { count: 1, label: "Exce\u00e7\u00e3o manual", percentage: 50, status: "MANUAL" },
+      { count: 0, label: "Projeto legado", percentage: 0, status: "LEGACY" },
+      { count: 0, label: "Projeto interno", percentage: 0, status: "INTERNAL" }
+    ]);
     expect(overview.projects.totalContractedAmount).toBe("1800.00");
     expect(overview.projects.topReceivableProjects).toEqual([
       {

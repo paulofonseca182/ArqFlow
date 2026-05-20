@@ -1,5 +1,7 @@
 export const clientStatuses = ["NEW_CONTACT", "IN_SERVICE", "BUDGET_SENT", "ACTIVE", "INACTIVE", "RECURRING"] as const;
 export const projectTypes = ["RESIDENTIAL", "INTERIORS", "RENOVATION", "COMMERCIAL", "OTHER"] as const;
+export const projectOrigins = ["BUDGET_APPROVAL", "MANUAL", "LEGACY", "INTERNAL"] as const;
+export const manualProjectReasons = ["LEGACY_PROJECT", "INTERNAL_PROJECT", "ADMINISTRATIVE_ADJUSTMENT", "COURTESY", "OTHER"] as const;
 export const projectStatuses = [
   "CONTRACT_IN_PROGRESS",
   "CONTRACT_SIGNED",
@@ -23,6 +25,8 @@ export const visitStatuses = ["SCHEDULED", "COMPLETED", "CANCELLED"] as const;
 
 export type ClientStatus = (typeof clientStatuses)[number];
 export type ProjectType = (typeof projectTypes)[number];
+export type ProjectOrigin = (typeof projectOrigins)[number];
+export type ManualProjectReason = (typeof manualProjectReasons)[number];
 export type ProjectStatus = (typeof projectStatuses)[number];
 export type StepStatus = (typeof stepStatuses)[number];
 export type BudgetStatus = (typeof budgetStatuses)[number];
@@ -60,6 +64,21 @@ export const projectTypeLabels: Record<ProjectType, string> = {
   INTERIORS: "Interiores",
   RENOVATION: "Reforma",
   COMMERCIAL: "Comercial",
+  OTHER: "Outro"
+};
+
+export const projectOriginLabels: Record<ProjectOrigin, string> = {
+  BUDGET_APPROVAL: "Or\u00e7amento aprovado",
+  MANUAL: "Exce\u00e7\u00e3o manual",
+  LEGACY: "Projeto legado",
+  INTERNAL: "Projeto interno"
+};
+
+export const manualProjectReasonLabels: Record<ManualProjectReason, string> = {
+  LEGACY_PROJECT: "Projeto legado",
+  INTERNAL_PROJECT: "Projeto interno",
+  ADMINISTRATIVE_ADJUSTMENT: "Ajuste administrativo",
+  COURTESY: "Cortesia",
   OTHER: "Outro"
 };
 

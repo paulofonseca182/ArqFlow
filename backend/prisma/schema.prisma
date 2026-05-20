@@ -35,6 +35,7 @@ model Client {
 model Project {
   id                   String    @id @default(cuid())
   clientId             String
+  budgetId             String?   @unique
   name                 String
   type                 String
   workAddress          String?
@@ -46,18 +47,26 @@ model Project {
   description          String?
   notes                String?
   internalNotes        String?
+  origin               String    @default("MANUAL")
+  manualReason         String?
+  approvedAt           DateTime?
+  convertedAt          DateTime?
   pinned               Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  client    Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  steps     ProjectStep[]
-  budgets   Budget[]
-  payments  Payment[]
-  tasks     Task[]
-  visits    Visit[]
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  budget          Budget?       @relation("ProjectOriginBudget", fields: [budgetId], references: [id], onDelete: SetNull)
+  convertedBudget Budget?       @relation("BudgetConvertedProject")
+  steps           ProjectStep[]
+  budgets         Budget[]      @relation("ProjectBudgets")
+  payments        Payment[]
+  tasks           Task[]
+  visits          Visit[]
 
   @@index([clientId])
+  @@index([budgetId])
+  @@index([origin])
   @@index([status])
   @@index([type])
 }
@@ -87,6 +96,7 @@ model Budget {
   id            String    @id @default(cuid())
   clientId      String
   projectId     String?
+  convertedProjectId String? @unique
   title         String
   serviceType   String
   description   String?
@@ -96,15 +106,20 @@ model Budget {
   paymentMethod String?
   expiresAt     DateTime?
   status        String    @default("DRAFT")
+  approvedAt    DateTime?
+  convertedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  client  Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  project Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  items   BudgetItem[]
+  client           Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project          Project?     @relation("ProjectBudgets", fields: [projectId], references: [id], onDelete: SetNull)
+  convertedProject Project?     @relation("BudgetConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
+  originatedProject Project?    @relation("ProjectOriginBudget")
+  items            BudgetItem[]
 
   @@index([clientId])
   @@index([projectId])
+  @@index([convertedProjectId])
   @@index([status])
 }
 

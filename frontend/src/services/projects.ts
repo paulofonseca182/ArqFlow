@@ -3,7 +3,9 @@ import type { ApiSuccess, PaginatedResponse } from "../types/api";
 import type {
   Project,
   ProjectDeleteImpact,
+  ManualProjectReason,
   ProjectOption,
+  ProjectOrigin,
   ProjectStatus,
   ProjectType,
   ProjectWriteInput
@@ -12,6 +14,8 @@ import type {
 type ProjectsMeta = {
   statuses: ProjectOption<ProjectStatus>[];
   types: ProjectOption<ProjectType>[];
+  origins: ProjectOption<ProjectOrigin>[];
+  manualReasons: ProjectOption<ManualProjectReason>[];
 };
 
 type ListProjectsParams = {
@@ -20,6 +24,7 @@ type ListProjectsParams = {
   search?: string;
   status?: ProjectStatus;
   type?: ProjectType;
+  origin?: ProjectOrigin;
   clientId?: string;
 };
 
@@ -31,6 +36,7 @@ export async function listProjects(params: ListProjectsParams) {
       search: params.search || undefined,
       status: params.status || undefined,
       type: params.type || undefined,
+      origin: params.origin || undefined,
       clientId: params.clientId || undefined
     }
   });

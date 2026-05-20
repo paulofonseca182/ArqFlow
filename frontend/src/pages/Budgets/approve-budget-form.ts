@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Budget, BudgetApproveInput } from "../../types/budget";
+import type { Budget, BudgetGenerateProjectInput } from "../../types/budget";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
 
 export type ApproveBudgetFormFields = {
@@ -68,7 +68,7 @@ export function getApproveBudgetFormDefaults(budget?: Budget | null): ApproveBud
   };
 }
 
-export function normalizeApproveBudgetPayload(data: ApproveBudgetFormPayload): BudgetApproveInput {
+export function normalizeApproveBudgetPayload(data: ApproveBudgetFormPayload): BudgetGenerateProjectInput {
   return {
     name: data.name,
     type: data.type,

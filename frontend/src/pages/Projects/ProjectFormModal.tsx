@@ -8,8 +8,16 @@ import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import type { Client } from "../../types/client";
-import type { Project, ProjectOption, ProjectStatus, ProjectType, ProjectWriteInput } from "../../types/project";
-import { getProjectFormDefaults, normalizeProjectPayload, projectFormSchema } from "./project-form";
+import type {
+  ManualProjectReason,
+  Project,
+  ProjectOption,
+  ProjectOrigin,
+  ProjectStatus,
+  ProjectType,
+  ProjectWriteInput
+} from "../../types/project";
+import { getProjectFormDefaults, normalizeProjectPayload, projectEditFormSchema, projectFormSchema } from "./project-form";
 import type { ProjectFormFields } from "./project-form";
 
 type ProjectFormModalProps = {
@@ -19,6 +27,8 @@ type ProjectFormModalProps = {
   clients: Client[];
   statuses: ProjectOption<ProjectStatus>[];
   types: ProjectOption<ProjectType>[];
+  origins: ProjectOption<ProjectOrigin>[];
+  manualReasons: ProjectOption<ManualProjectReason>[];
   saving: boolean;
   apiError?: string | null;
   onClose: () => void;
@@ -33,6 +43,8 @@ export function ProjectFormModal({
   onSubmit,
   open,
   project,
+  origins,
+  manualReasons,
   saving,
   statuses,
   types
@@ -56,7 +68,7 @@ export function ProjectFormModal({
     setFormError(null);
     form.clearErrors();
 
-    const result = projectFormSchema.safeParse(values);
+    const result = (mode === "create" ? projectFormSchema : projectEditFormSchema).safeParse(values);
 
     if (!result.success) {
       for (const issue of result.error.issues) {
@@ -76,7 +88,8 @@ export function ProjectFormModal({
   }
 
   const errors = form.formState.errors;
-  const title = mode === "create" ? "Novo projeto" : "Editar projeto";
+  const title = mode === "create" ? "Cadastrar projeto manual" : "Editar projeto";
+  const manualOrigins = origins.filter((origin) => origin.value !== "BUDGET_APPROVAL");
 
   return (
     <Modal
@@ -103,6 +116,12 @@ export function ProjectFormModal({
           </div>
         ) : null}
 
+        {mode === "create" ? (
+          <div className="rounded-ui border border-accent-bronze/40 bg-accent-bronze/10 px-3 py-2 text-sm text-text-secondary">
+            Este cadastro é uma exceção à RN-P11. Use apenas para projeto legado, interno, cortesia ou ajuste administrativo.
+          </div>
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2">
           <Input autoFocus error={errors.name?.message} label="Nome do projeto" placeholder="Apartamento Vila Mariana" {...form.register("name")} />
           <Select error={errors.clientId?.message} label="Cliente" {...form.register("clientId")}>
@@ -120,6 +139,25 @@ export function ProjectFormModal({
               </option>
             ))}
           </Select>
+          {mode === "create" ? (
+            <>
+              <Select error={errors.origin?.message} label="Origem da exceção" {...form.register("origin")}>
+                {manualOrigins.map((origin) => (
+                  <option key={origin.value} value={origin.value}>
+                    {origin.label}
+                  </option>
+                ))}
+              </Select>
+              <Select error={errors.manualReason?.message} label="Motivo obrigatório" {...form.register("manualReason")}>
+                <option value="">Selecione</option>
+                {manualReasons.map((reason) => (
+                  <option key={reason.value} value={reason.value}>
+                    {reason.label}
+                  </option>
+                ))}
+              </Select>
+            </>
+          ) : null}
           <Select error={errors.status?.message} label="Status" {...form.register("status")}>
             {statuses.map((status) => (
               <option key={status.value} value={status.value}>

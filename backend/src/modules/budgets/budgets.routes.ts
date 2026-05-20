@@ -5,6 +5,7 @@ import {
   approveBudgetController,
   createBudgetController,
   deleteBudgetController,
+  generateProjectFromBudgetController,
   getBudgetByIdController,
   getBudgetsMetaController,
   listBudgetsController,
@@ -15,6 +16,7 @@ import {
   approveBudgetSchema,
   budgetIdParamsSchema,
   createBudgetSchema,
+  generateProjectFromBudgetSchema,
   listBudgetsQuerySchema,
   updateBudgetSchema
 } from "./budgets.schema.js";
@@ -31,9 +33,10 @@ budgetsRouter.patch(
   asyncHandler(updateBudgetController)
 );
 budgetsRouter.patch("/:id/send", validateRequest({ params: budgetIdParamsSchema }), asyncHandler(sendBudgetController));
+budgetsRouter.patch("/:id/approve", validateRequest({ params: budgetIdParamsSchema, body: approveBudgetSchema }), asyncHandler(approveBudgetController));
 budgetsRouter.patch(
-  "/:id/approve",
-  validateRequest({ params: budgetIdParamsSchema, body: approveBudgetSchema }),
-  asyncHandler(approveBudgetController)
+  "/:id/generate-project",
+  validateRequest({ params: budgetIdParamsSchema, body: generateProjectFromBudgetSchema }),
+  asyncHandler(generateProjectFromBudgetController)
 );
 budgetsRouter.delete("/:id", validateRequest({ params: budgetIdParamsSchema }), asyncHandler(deleteBudgetController));

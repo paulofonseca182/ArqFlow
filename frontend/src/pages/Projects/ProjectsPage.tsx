@@ -29,6 +29,7 @@ import { Table } from "../../components/ui/Table";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
 import { listClients } from "../../services/clients";
+import { generateProjectFromBudget, listBudgets } from "../../services/budgets";
 import {
   completeProjectStep,
   generateDefaultProjectSteps,
@@ -46,11 +47,14 @@ import {
 } from "../../services/projects";
 import type { PaginationMeta } from "../../types/api";
 import type { Client } from "../../types/client";
-import { projectStatusValues, projectTypeValues } from "../../types/project";
+import type { Budget, BudgetGenerateProjectInput } from "../../types/budget";
+import { manualProjectReasonValues, projectOriginValues, projectStatusValues, projectTypeValues } from "../../types/project";
 import type {
+  ManualProjectReason,
   Project,
   ProjectDeleteImpact,
   ProjectOption,
+  ProjectOrigin,
   ProjectRelationCounts,
   ProjectStatus,
   ProjectType,
@@ -60,6 +64,7 @@ import { projectStepStatusValues } from "../../types/projectStep";
 import type { ProjectStep, ProjectStepStatus } from "../../types/projectStep";
 import { formatCurrency } from "../../utils/currency";
 import { ProjectFormModal } from "./ProjectFormModal";
+import { ApproveBudgetModal } from "../Budgets/ApproveBudgetModal";
 
 const pageSize = 20;
 const actionIconClassName = "h-4 w-4 shrink-0";
@@ -72,6 +77,8 @@ const emptyPagination: PaginationMeta = {
 };
 const fallbackStatuses: ProjectOption<ProjectStatus>[] = projectStatusValues.map((value) => ({ value, label: value }));
 const fallbackTypes: ProjectOption<ProjectType>[] = projectTypeValues.map((value) => ({ value, label: value }));
+const fallbackOrigins: ProjectOption<ProjectOrigin>[] = projectOriginValues.map((value) => ({ value, label: value }));
+const fallbackManualReasons: ProjectOption<ManualProjectReason>[] = manualProjectReasonValues.map((value) => ({ value, label: value }));
 const fallbackStepStatuses: ProjectOption<ProjectStepStatus>[] = projectStepStatusValues.map((value) => ({ value, label: value }));
 
 export function ProjectsPage() {
@@ -80,6 +87,9 @@ export function ProjectsPage() {
   const [pagination, setPagination] = useState<PaginationMeta>(emptyPagination);
   const [statuses, setStatuses] = useState<ProjectOption<ProjectStatus>[]>(fallbackStatuses);
   const [types, setTypes] = useState<ProjectOption<ProjectType>[]>(fallbackTypes);
+  const [origins, setOrigins] = useState<ProjectOption<ProjectOrigin>[]>(fallbackOrigins);
+  const [manualReasons, setManualReasons] = useState<ProjectOption<ManualProjectReason>[]>(fallbackManualReasons);
+  const [approvedBudgets, setApprovedBudgets] = useState<Budget[]>([]);
   const [stepStatuses, setStepStatuses] = useState<ProjectOption<ProjectStepStatus>[]>(fallbackStepStatuses);
   const [page, setPage] = useState(1);
   const [draftSearch, setDraftSearch] = useState("");
@@ -101,6 +111,11 @@ export function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [budgetPickerOpen, setBudgetPickerOpen] = useState(false);
+  const [budgetsLoading, setBudgetsLoading] = useState(false);
+  const [generationTarget, setGenerationTarget] = useState<Budget | null>(null);
+  const [generatingProject, setGeneratingProject] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<ProjectDeleteImpact | null>(null);
   const [deleteBlocked, setDeleteBlocked] = useState(false);
@@ -116,6 +131,7 @@ export function ProjectsPage() {
 
   const statusLabelByValue = useMemo(() => new Map(statuses.map((status) => [status.value, status.label])), [statuses]);
   const typeLabelByValue = useMemo(() => new Map(types.map((type) => [type.value, type.label])), [types]);
+  const originLabelByValue = useMemo(() => new Map(origins.map((origin) => [origin.value, origin.label])), [origins]);
   const stepStatusLabelByValue = useMemo(
     () => new Map(stepStatuses.map((status) => [status.value, status.label])),
     [stepStatuses]
@@ -160,6 +176,8 @@ export function ProjectsPage() {
         if (active) {
           setStatuses(projectsMeta.statuses);
           setTypes(projectsMeta.types);
+          setOrigins(projectsMeta.origins);
+          setManualReasons(projectsMeta.manualReasons);
           setStepStatuses(projectStepsMeta.statuses);
           setClients(clientsResult.data);
         }
@@ -210,6 +228,52 @@ export function ProjectsPage() {
     setSelectedProject(null);
     setFormError(null);
     setFormOpen(true);
+  }
+
+  async function loadApprovedBudgets() {
+    setBudgetsLoading(true);
+    setGenerationError(null);
+
+    try {
+      const result = await listBudgets({ page: 1, pageSize: 100, status: "APPROVED" });
+      setApprovedBudgets(result.data.filter((budget) => !budget.projectId && !budget.convertedProjectId));
+    } catch (requestError) {
+      setGenerationError(getErrorMessage(requestError));
+    } finally {
+      setBudgetsLoading(false);
+    }
+  }
+
+  async function handleOpenBudgetProjectFlow() {
+    setBudgetPickerOpen(true);
+    await loadApprovedBudgets();
+  }
+
+  function handleSelectApprovedBudget(budget: Budget) {
+    setBudgetPickerOpen(false);
+    setGenerationTarget(budget);
+    setGenerationError(null);
+  }
+
+  async function handleGenerateProjectFromBudget(payload: BudgetGenerateProjectInput) {
+    if (!generationTarget) {
+      return;
+    }
+
+    setGeneratingProject(true);
+    setGenerationError(null);
+    setNotice(null);
+
+    try {
+      const result = await generateProjectFromBudget(generationTarget.id, payload);
+      setNotice(`Projeto "${result.project.name}" gerado a partir do orçamento aprovado.`);
+      setGenerationTarget(null);
+      await Promise.all([loadProjects(), loadApprovedBudgets()]);
+    } catch (requestError) {
+      setGenerationError(getErrorMessage(requestError));
+    } finally {
+      setGeneratingProject(false);
+    }
   }
 
   function handleOpenEdit(project: Project) {
@@ -389,10 +453,15 @@ export function ProjectsPage() {
   return (
     <PageWrapper
       actions={
-        <Button disabled={metaLoading || clients.length === 0} onClick={handleOpenCreate} type="button">
-          <Plus className="h-4 w-4" />
-          Novo projeto
-        </Button>
+        <div className="flex max-w-full flex-wrap items-center gap-2">
+          <Button disabled={metaLoading} onClick={() => void handleOpenBudgetProjectFlow()} type="button">
+            <Plus className="h-4 w-4" />
+            Criar por orçamento aprovado
+          </Button>
+          <Button disabled={metaLoading || clients.length === 0} onClick={handleOpenCreate} type="button" variant="secondary">
+            Cadastro manual
+          </Button>
+        </div>
       }
       description="Projetos vinculados aos clientes do escritório."
       title="Projetos"
@@ -462,20 +531,20 @@ export function ProjectsPage() {
                 Limpar filtros
               </Button>
             ) : (
-              <Button disabled={clients.length === 0} onClick={handleOpenCreate} type="button">
+              <Button onClick={() => void handleOpenBudgetProjectFlow()} type="button">
                 <Plus className="h-4 w-4" />
-                Novo projeto
+                Criar por orçamento aprovado
               </Button>
             )
           }
-          description={hasFilters ? "Nenhum projeto encontrado para os filtros atuais." : "Crie o primeiro projeto a partir de um cliente existente."}
+          description={hasFilters ? "Nenhum projeto encontrado para os filtros atuais." : "Gere o primeiro projeto a partir de um orçamento aprovado ou use cadastro manual como exceção."}
           title={hasFilters ? "Sem resultados" : "Nenhum projeto cadastrado"}
         />
       ) : null}
 
       {projects.length > 0 ? (
         <div className="space-y-3">
-          <Table headers={["Projeto", "Cliente", "Tipo", "Status", "Valor", "Progresso", "Entrega", "Ações"]}>
+          <Table headers={["Projeto", "Cliente", "Tipo", "Origem", "Status", "Valor", "Progresso", "Entrega", "Ações"]}>
             {projects.map((project) => (
               <tr className="min-w-[980px]" key={project.id}>
                 <td className="min-w-60 px-4 py-4 align-top">
@@ -484,6 +553,7 @@ export function ProjectsPage() {
                 </td>
                 <td className="min-w-44 px-4 py-4 align-top text-text-secondary">{project.client.name}</td>
                 <td className="px-4 py-4 align-top text-text-secondary">{typeLabelByValue.get(project.type) ?? project.type}</td>
+                <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{originLabelByValue.get(project.origin) ?? project.origin}</td>
                 <td className="px-4 py-4 align-top">
                   <Badge tone={getProjectStatusTone(project.status)}>{statusLabelByValue.get(project.status) ?? project.status}</Badge>
                 </td>
@@ -552,6 +622,7 @@ export function ProjectsPage() {
       <ProjectFormModal
         apiError={formError}
         clients={clients}
+        manualReasons={manualReasons}
         mode={formMode}
         onClose={() => {
           if (!saving) {
@@ -560,8 +631,72 @@ export function ProjectsPage() {
         }}
         onSubmit={handleSaveProject}
         open={formOpen}
+        origins={origins}
         project={selectedProject}
         saving={saving}
+        statuses={statuses}
+        types={types}
+      />
+
+      <Modal
+        footer={
+          <Button onClick={() => setBudgetPickerOpen(false)} type="button" variant="secondary">
+            Fechar
+          </Button>
+        }
+        onClose={() => setBudgetPickerOpen(false)}
+        open={budgetPickerOpen}
+        size="lg"
+        title="Criar por orçamento aprovado"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Selecione um orçamento aprovado ainda não convertido. O projeto herdará cliente, valor contratado e vínculo de origem.
+          </p>
+          {generationError ? (
+            <div className="flex gap-2 rounded-ui border border-status-danger/30 bg-status-danger/10 px-4 py-3 text-sm text-status-danger">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{generationError}</span>
+            </div>
+          ) : null}
+          {budgetsLoading ? <LoadingState /> : null}
+          {!budgetsLoading && approvedBudgets.length === 0 ? (
+            <EmptyState
+              description="Aprove um orçamento em Orçamentos para liberar a geração do projeto."
+              title="Nenhum orçamento aprovado disponível"
+            />
+          ) : null}
+          {!budgetsLoading && approvedBudgets.length > 0 ? (
+            <div className="max-h-[48vh] overflow-y-auto rounded-ui border border-surface-600">
+              {approvedBudgets.map((budget) => (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-600 px-4 py-3 last:border-b-0" key={budget.id}>
+                  <div className="min-w-0">
+                    <div className="font-medium text-text-primary">{budget.title}</div>
+                    <div className="mt-1 text-sm text-text-secondary">
+                      {budget.client.name} · {formatCurrency(budget.finalAmount)}
+                    </div>
+                  </div>
+                  <Button onClick={() => handleSelectApprovedBudget(budget)} type="button">
+                    Gerar projeto
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </Modal>
+
+      <ApproveBudgetModal
+        apiError={generationError}
+        approving={generatingProject}
+        budget={generationTarget}
+        onClose={() => {
+          if (!generatingProject) {
+            setGenerationTarget(null);
+          }
+        }}
+        onSubmit={handleGenerateProjectFromBudget}
+        open={Boolean(generationTarget)}
         statuses={statuses}
         types={types}
       />

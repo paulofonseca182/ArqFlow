@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { projectStatuses, projectTypes } from "../../shared/domain.js";
+import { manualProjectReasons, projectOrigins, projectStatuses, projectTypes } from "../../shared/domain.js";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
@@ -23,11 +23,12 @@ export const projectIdParamsSchema = z.object({
 
 export const listProjectsQuerySchema = paginationQuerySchema.extend({
   clientId: z.string().cuid().optional(),
+  origin: z.enum(projectOrigins).optional(),
   status: z.enum(projectStatuses).optional(),
   type: z.enum(projectTypes).optional()
 });
 
-const projectBaseSchema = z.object({
+const projectEditableSchema = z.object({
   clientId: z.string().cuid("cliente inválido"),
   name: z.string().trim().min(2, "nome deve ter pelo menos 2 caracteres"),
   type: z.enum(projectTypes),
@@ -43,9 +44,19 @@ const projectBaseSchema = z.object({
   pinned: z.boolean().optional()
 });
 
-export const createProjectSchema = projectBaseSchema.superRefine(validateProjectDateRange);
+export const createProjectSchema = projectEditableSchema
+  .extend({
+    origin: z.enum(projectOrigins).default("MANUAL"),
+    manualReason: z.enum(manualProjectReasons, {
+      required_error: "projeto manual exige motivo"
+    })
+  })
+  .superRefine((data, context) => {
+    validateProjectDateRange(data, context);
+    validateManualProjectOrigin(data, context);
+  });
 
-export const updateProjectSchema = projectBaseSchema
+export const updateProjectSchema = projectEditableSchema
   .partial()
   .superRefine(validateProjectDateRange)
   .refine((data) => Object.keys(data).length > 0, {
@@ -62,6 +73,24 @@ function validateProjectDateRange(data: { startsAt?: Date; expectedDeliveryDate?
       code: z.ZodIssueCode.custom,
       path: ["expectedDeliveryDate"],
       message: "data de entrega não pode ser anterior à data de início"
+    });
+  }
+}
+
+function validateManualProjectOrigin(data: { origin?: string; manualReason?: string }, context: z.RefinementCtx) {
+  if (data.origin === "BUDGET_APPROVAL") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["origin"],
+      message: "projeto por orçamento aprovado deve ser gerado a partir do orçamento"
+    });
+  }
+
+  if (data.origin !== "BUDGET_APPROVAL" && !data.manualReason) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["manualReason"],
+      message: "projeto manual exige motivo"
     });
   }
 }

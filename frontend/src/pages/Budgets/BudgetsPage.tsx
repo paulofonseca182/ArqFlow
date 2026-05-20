@@ -14,11 +14,20 @@ import { Select } from "../../components/ui/Select";
 import { Table } from "../../components/ui/Table";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
-import { approveBudget, createBudget, deleteBudget, getBudgetsMeta, listBudgets, sendBudget, updateBudget } from "../../services/budgets";
+import {
+  approveBudget,
+  createBudget,
+  deleteBudget,
+  generateProjectFromBudget,
+  getBudgetsMeta,
+  listBudgets,
+  sendBudget,
+  updateBudget
+} from "../../services/budgets";
 import { listClients } from "../../services/clients";
 import { getProjectsMeta, listProjects } from "../../services/projects";
 import type { PaginationMeta } from "../../types/api";
-import type { Budget, BudgetApproveInput, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
+import type { Budget, BudgetGenerateProjectInput, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
 import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
 import type { Project, ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
@@ -82,6 +91,7 @@ export function BudgetsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sendLoadingId, setSendLoadingId] = useState<string | null>(null);
+  const [approveLoadingId, setApproveLoadingId] = useState<string | null>(null);
   const [approvalTarget, setApprovalTarget] = useState<Budget | null>(null);
   const [approving, setApproving] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
@@ -260,12 +270,28 @@ export function BudgetsPage() {
     }
   }
 
+  async function handleApproveBudget(budget: Budget) {
+    setApproveLoadingId(budget.id);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await approveBudget(budget.id);
+      setNotice("Orçamento aprovado. Agora você pode gerar o projeto.");
+      await loadBudgets();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setApproveLoadingId(null);
+    }
+  }
+
   function handleOpenApprove(budget: Budget) {
     setApprovalTarget(budget);
     setApprovalError(null);
   }
 
-  async function handleApproveBudget(payload: BudgetApproveInput) {
+  async function handleGenerateProject(payload: BudgetGenerateProjectInput) {
     if (!approvalTarget) {
       return;
     }
@@ -275,8 +301,8 @@ export function BudgetsPage() {
     setNotice(null);
 
     try {
-      const result = await approveBudget(approvalTarget.id, payload);
-      setNotice(`Orçamento aprovado e projeto "${result.project.name}" criado.`);
+      const result = await generateProjectFromBudget(approvalTarget.id, payload);
+      setNotice(`Projeto "${result.project.name}" gerado a partir do orçamento aprovado.`);
       setApprovalTarget(null);
       await loadBudgets();
     } catch (requestError) {
@@ -440,9 +466,11 @@ export function BudgetsPage() {
                 <td className="min-w-32 px-4 py-4 align-top text-text-secondary">{formatDate(budget.expiresAt)}</td>
                 <td className="px-4 py-4 align-top">
                   <div className="flex max-w-full flex-wrap items-center gap-2">
-                    <ActionIconButton ariaLabel={`Editar ${budget.title}`} label="Editar" onClick={() => handleOpenEdit(budget)}>
-                      <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
-                    </ActionIconButton>
+                    {budget.status !== "APPROVED" ? (
+                      <ActionIconButton ariaLabel={`Editar ${budget.title}`} label="Editar" onClick={() => handleOpenEdit(budget)}>
+                        <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                      </ActionIconButton>
+                    ) : null}
                     {canSendBudget(budget) ? (
                       <ActionIconButton
                         ariaLabel={`Enviar ${budget.title}`}
@@ -459,11 +487,25 @@ export function BudgetsPage() {
                     ) : null}
                     {canApproveBudget(budget) ? (
                       <ActionIconButton
-                        ariaLabel={`Aprovar e converter ${budget.title}`}
-                        label="Aprovar e converter"
+                        ariaLabel={`Aprovar ${budget.title}`}
+                        disabled={approveLoadingId === budget.id}
+                        label="Aprovar"
+                        onClick={() => void handleApproveBudget(budget)}
+                      >
+                        {approveLoadingId === budget.id ? (
+                          <RefreshCw className={`${actionIconClassName} animate-spin`} strokeWidth={actionIconStrokeWidth} />
+                        ) : (
+                          <CheckCircle2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                        )}
+                      </ActionIconButton>
+                    ) : null}
+                    {canGenerateProject(budget) ? (
+                      <ActionIconButton
+                        ariaLabel={`Gerar projeto de ${budget.title}`}
+                        label="Gerar projeto"
                         onClick={() => handleOpenApprove(budget)}
                       >
-                        <CheckCircle2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                        <Plus className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                       </ActionIconButton>
                     ) : null}
                     <ActionIconButton
@@ -531,7 +573,7 @@ export function BudgetsPage() {
             setApprovalTarget(null);
           }
         }}
-        onSubmit={handleApproveBudget}
+        onSubmit={handleGenerateProject}
         open={Boolean(approvalTarget)}
         statuses={projectStatuses}
         types={projectTypes}
@@ -578,7 +620,11 @@ function canSendBudget(budget: Budget) {
 }
 
 function canApproveBudget(budget: Budget) {
-  return !budget.projectId && ["DRAFT", "SENT", "NEGOTIATION", "APPROVED"].includes(budget.status);
+  return !budget.projectId && !budget.convertedProjectId && ["SENT", "NEGOTIATION"].includes(budget.status);
+}
+
+function canGenerateProject(budget: Budget) {
+  return budget.status === "APPROVED" && !budget.projectId && !budget.convertedProjectId;
 }
 
 function getBudgetStatusTone(status: BudgetStatus) {

@@ -36,6 +36,7 @@ export type Budget = {
   id: string;
   clientId: string;
   projectId: string | null;
+  convertedProjectId: string | null;
   title: string;
   serviceType: string;
   description: string | null;
@@ -45,10 +46,13 @@ export type Budget = {
   paymentMethod: string | null;
   expiresAt: string | null;
   status: BudgetStatus;
+  approvedAt: string | null;
+  convertedAt: string | null;
   createdAt: string;
   updatedAt: string;
   client: BudgetClientSummary;
   project: BudgetProjectSummary | null;
+  convertedProject: BudgetProjectSummary | null;
   items: BudgetItem[];
 };
 
@@ -71,7 +75,7 @@ export type BudgetWriteInput = {
   items: BudgetWriteItemInput[];
 };
 
-export type BudgetApproveInput = {
+export type BudgetGenerateProjectInput = {
   name?: string;
   type: ProjectType;
   status: ProjectStatus;
@@ -87,10 +91,15 @@ export type BudgetApproveInput = {
 export type BudgetApprovalProject = {
   id: string;
   clientId: string;
+  budgetId: string | null;
   name: string;
   type: ProjectType;
   status: ProjectStatus;
+  origin: string;
+  manualReason: string | null;
   contractedAmount: string | null;
+  approvedAt: string | null;
+  convertedAt: string | null;
   startsAt: string | null;
   expectedDeliveryDate: string | null;
   createdAt: string;

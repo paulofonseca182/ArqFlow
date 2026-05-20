@@ -32,6 +32,8 @@ export function buildReportsCsv(overview: ReportsOverview) {
     ["Projetos", "Finalizados", overview.projects.finished, ""],
     ["Projetos", "Cancelados", overview.projects.cancelled, ""],
     ["Projetos", "Valor contratado", overview.projects.totalContractedAmount, "BRL"],
+    ["Projetos", "Vindos de orçamento", overview.projects.budgetOriginProjects, ""],
+    ["Projetos", "Manuais/exceção", overview.projects.manualProjects, ""],
     ["Projetos", "Progresso médio", `${overview.projects.averageProgress}%`, ""],
     ["Operação", "Tarefas totais", overview.operations.tasksTotal, ""],
     ["Operação", "Tarefas abertas", overview.operations.openTasks, ""],
@@ -47,6 +49,7 @@ export function buildReportsCsv(overview: ReportsOverview) {
   appendStatusRows(rows, "Clientes por status", overview.clients.byStatus);
   appendStatusRows(rows, "Orçamentos por status", overview.commercial.byStatus);
   appendStatusRows(rows, "Projetos por status", overview.projects.byStatus);
+  appendStatusRows(rows, "Projetos por origem", overview.projects.byOrigin);
   appendStatusRows(rows, "Projetos por tipo", overview.projects.byType);
   appendStatusRows(rows, "Tarefas por status", overview.operations.byTaskStatus);
   appendStatusRows(rows, "Tarefas por prioridade", overview.operations.byTaskPriority);

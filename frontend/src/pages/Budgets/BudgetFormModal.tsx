@@ -83,6 +83,7 @@ export function BudgetFormModal({
 
   const errors = form.formState.errors;
   const title = mode === "create" ? "Novo orçamento" : "Editar orçamento";
+  const editableStatuses = statuses.filter((status) => status.value !== "APPROVED");
 
   return (
     <Modal
@@ -121,7 +122,7 @@ export function BudgetFormModal({
           </Select>
           <Input error={errors.serviceType?.message} label="Tipo de serviço" placeholder="Interiores" {...form.register("serviceType")} />
           <Select error={errors.status?.message} label="Status" {...form.register("status")}>
-            {statuses.map((status) => (
+            {editableStatuses.map((status) => (
               <option key={status.value} value={status.value}>
                 {status.label}
               </option>

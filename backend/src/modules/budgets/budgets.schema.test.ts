@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { approveBudgetSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetSchema } from "./budgets.schema.js";
+import {
+  approveBudgetSchema,
+  createBudgetSchema,
+  generateProjectFromBudgetSchema,
+  listBudgetsQuerySchema,
+  updateBudgetSchema
+} from "./budgets.schema.js";
 
 const validClientId = "clw0000000000000000000000";
 const validProjectId = "clw0000000000000000000001";
@@ -18,26 +24,26 @@ const validBudget = {
 };
 
 describe("budgets schema", () => {
-  it("exige cliente e título no cadastro", () => {
+  it("exige cliente e titulo no cadastro", () => {
     expect(createBudgetSchema.safeParse({ ...validBudget, clientId: undefined }).success).toBe(false);
     expect(createBudgetSchema.safeParse({ ...validBudget, title: "" }).success).toBe(false);
   });
 
-  it("orçamento enviado exige pelo menos 1 item", () => {
+  it("orcamento enviado exige pelo menos 1 item", () => {
     expect(createBudgetSchema.safeParse({ ...validBudget, items: [] }).success).toBe(false);
   });
 
-  it("bloqueia quantidade e valor unitário inválidos", () => {
+  it("bloqueia quantidade e valor unitario invalidos", () => {
     expect(
       createBudgetSchema.safeParse({
         ...validBudget,
-        items: [{ description: "Item inválido", quantity: 0, unitAmount: 100 }]
+        items: [{ description: "Item invalido", quantity: 0, unitAmount: 100 }]
       }).success
     ).toBe(false);
     expect(
       createBudgetSchema.safeParse({
         ...validBudget,
-        items: [{ description: "Item inválido", quantity: 1, unitAmount: -100 }]
+        items: [{ description: "Item invalido", quantity: 1, unitAmount: -100 }]
       }).success
     ).toBe(false);
   });
@@ -57,7 +63,7 @@ describe("budgets schema", () => {
     expect(updateBudgetSchema.safeParse({ status: "NEGOTIATION" }).success).toBe(true);
   });
 
-  it("valida escopo composto de orçamentos abertos e período de criação", () => {
+  it("valida escopo composto de orcamentos abertos e periodo de criacao", () => {
     expect(
       listBudgetsQuerySchema.safeParse({
         projectId: validProjectId,
@@ -76,11 +82,16 @@ describe("budgets schema", () => {
     ).toBe(false);
   });
 
-  it("valida dados para aprovar e converter em projeto", () => {
-    expect(approveBudgetSchema.safeParse({ type: "INTERIORS" }).success).toBe(true);
-    expect(approveBudgetSchema.safeParse({ type: "INTERIORS", area: 0 }).success).toBe(false);
+  it("mantem aprovacao como acao sem payload de projeto", () => {
+    expect(approveBudgetSchema.safeParse(undefined).success).toBe(true);
+    expect(approveBudgetSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("valida dados para gerar projeto a partir de orcamento aprovado", () => {
+    expect(generateProjectFromBudgetSchema.safeParse({ type: "INTERIORS" }).success).toBe(true);
+    expect(generateProjectFromBudgetSchema.safeParse({ type: "INTERIORS", area: 0 }).success).toBe(false);
     expect(
-      approveBudgetSchema.safeParse({
+      generateProjectFromBudgetSchema.safeParse({
         type: "INTERIORS",
         startsAt: "2026-08-10",
         expectedDeliveryDate: "2026-08-01"

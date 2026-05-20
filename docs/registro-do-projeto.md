@@ -1856,6 +1856,7 @@ POST /budgets
 PATCH /budgets/:id
 PATCH /budgets/:id/send
 PATCH /budgets/:id/approve
+PATCH /budgets/:id/generate-project
 DELETE /budgets/:id
 GET /financial/meta
 GET /financial/summary
@@ -1960,7 +1961,7 @@ Qualidade:
 
 ## Proximo passo recomendado
 
-Validar Relatórios filtrados por cliente/projeto com dados reais do escritório. Depois disso, bons candidatos para a próxima fatia são detalhamento limitado de pagamentos, tarefas e visitas mais críticos, sempre mantendo o backend como fonte da verdade.
+Validar visualmente o fluxo completo da RN-P11 com dados reais de teste: criar cliente, criar orçamento, enviar, aprovar, gerar projeto, gerar parcelas e conferir Dashboard/Relatórios separando origem do projeto. Depois disso, bons candidatos para a próxima fatia são reforçar os relatórios comerciais com taxa de conversão por período e listar projetos manuais/exceção para auditoria.
 
 ## Pontos de atencao para Clientes
 
@@ -2128,6 +2129,68 @@ Regra de uso:
 - quantidade e área não devem usar máscara de moeda;
 - valores financeiros digitados no frontend devem seguir o padrão de centavos, por exemplo `5` -> `R$ 0,05`, `55` -> `R$ 0,55`, `555` -> `R$ 5,55`;
 - o backend continua sendo a fonte da verdade para bloquear valores zero, negativos ou inconsistentes.
+
+## RN-P11 - Projeto deve nascer de orçamento aprovado
+
+Foi implementada a regra de produto RN-P11 para preservar a rastreabilidade comercial do ArqFlow.
+
+Decisão funcional:
+
+- projeto contratado deve nascer de orçamento aprovado;
+- cadastro manual de projeto não foi removido, mas virou exceção controlada;
+- projeto manual exige origem e motivo obrigatórios;
+- projetos manuais devem ser usados apenas para legado, interno, ajuste administrativo, cortesia ou outro caso justificado;
+- projetos manuais não devem ser usados como fluxo comercial novo;
+- relatórios passam a separar projetos vindos de orçamento aprovado e projetos manuais/exceção.
+
+Banco e Prisma:
+
+- `Project` passou a registrar `budgetId`, `origin`, `manualReason`, `approvedAt` e `convertedAt`;
+- `Budget` passou a registrar `convertedProjectId`, `approvedAt` e `convertedAt`;
+- `Project.budgetId` identifica o orçamento aprovado que originou o projeto;
+- `Budget.convertedProjectId` identifica o projeto gerado;
+- foram criadas as migrations `20260520100000_project_origin_budget_rule` e `20260520101000_backfill_project_origin_budget_rule`;
+- o backfill marca projetos antigos sem orçamento como `LEGACY`/`LEGACY_PROJECT` e vincula histórico aprovado quando existe um único orçamento aprovado para o projeto;
+- Prisma Client foi regenerado após a migration.
+
+Backend:
+
+- `PATCH /budgets/:id/approve` agora aprova comercialmente o orçamento e registra `approvedAt`;
+- `PATCH /budgets/:id/generate-project` gera o projeto a partir de orçamento aprovado usando `$transaction`;
+- a geração do projeto grava cliente, nome, tipo, descrição, valor contratado, status inicial, datas, `budgetId`, `origin = BUDGET_APPROVAL`, `approvedAt` e `convertedAt`;
+- orçamento aprovado convertido grava `projectId`, `convertedProjectId` e `convertedAt`;
+- orçamento só pode ser aprovado quando estiver `SENT` ou `NEGOTIATION` e tiver pelo menos um item;
+- orçamento só pode gerar projeto quando estiver `APPROVED` e ainda não estiver convertido;
+- status `APPROVED` foi bloqueado no fluxo comum de criação/edição de orçamento;
+- cadastro manual de projeto bloqueia `origin = BUDGET_APPROVAL` e exige `manualReason`;
+- metadados de Projetos agora expõem origens e motivos manuais.
+
+Frontend:
+
+- `/projects` passou a mostrar como ação principal `Criar por orçamento aprovado`;
+- a ação principal abre uma lista de orçamentos aprovados ainda não convertidos;
+- a geração usa o modal de dados iniciais do projeto e chama `/budgets/:id/generate-project`;
+- `Cadastro manual` ficou como ação secundária;
+- o formulário manual mostra aviso de exceção e exige origem/motivo;
+- a tabela de Projetos mostra a coluna `Origem`;
+- `/budgets` separa a ação `Aprovar` da ação `Gerar projeto`;
+- o formulário comum de orçamento não oferece o status `Aprovado`;
+- tipos TypeScript de Projeto, Orçamento e Relatórios foram atualizados.
+
+Relatórios:
+
+- `GET /reports/overview` agora inclui `budgetOriginProjects`, `manualProjects` e `byOrigin`;
+- `/reports` exibe projetos vindos de orçamento e projetos manuais/exceção;
+- exportação CSV inclui a quebra de projetos por origem;
+- filtros por projeto em Orçamentos consideram tanto `projectId` quanto `convertedProjectId`.
+
+Qualidade:
+
+- testes de Orçamentos cobrem aprovação, bloqueio de aprovação fora do fluxo, conversão apenas de orçamento aprovado e busca por projeto convertido;
+- testes de Projetos cobrem exigência de motivo manual e bloqueio de origem `BUDGET_APPROVAL` no cadastro manual;
+- testes de Relatórios cobrem a separação por origem;
+- `corepack pnpm typecheck` passou;
+- `corepack pnpm test` passou.
 
 ## Sugestao de commit para o estado atual
 

@@ -7,6 +7,8 @@ import {
   clientStatusLabels,
   clientStatuses,
   paymentStatusLabels,
+  projectOriginLabels,
+  projectOrigins,
   projectStatusLabels,
   projectStatuses,
   projectTypeLabels,
@@ -50,6 +52,7 @@ type ReportProjectSnapshot = {
   createdAt: Date;
   id: string;
   name: string;
+  origin: string;
   type: string;
   status: string;
   contractedAmount: { toString(): string } | number | string | null;
@@ -155,6 +158,7 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
           createdAt: true,
           id: true,
           name: true,
+          origin: true,
           type: true,
           status: true,
           contractedAmount: true,
@@ -341,9 +345,12 @@ export function buildReportsOverview(
       finished: projectsInPeriod.filter((project) => project.status === "FINISHED").length,
       cancelled: projectsInPeriod.filter((project) => project.status === "CANCELLED").length,
       totalContractedAmount: sumMoney(projectsInPeriod.map((project) => project.contractedAmount)),
+      budgetOriginProjects: projectsInPeriod.filter((project) => project.origin === "BUDGET_APPROVAL").length,
+      manualProjects: projectsInPeriod.filter((project) => project.origin !== "BUDGET_APPROVAL").length,
       averageProgress:
         progresses.length > 0 ? Math.round(progresses.reduce((total, progress) => total + progress, 0) / progresses.length) : 0,
       byStatus: countByValues(projectStatuses, projectStatusLabels, projectsInPeriod, (project) => project.status),
+      byOrigin: countByValues(projectOrigins, projectOriginLabels, projectsInPeriod, (project) => project.origin),
       byType: countByValues(projectTypes, projectTypeLabels, projectsInPeriod, (project) => project.type),
       topReceivableProjects: projectFinancials
         .filter((project) => Number(project.pendingAmount) > 0 || Number(project.overdueAmount) > 0)
@@ -652,7 +659,7 @@ function buildReportProjectWhere({ clientId, projectId }: Pick<ReportsOverviewQu
 function buildReportBudgetWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.BudgetWhereInput {
   return {
     ...(clientId ? { clientId } : {}),
-    ...(projectId ? { projectId } : {})
+    ...(projectId ? { OR: [{ projectId }, { convertedProjectId: projectId }] } : {})
   };
 }
 

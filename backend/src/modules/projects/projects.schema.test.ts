@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createProjectSchema, updateProjectSchema } from "./projects.schema.js";
 
 const validClientId = "clw0000000000000000000000";
+const manualException = {
+  manualReason: "LEGACY_PROJECT",
+  origin: "LEGACY"
+} as const;
 
 describe("projects schema", () => {
   it("exige cliente no cadastro", () => {
     const result = createProjectSchema.safeParse({
+      ...manualException,
       name: "Apartamento Vila Mariana",
       type: "INTERIORS"
     });
@@ -14,12 +19,13 @@ describe("projects schema", () => {
   });
 
   it("exige nome e tipo no cadastro", () => {
-    expect(createProjectSchema.safeParse({ clientId: validClientId, type: "INTERIORS" }).success).toBe(false);
-    expect(createProjectSchema.safeParse({ clientId: validClientId, name: "Apartamento Vila Mariana" }).success).toBe(false);
+    expect(createProjectSchema.safeParse({ ...manualException, clientId: validClientId, type: "INTERIORS" }).success).toBe(false);
+    expect(createProjectSchema.safeParse({ ...manualException, clientId: validClientId, name: "Apartamento Vila Mariana" }).success).toBe(false);
   });
 
   it("bloqueia data de entrega anterior a data de inicio", () => {
     const result = createProjectSchema.safeParse({
+      ...manualException,
       clientId: validClientId,
       name: "Apartamento Vila Mariana",
       type: "INTERIORS",
@@ -33,6 +39,7 @@ describe("projects schema", () => {
   it("bloqueia valor contratado negativo ou zero", () => {
     expect(
       createProjectSchema.safeParse({
+        ...manualException,
         clientId: validClientId,
         name: "Apartamento Vila Mariana",
         type: "INTERIORS",
@@ -41,8 +48,32 @@ describe("projects schema", () => {
     ).toBe(false);
   });
 
+  it("exige motivo para cadastro manual", () => {
+    expect(
+      createProjectSchema.safeParse({
+        clientId: validClientId,
+        name: "Apartamento Vila Mariana",
+        origin: "MANUAL",
+        type: "INTERIORS"
+      }).success
+    ).toBe(false);
+  });
+
+  it("bloqueia origem por orcamento aprovado no cadastro manual", () => {
+    expect(
+      createProjectSchema.safeParse({
+        clientId: validClientId,
+        manualReason: "OTHER",
+        name: "Apartamento Vila Mariana",
+        origin: "BUDGET_APPROVAL",
+        type: "INTERIORS"
+      }).success
+    ).toBe(false);
+  });
+
   it("normaliza campos opcionais vazios", () => {
     const result = createProjectSchema.parse({
+      ...manualException,
       clientId: validClientId,
       name: "Apartamento Vila Mariana",
       type: "INTERIORS",

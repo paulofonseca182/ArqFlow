@@ -4,7 +4,12 @@ import { calculateBudgetFinalAmount } from "../../shared/business-rules.js";
 import { budgetStatusLabels, budgetStatuses } from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
 import { getPaginationMeta } from "../../shared/pagination.js";
-import type { ApproveBudgetInput, CreateBudgetInput, ListBudgetsQuery, UpdateBudgetInput } from "./budgets.schema.js";
+import type {
+  CreateBudgetInput,
+  GenerateProjectFromBudgetInput,
+  ListBudgetsQuery,
+  UpdateBudgetInput
+} from "./budgets.schema.js";
 
 type BudgetItemInput = {
   description: string;
@@ -13,6 +18,8 @@ type BudgetItemInput = {
 };
 
 type BudgetConversionSnapshot = {
+  approvedAt: Date | null;
+  id: string;
   clientId: string;
   title: string;
   description: string | null;
@@ -23,6 +30,7 @@ const budgetSelect = {
   id: true,
   clientId: true,
   projectId: true,
+  convertedProjectId: true,
   title: true,
   serviceType: true,
   description: true,
@@ -32,6 +40,8 @@ const budgetSelect = {
   paymentMethod: true,
   expiresAt: true,
   status: true,
+  approvedAt: true,
+  convertedAt: true,
   createdAt: true,
   updatedAt: true,
   client: {
@@ -44,6 +54,13 @@ const budgetSelect = {
     }
   },
   project: {
+    select: {
+      id: true,
+      name: true,
+      status: true
+    }
+  },
+  convertedProject: {
     select: {
       id: true,
       name: true,
@@ -72,6 +89,11 @@ const convertedProjectSelect = {
   type: true,
   status: true,
   contractedAmount: true,
+  budgetId: true,
+  origin: true,
+  manualReason: true,
+  approvedAt: true,
+  convertedAt: true,
   startsAt: true,
   expectedDeliveryDate: true,
   createdAt: true,
@@ -133,6 +155,7 @@ export async function getBudgetById(id: string) {
 
 export async function createBudget(input: CreateBudgetInput) {
   await ensureBudgetRelations(input.clientId, input.projectId ?? null);
+  assertBudgetStatusCanBeWritten(input.status);
 
   const prepared = prepareBudgetAmounts(input.items, input.discount);
 
@@ -149,6 +172,9 @@ export async function createBudget(input: CreateBudgetInput) {
         finalAmount: prepared.finalAmount,
         paymentMethod: input.paymentMethod,
         expiresAt: input.expiresAt,
+        approvedAt: null,
+        convertedAt: null,
+        convertedProjectId: null,
         status: input.status,
         items: {
           create: prepared.items
@@ -167,7 +193,9 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
     select: {
       id: true,
       clientId: true,
+      convertedProjectId: true,
       projectId: true,
+      status: true,
       discount: true,
       items: {
         select: {
@@ -181,6 +209,14 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
 
   if (!currentBudget) {
     throw new AppError("BUDGET_NOT_FOUND", "Orçamento não encontrado.", 404);
+  }
+
+  if (currentBudget.status === "APPROVED" || currentBudget.convertedProjectId) {
+    throw new AppError("BUDGET_APPROVED_UPDATE_BLOCKED", "Orçamento aprovado não pode ser editado.", 409);
+  }
+
+  if (input.status) {
+    assertBudgetStatusCanBeWritten(input.status);
   }
 
   const nextClientId = input.clientId ?? currentBudget.clientId;
@@ -262,11 +298,48 @@ export async function sendBudget(id: string) {
   return mapBudget(updatedBudget);
 }
 
-export async function approveBudget(id: string, input: ApproveBudgetInput) {
+export async function approveBudget(id: string) {
+  const budget = await prisma.budget.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      _count: {
+        select: {
+          items: true
+        }
+      }
+    }
+  });
+
+  if (!budget) {
+    throw new AppError("BUDGET_NOT_FOUND", "Orçamento não encontrado.", 404);
+  }
+
+  assertBudgetCanBeApproved({
+    itemCount: budget._count.items,
+    status: budget.status
+  });
+
+  const updatedBudget = await prisma.budget.update({
+    where: { id },
+    data: {
+      approvedAt: new Date(),
+      status: "APPROVED"
+    },
+    select: budgetSelect
+  });
+
+  return mapBudget(updatedBudget);
+}
+
+export async function generateProjectFromBudget(id: string, input: GenerateProjectFromBudgetInput) {
   return prisma.$transaction(async (transaction) => {
     const budget = await transaction.budget.findUnique({
       where: { id },
       select: {
+        approvedAt: true,
+        convertedProjectId: true,
         id: true,
         clientId: true,
         projectId: true,
@@ -287,19 +360,24 @@ export async function approveBudget(id: string, input: ApproveBudgetInput) {
     }
 
     assertBudgetCanBeConverted({
+      convertedProjectId: budget.convertedProjectId,
       itemCount: budget._count.items,
       projectId: budget.projectId,
       status: budget.status
     });
 
+    const convertedAt = new Date();
     const project = await transaction.project.create({
-      data: buildConvertedProjectData(budget, input),
+      data: buildConvertedProjectData(budget, input, convertedAt),
       select: convertedProjectSelect
     });
 
     const updatedBudget = await transaction.budget.update({
       where: { id },
       data: {
+        approvedAt: budget.approvedAt ?? convertedAt,
+        convertedAt,
+        convertedProjectId: project.id,
         projectId: project.id,
         status: "APPROVED"
       },
@@ -351,7 +429,7 @@ export function buildBudgetWhere({
   }
 
   if (projectId) {
-    where.projectId = projectId;
+    where.OR = [{ projectId }, { convertedProjectId: projectId }];
   }
 
   if (status) {
@@ -382,14 +460,22 @@ export function buildBudgetWhere({
   }
 
   if (search) {
-    where.OR = [
+    const searchWhere = [
       { title: { contains: search } },
       { serviceType: { contains: search } },
       { description: { contains: search } },
       { client: { name: { contains: search } } },
       { project: { name: { contains: search } } },
+      { convertedProject: { name: { contains: search } } },
       { items: { some: { description: { contains: search } } } }
     ];
+
+    if (where.OR) {
+      where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), { OR: where.OR }, { OR: searchWhere }];
+      delete where.OR;
+    } else {
+      where.OR = searchWhere;
+    }
   }
 
   return where;
@@ -411,15 +497,17 @@ export function prepareBudgetAmounts(items: BudgetItemInput[], discount = 0) {
 }
 
 export function assertBudgetCanBeConverted({
+  convertedProjectId,
   itemCount,
   projectId,
   status
 }: {
+  convertedProjectId?: string | null;
   itemCount: number;
   projectId?: string | null;
   status: string;
 }) {
-  if (projectId) {
+  if (projectId || convertedProjectId) {
     throw new AppError("BUDGET_ALREADY_CONVERTED", "Orçamento já está vinculado a um projeto.", 409);
   }
 
@@ -427,15 +515,40 @@ export function assertBudgetCanBeConverted({
     throw new AppError("BUDGET_ITEMS_REQUIRED", "Orçamento aprovado exige pelo menos 1 item.", 422);
   }
 
-  if (["REFUSED", "EXPIRED", "CANCELLED"].includes(status)) {
-    throw new AppError("BUDGET_CANNOT_BE_APPROVED", "Orçamento recusado, vencido ou cancelado não pode virar projeto.", 409);
+  if (status !== "APPROVED") {
+    throw new AppError("BUDGET_NOT_APPROVED", "Somente orçamento aprovado pode gerar projeto.", 409);
   }
 }
 
-export function buildConvertedProjectData(budget: BudgetConversionSnapshot, input: ApproveBudgetInput) {
+export function assertBudgetCanBeApproved({ itemCount, status }: { itemCount: number; status: string }) {
+  if (itemCount <= 0) {
+    throw new AppError("BUDGET_ITEMS_REQUIRED", "Orçamento aprovado exige pelo menos 1 item.", 422);
+  }
+
+  if (!["SENT", "NEGOTIATION"].includes(status)) {
+    throw new AppError("BUDGET_CANNOT_BE_APPROVED", "Somente orçamento enviado ou em negociação pode ser aprovado.", 409);
+  }
+}
+
+export function assertBudgetStatusCanBeWritten(status: string) {
+  if (status === "APPROVED") {
+    throw new AppError("BUDGET_APPROVAL_FLOW_REQUIRED", "Use a ação de aprovação para aprovar orçamento.", 409);
+  }
+}
+
+export function buildConvertedProjectData(
+  budget: BudgetConversionSnapshot,
+  input: GenerateProjectFromBudgetInput,
+  convertedAt = new Date()
+) {
   return {
+    approvedAt: budget.approvedAt ?? convertedAt,
+    budgetId: budget.id,
     clientId: budget.clientId,
+    convertedAt,
     name: input.name?.trim() || budget.title,
+    origin: "BUDGET_APPROVAL",
+    manualReason: null,
     type: input.type,
     status: input.status,
     workAddress: input.workAddress,
@@ -454,6 +567,7 @@ function mapBudget(budget: BudgetRecord) {
     id: budget.id,
     clientId: budget.clientId,
     projectId: budget.projectId,
+    convertedProjectId: budget.convertedProjectId,
     title: budget.title,
     serviceType: budget.serviceType,
     description: budget.description,
@@ -463,10 +577,13 @@ function mapBudget(budget: BudgetRecord) {
     paymentMethod: budget.paymentMethod,
     expiresAt: budget.expiresAt?.toISOString() ?? null,
     status: budget.status,
+    approvedAt: budget.approvedAt?.toISOString() ?? null,
+    convertedAt: budget.convertedAt?.toISOString() ?? null,
     createdAt: budget.createdAt.toISOString(),
     updatedAt: budget.updatedAt.toISOString(),
     client: budget.client,
     project: budget.project,
+    convertedProject: budget.convertedProject,
     items: budget.items.map((item) => ({
       id: item.id,
       budgetId: item.budgetId,
@@ -482,10 +599,15 @@ function mapConvertedProject(project: ConvertedProjectRecord) {
   return {
     id: project.id,
     clientId: project.clientId,
+    budgetId: project.budgetId,
     name: project.name,
     type: project.type,
     status: project.status,
+    origin: project.origin,
+    manualReason: project.manualReason,
     contractedAmount: project.contractedAmount?.toString() ?? null,
+    approvedAt: project.approvedAt?.toISOString() ?? null,
+    convertedAt: project.convertedAt?.toISOString() ?? null,
     startsAt: project.startsAt?.toISOString() ?? null,
     expectedDeliveryDate: project.expectedDeliveryDate?.toISOString() ?? null,
     createdAt: project.createdAt.toISOString(),

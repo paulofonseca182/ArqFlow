@@ -70,7 +70,9 @@ export const updateBudgetSchema = budgetBaseSchema
     message: "informe pelo menos um campo para atualizar"
   });
 
-export const approveBudgetSchema = z
+export const approveBudgetSchema = z.object({}).optional();
+
+export const generateProjectFromBudgetSchema = z
   .object({
     name: optionalText,
     type: z.enum(projectTypes),
@@ -88,7 +90,7 @@ export const approveBudgetSchema = z
 export type ListBudgetsQuery = z.infer<typeof listBudgetsQuerySchema>;
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
-export type ApproveBudgetInput = z.infer<typeof approveBudgetSchema>;
+export type GenerateProjectFromBudgetInput = z.infer<typeof generateProjectFromBudgetSchema>;
 
 function parseNumberInput(value: unknown) {
   if (typeof value === "string") {
