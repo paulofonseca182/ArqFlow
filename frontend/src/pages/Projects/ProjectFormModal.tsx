@@ -64,6 +64,20 @@ export function ProjectFormModal({
     setFormError(null);
   }, [form, open, project]);
 
+  const selectedOrigin = form.watch("origin");
+
+  useEffect(() => {
+    if (!open || mode !== "create") {
+      return;
+    }
+
+    const expectedReason = selectedOrigin === "INTERNAL" ? "INTERNAL_PROJECT" : "LEGACY_PROJECT";
+
+    if (form.getValues("manualReason") !== expectedReason) {
+      form.setValue("manualReason", expectedReason, { shouldValidate: true });
+    }
+  }, [form, mode, open, selectedOrigin]);
+
   async function handleFormSubmit(values: ProjectFormFields) {
     setFormError(null);
     form.clearErrors();
@@ -88,8 +102,13 @@ export function ProjectFormModal({
   }
 
   const errors = form.formState.errors;
-  const title = mode === "create" ? "Cadastrar projeto manual" : "Editar projeto";
-  const manualOrigins = origins.filter((origin) => origin.value !== "BUDGET_APPROVAL");
+  const title = mode === "create" ? "Cadastrar legado/interno" : "Editar projeto";
+  const manualOrigins = origins.filter((origin) => origin.value === "LEGACY" || origin.value === "INTERNAL");
+  const visibleManualReasons = manualReasons.filter((reason) =>
+    selectedOrigin === "INTERNAL" ? reason.value === "INTERNAL_PROJECT" : reason.value === "LEGACY_PROJECT"
+  );
+  const descriptionLabel = mode === "create" && selectedOrigin === "INTERNAL" ? "Descrição / motivo interno" : "Descrição";
+  const notesLabel = mode === "create" && selectedOrigin === "LEGACY" ? "Justificativa do legado" : "Observações";
 
   return (
     <Modal
@@ -118,7 +137,7 @@ export function ProjectFormModal({
 
         {mode === "create" ? (
           <div className="rounded-ui border border-accent-bronze/40 bg-accent-bronze/10 px-3 py-2 text-sm text-text-secondary">
-            Este cadastro é uma exceção à RN-P11. Use apenas para projeto legado, interno, cortesia ou ajuste administrativo.
+            Cadastro manual permitido apenas para projeto legado ou interno. Projeto comercial novo deve nascer de um orçamento aprovado.
           </div>
         ) : null}
 
@@ -141,7 +160,7 @@ export function ProjectFormModal({
           </Select>
           {mode === "create" ? (
             <>
-              <Select error={errors.origin?.message} label="Origem da exceção" {...form.register("origin")}>
+              <Select error={errors.origin?.message} label="Tipo de cadastro manual" {...form.register("origin")}>
                 {manualOrigins.map((origin) => (
                   <option key={origin.value} value={origin.value}>
                     {origin.label}
@@ -149,8 +168,7 @@ export function ProjectFormModal({
                 ))}
               </Select>
               <Select error={errors.manualReason?.message} label="Motivo obrigatório" {...form.register("manualReason")}>
-                <option value="">Selecione</option>
-                {manualReasons.map((reason) => (
+                {visibleManualReasons.map((reason) => (
                   <option key={reason.value} value={reason.value}>
                     {reason.label}
                   </option>
@@ -172,8 +190,8 @@ export function ProjectFormModal({
           <Input className="md:col-span-2" error={errors.workAddress?.message} label="Endereço da obra" placeholder="Endereço principal da obra" {...form.register("workAddress")} />
         </div>
 
-        <Textarea error={errors.description?.message} label="Descrição" placeholder="Escopo resumido do projeto" rows={3} {...form.register("description")} />
-        <Textarea error={errors.notes?.message} label="Observações" placeholder="Notas visíveis para acompanhamento" rows={3} {...form.register("notes")} />
+        <Textarea error={errors.description?.message} label={descriptionLabel} placeholder="Escopo resumido do projeto" rows={3} {...form.register("description")} />
+        <Textarea error={errors.notes?.message} label={notesLabel} placeholder="Notas visíveis para acompanhamento" rows={3} {...form.register("notes")} />
       </form>
     </Modal>
   );

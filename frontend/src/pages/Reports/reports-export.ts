@@ -1,4 +1,5 @@
 import type { ReportStatusCount, ReportsOverview } from "../../types/reports";
+import { toDateParamValue } from "../../utils/date";
 
 type CsvRow = Array<number | string>;
 
@@ -33,7 +34,7 @@ export function buildReportsCsv(overview: ReportsOverview) {
     ["Projetos", "Cancelados", overview.projects.cancelled, ""],
     ["Projetos", "Valor contratado", overview.projects.totalContractedAmount, "BRL"],
     ["Projetos", "Vindos de orçamento", overview.projects.budgetOriginProjects, ""],
-    ["Projetos", "Manuais/exceção", overview.projects.manualProjects, ""],
+    ["Projetos", "Legados/internos", overview.projects.manualProjects, ""],
     ["Projetos", "Progresso médio", `${overview.projects.averageProgress}%`, ""],
     ["Operação", "Tarefas totais", overview.operations.tasksTotal, ""],
     ["Operação", "Tarefas abertas", overview.operations.openTasks, ""],
@@ -125,12 +126,7 @@ function escapeCsvValue(value: number | string) {
 }
 
 function formatDateParam(value: string) {
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return toDateParamValue(value);
 }
 
 function slugify(value: string) {

@@ -29,6 +29,10 @@ describe("projects service", () => {
       value: "INTERIORS",
       label: "Interiores"
     });
+    expect(meta.origins.map((origin) => origin.value)).toEqual(["BUDGET_APPROVAL", "LEGACY", "INTERNAL"]);
+    expect(meta.manualReasons.map((reason) => reason.value)).toEqual(["LEGACY_PROJECT", "INTERNAL_PROJECT"]);
+    expect(meta.origins.map((origin) => origin.value)).not.toContain("MANUAL");
+    expect(meta.manualReasons.map((reason) => reason.value)).not.toContain("OTHER");
   });
 
   it("monta filtros por cliente, status e tipo", () => {

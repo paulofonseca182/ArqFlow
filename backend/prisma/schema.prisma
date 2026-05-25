@@ -47,7 +47,7 @@ model Project {
   description          String?
   notes                String?
   internalNotes        String?
-  origin               String    @default("MANUAL")
+  origin               String    @default("LEGACY")
   manualReason         String?
   approvedAt           DateTime?
   convertedAt          DateTime?

@@ -30,7 +30,7 @@ async function main() {
       expectedDeliveryDate: new Date("2026-08-30T00:00:00.000Z"),
       steps: {
         create: [
-          { name: "Alinhamento inicial", sortOrder: 1, status: "COMPLETED", completedAt: new Date("2026-05-03T00:00:00.000Z") },
+          { name: "Briefing", sortOrder: 1, status: "COMPLETED", completedAt: new Date("2026-05-03T00:00:00.000Z") },
           { name: "Levantamento", sortOrder: 2, status: "IN_PROGRESS" },
           { name: "Anteprojeto", sortOrder: 3, status: "PENDING" },
           { name: "Projeto 3D", sortOrder: 4, status: "PENDING" },

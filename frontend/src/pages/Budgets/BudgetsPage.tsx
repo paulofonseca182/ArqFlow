@@ -32,6 +32,7 @@ import { budgetStatusValues } from "../../types/budget";
 import type { Client } from "../../types/client";
 import type { Project, ProjectOption, ProjectStatus, ProjectType } from "../../types/project";
 import { projectStatusValues, projectTypeValues } from "../../types/project";
+import { formatDateOnly } from "../../utils/date";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { ApproveBudgetModal } from "./ApproveBudgetModal";
 import { BudgetFormModal } from "./BudgetFormModal";
@@ -651,11 +652,7 @@ function formatMoney(value: string) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "Não informada";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return formatDateOnly(value, "Não informada");
 }
 
 function formatItemsCount(count: number) {

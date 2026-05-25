@@ -1,6 +1,6 @@
 export const projectTypeValues = ["RESIDENTIAL", "INTERIORS", "RENOVATION", "COMMERCIAL", "OTHER"] as const;
-export const projectOriginValues = ["BUDGET_APPROVAL", "MANUAL", "LEGACY", "INTERNAL"] as const;
-export const manualProjectReasonValues = ["LEGACY_PROJECT", "INTERNAL_PROJECT", "ADMINISTRATIVE_ADJUSTMENT", "COURTESY", "OTHER"] as const;
+export const projectOriginValues = ["BUDGET_APPROVAL", "LEGACY", "INTERNAL"] as const;
+export const manualProjectReasonValues = ["LEGACY_PROJECT", "INTERNAL_PROJECT"] as const;
 export const projectStatusValues = [
   "CONTRACT_IN_PROGRESS",
   "CONTRACT_SIGNED",

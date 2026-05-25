@@ -21,6 +21,7 @@ import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import { reportPeriodValues } from "../../types/reports";
 import type { ReportPeriodKey, ReportsOverview, ReportsOverviewParams, ReportStatusCount } from "../../types/reports";
+import { formatDateOnly, toDateParamValue } from "../../utils/date";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { buildReportsCsv, createReportExportFilename } from "./reports-export";
 
@@ -393,7 +394,7 @@ export function ReportsPage() {
                 <MetricLine label="Finalizados" value={overview.projects.finished.toString()} />
                 <MetricLine label="Cancelados" value={overview.projects.cancelled.toString()} />
                 <MetricLine label="Vindos de orçamento" value={overview.projects.budgetOriginProjects.toString()} />
-                <MetricLine label="Manuais/exceção" value={overview.projects.manualProjects.toString()} />
+                <MetricLine label="Legados/internos" value={overview.projects.manualProjects.toString()} />
                 <MetricLine label="Ticket médio" value={formatMoney(overview.financial.averageProjectTicket)} />
                 <MetricLine label="Atrasado no período" to={shortcuts?.financialOverdue} value={formatMoney(overview.financial.overdueAmount)} />
               </div>
@@ -792,9 +793,7 @@ function buildPath(pathname: string, params: Record<string, string | undefined>)
 }
 
 function toDateParam(value: string) {
-  const date = new Date(value);
-
-  return toDateInputValue(date);
+  return toDateParamValue(value);
 }
 
 function todayDateParam() {
@@ -832,7 +831,7 @@ function formatDateTime(value: string) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return formatDateOnly(value);
 }
 
 function getErrorMessage(error: unknown) {

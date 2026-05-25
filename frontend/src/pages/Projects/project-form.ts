@@ -3,6 +3,8 @@ import { manualProjectReasonValues, projectOriginValues, projectStatusValues, pr
 import type { Project, ProjectWriteInput } from "../../types/project";
 import { parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 
+const manualProjectOriginValues = ["LEGACY", "INTERNAL"] as const;
+
 export type ProjectFormFields = {
   clientId: string;
   name: string;
@@ -59,19 +61,17 @@ const projectBaseFormSchema = z.object({
 
 export const projectFormSchema = projectBaseFormSchema
   .extend({
-    origin: z.enum(["MANUAL", "LEGACY", "INTERNAL"]),
+    origin: z.enum(manualProjectOriginValues),
     manualReason: z.enum(manualProjectReasonValues, {
       errorMap: () => ({ message: "Selecione o motivo do cadastro manual." })
     })
   })
-  .superRefine(validateProjectFormDateRange);
+  .superRefine((data, context) => {
+    validateProjectFormDateRange(data, context);
+    validateManualProjectForm(data, context);
+  });
 
-export const projectEditFormSchema = projectBaseFormSchema
-  .extend({
-    origin: z.enum(["MANUAL", "LEGACY", "INTERNAL"]).optional(),
-    manualReason: z.enum(manualProjectReasonValues).or(z.literal("")).optional()
-  })
-  .superRefine(validateProjectFormDateRange);
+export const projectEditFormSchema = projectBaseFormSchema.superRefine(validateProjectFormDateRange);
 
 export type ProjectFormPayload = z.infer<typeof projectFormSchema> | z.infer<typeof projectEditFormSchema>;
 
@@ -80,7 +80,7 @@ export function getProjectFormDefaults(project?: Project | null): ProjectFormFie
     clientId: project?.clientId ?? "",
     name: project?.name ?? "",
     type: project?.type ?? "RESIDENTIAL",
-    origin: project?.origin && project.origin !== "BUDGET_APPROVAL" ? project.origin : "MANUAL",
+    origin: project?.origin && project.origin !== "BUDGET_APPROVAL" ? project.origin : "LEGACY",
     manualReason: project?.manualReason ?? "",
     status: project?.status ?? "CONTRACT_IN_PROGRESS",
     workAddress: project?.workAddress ?? "",
@@ -139,7 +139,62 @@ function validateProjectFormDateRange(
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["expectedDeliveryDate"],
-      message: "A entrega n\u00e3o pode ser anterior ao in\u00edcio."
+      message: "A entrega não pode ser anterior ao início."
     });
+  }
+}
+
+function validateManualProjectForm(
+  data: {
+    description?: string;
+    manualReason?: string;
+    notes?: string;
+    origin?: string;
+    startsAt?: string;
+  },
+  context: z.RefinementCtx
+) {
+  if (data.origin === "LEGACY") {
+    if (data.manualReason !== "LEGACY_PROJECT") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["manualReason"],
+        message: "Selecione projeto legado."
+      });
+    }
+
+    if (!data.startsAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["startsAt"],
+        message: "Informe a data de início original."
+      });
+    }
+
+    if (!data.notes) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notes"],
+        message: "Informe a justificativa do projeto legado."
+      });
+    }
+  }
+
+  if (data.origin === "INTERNAL") {
+    if (data.manualReason !== "INTERNAL_PROJECT") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["manualReason"],
+        message: "Selecione projeto interno."
+      });
+    }
+
+    if (!data.description) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["description"],
+        message: "Informe a descrição ou motivo do projeto interno."
+      });
+    }
   }
 }

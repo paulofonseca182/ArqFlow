@@ -63,6 +63,7 @@ import type {
 import { projectStepStatusValues } from "../../types/projectStep";
 import type { ProjectStep, ProjectStepStatus } from "../../types/projectStep";
 import { formatCurrency } from "../../utils/currency";
+import { formatDateOnly } from "../../utils/date";
 import { ProjectFormModal } from "./ProjectFormModal";
 import { ApproveBudgetModal } from "../Budgets/ApproveBudgetModal";
 
@@ -459,7 +460,7 @@ export function ProjectsPage() {
             Criar por orçamento aprovado
           </Button>
           <Button disabled={metaLoading || clients.length === 0} onClick={handleOpenCreate} type="button" variant="secondary">
-            Cadastro manual
+            Legado/interno
           </Button>
         </div>
       }
@@ -537,7 +538,7 @@ export function ProjectsPage() {
               </Button>
             )
           }
-          description={hasFilters ? "Nenhum projeto encontrado para os filtros atuais." : "Gere o primeiro projeto a partir de um orçamento aprovado ou use cadastro manual como exceção."}
+          description={hasFilters ? "Nenhum projeto encontrado para os filtros atuais." : "Gere o primeiro projeto a partir de um orçamento aprovado ou cadastre apenas legado/interno."}
           title={hasFilters ? "Sem resultados" : "Nenhum projeto cadastrado"}
         />
       ) : null}
@@ -781,7 +782,7 @@ export function ProjectsPage() {
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted">
                           <span>Início: {formatDate(step.startsAt)}</span>
                           <span>Prazo: {formatDate(step.dueDate)}</span>
-                          <span>Conclusão: {formatDate(step.completedAt)}</span>
+                          <span>Conclusão: {formatTimestampDate(step.completedAt)}</span>
                         </div>
                       </div>
                       <div className="flex min-w-0 flex-wrap sm:col-span-2 sm:justify-end">
@@ -874,6 +875,10 @@ function getProjectStepStatusTone(status: ProjectStepStatus) {
 }
 
 function formatDate(value?: string | null) {
+  return formatDateOnly(value, "Não informada");
+}
+
+function formatTimestampDate(value?: string | null) {
   if (!value) {
     return "Não informada";
   }

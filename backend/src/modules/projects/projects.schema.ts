@@ -2,6 +2,7 @@ import { z } from "zod";
 import { manualProjectReasons, projectOrigins, projectStatuses, projectTypes } from "../../shared/domain.js";
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
+const manualProjectOrigins = ["LEGACY", "INTERNAL"] as const;
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
 const optionalPositiveNumber = z
@@ -32,7 +33,7 @@ const projectEditableSchema = z.object({
   clientId: z.string().cuid("cliente inválido"),
   name: z.string().trim().min(2, "nome deve ter pelo menos 2 caracteres"),
   type: z.enum(projectTypes),
-  status: z.enum(projectStatuses).default("CONTRACT_IN_PROGRESS"),
+  status: z.enum(projectStatuses),
   workAddress: optionalText,
   area: optionalPositiveNumber,
   contractedAmount: optionalPositiveNumber,
@@ -46,7 +47,9 @@ const projectEditableSchema = z.object({
 
 export const createProjectSchema = projectEditableSchema
   .extend({
-    origin: z.enum(projectOrigins).default("MANUAL"),
+    origin: z.enum(manualProjectOrigins, {
+      required_error: "selecione a origem do projeto manual"
+    }),
     manualReason: z.enum(manualProjectReasons, {
       required_error: "projeto manual exige motivo"
     })
@@ -77,13 +80,66 @@ function validateProjectDateRange(data: { startsAt?: Date; expectedDeliveryDate?
   }
 }
 
-function validateManualProjectOrigin(data: { origin?: string; manualReason?: string }, context: z.RefinementCtx) {
+function validateManualProjectOrigin(
+  data: {
+    description?: string;
+    manualReason?: string;
+    notes?: string;
+    origin?: string;
+    startsAt?: Date;
+  },
+  context: z.RefinementCtx
+) {
   if (data.origin === "BUDGET_APPROVAL") {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["origin"],
       message: "projeto por orçamento aprovado deve ser gerado a partir do orçamento"
     });
+  }
+
+  if (data.origin === "LEGACY") {
+    if (data.manualReason !== "LEGACY_PROJECT") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["manualReason"],
+        message: "projeto legado exige motivo legado"
+      });
+    }
+
+    if (!data.startsAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["startsAt"],
+        message: "projeto legado exige data de início original"
+      });
+    }
+
+    if (!data.notes) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notes"],
+        message: "projeto legado exige justificativa"
+      });
+    }
+  }
+
+  if (data.origin === "INTERNAL") {
+    if (data.manualReason !== "INTERNAL_PROJECT") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["manualReason"],
+        message: "projeto interno exige motivo interno"
+      });
+    }
+
+    if (!data.description) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["description"],
+        message: "projeto interno exige descrição ou motivo"
+      });
+    }
   }
 
   if (data.origin !== "BUDGET_APPROVAL" && !data.manualReason) {

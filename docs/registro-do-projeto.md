@@ -433,7 +433,7 @@ Implementado no backend:
 - `PATCH /project-steps/:id/reopen`;
 - metadados de status oficiais de etapas;
 - templates de etapas padrão por tipo de projeto;
-- template padrão enxuto: Alinhamento inicial, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
+- template padrão enxuto: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final;
 - geração de etapas com `sortOrder` sequencial;
 - bloqueio de geração duplicada quando o projeto ja possui etapas;
 - listagem ordenada por `sortOrder`;
@@ -521,6 +521,7 @@ Implementado no backend:
 - `PATCH /budgets/:id`;
 - `PATCH /budgets/:id/send`;
 - `PATCH /budgets/:id/approve`;
+- `PATCH /budgets/:id/generate-project`;
 - `DELETE /budgets/:id`;
 - busca por título, tipo de serviço, descrição, cliente, projeto e descrição dos itens;
 - filtros por status, cliente e projeto;
@@ -533,9 +534,10 @@ Implementado no backend:
 - transação para criar orçamento com itens;
 - transação para substituir itens ao editar orçamento;
 - bloqueio de envio quando o orçamento não está em rascunho ou negociação;
-- aprovação/conversão de orçamento em projeto usando `$transaction`;
+- aprovação comercial de orçamento por `/budgets/:id/approve`, sem criação automática de projeto;
+- geração de projeto por `/budgets/:id/generate-project`, usando `$transaction`;
 - criação de projeto com `contractedAmount` derivado de `Budget.finalAmount`;
-- vinculação do orçamento aprovado ao projeto criado via `projectId`;
+- vinculação do orçamento aprovado ao projeto criado via `projectId`, `convertedProjectId` e `Project.budgetId`;
 - bloqueio de exclusão de orçamento aprovado;
 - testes de schema e service.
 
@@ -552,8 +554,9 @@ Implementado no frontend:
 - validação de cliente obrigatório, título, tipo de serviço, desconto, validade e itens;
 - exibição de valores calculados pela API;
 - ação para enviar orçamento;
-- ação para aprovar orçamento e converter em projeto;
-- modal de conversão com tipo, status inicial, datas, área, endereço e descrição do projeto;
+- ação para aprovar orçamento comercialmente;
+- ação separada para gerar projeto a partir de orçamento aprovado;
+- modal de geração de projeto com tipo, status inicial, datas, área, endereço e descrição do projeto;
 - exclusão com modal de confirmação;
 - estados de carregamento, vazio, erro e sucesso.
 
@@ -568,6 +571,7 @@ Regras consideradas:
 - valor final é calculado no backend;
 - frontend valida para UX, mas não substitui regras críticas;
 - orçamento aprovado não pode ser excluído nesta fatia.
+- orçamento aprovado não pode ser editado após a aprovação;
 - orçamento convertido não pode gerar outro projeto.
 
 Ainda falta:
@@ -681,7 +685,7 @@ Ainda falta:
 
 - testes de frontend para formulários e ações financeiras;
 - refinamento visual contínuo após uso real;
-- geração automática opcional de parcelas imediatamente após converter orçamento em projeto;
+- geração automática opcional de parcelas imediatamente após gerar projeto a partir de orçamento aprovado;
 - relatório financeiro por projeto.
 
 ## Modulo Dashboard - estado atual
@@ -1084,9 +1088,9 @@ O que foi removido:
 
 Decisão de produto:
 
-- Briefings não fazem parte do escopo operacional atual.
-- O termo também foi removido das etapas padrão de projeto.
-- A antiga etapa `Briefing` foi renomeada para `Alinhamento inicial`.
+- Briefings não fazem parte do escopo operacional atual como módulo separado.
+- A etapa operacional `Briefing` permanece no template padrão de projeto.
+- O termo `Briefing` aqui representa a fase inicial do projeto, não uma entidade própria de banco, API ou UI.
 - Se o tema voltar, deve ser redesenhado como fluxo claro antes de recriar banco, API e UI.
 
 ## Ajuste de UI e português - Projetos e Clientes
@@ -1346,10 +1350,11 @@ Fluxo implementado:
 10. O backend calcula total bruto, desconto, total final e total de cada item.
 11. Usuário pode editar um orçamento existente.
 12. Usuário pode enviar um orçamento em rascunho ou negociação.
-13. Usuário pode aprovar e converter um orçamento em projeto.
-14. A conversão abre modal para definir dados iniciais do projeto.
-15. O backend cria o projeto e atualiza o orçamento aprovado dentro de uma `$transaction`.
-16. Usuário pode excluir orçamento com modal de confirmação.
+13. Usuário pode aprovar comercialmente um orçamento enviado ou em negociação.
+14. Usuário pode gerar projeto operacional a partir de um orçamento aprovado.
+15. A geração abre modal para definir dados iniciais do projeto.
+16. O backend cria o projeto e atualiza o orçamento aprovado dentro de uma `$transaction`.
+17. Usuário pode excluir orçamento com modal de confirmação quando ele ainda não estiver aprovado.
 
 Campos principais do formulário:
 
@@ -1362,8 +1367,8 @@ Campos principais do formulário:
 - forma de pagamento;
 - descrição;
 - itens com descrição, quantidade e valor unitário;
-- tipo e status inicial do projeto na conversão;
-- datas, área, endereço e observações do projeto na conversão.
+- tipo e status inicial do projeto na geração a partir de orçamento aprovado;
+- datas, área, endereço e observações do projeto na geração a partir de orçamento aprovado.
 
 Regras consideradas:
 
@@ -1374,10 +1379,10 @@ Regras consideradas:
 - frontend não calcula valores críticos;
 - backend continua sendo a fonte da verdade;
 - orçamento enviado exige pelo menos 1 item;
-- orçamento aprovado vira projeto usando `$transaction`;
+- orçamento aprovado pode gerar projeto via ação explícita `generate-project`, usando `$transaction`;
 - projeto convertido recebe `contractedAmount` a partir do valor final do orçamento;
 - orçamento já vinculado a projeto não pode ser convertido novamente;
-- orçamento aprovado não pode ser excluído.
+- orçamento aprovado não pode ser editado nem excluído.
 
 ### Frontend - Financeiro
 
@@ -1641,7 +1646,7 @@ Regras:
 - total de cada item de orçamento e calculado no backend;
 - desconto não pode deixar valor final menor ou igual a zero;
 - desconto de orçamento não pode ser negativo;
-- orçamento aprovado vira projeto usando `$transaction`;
+- orçamento aprovado pode gerar projeto via ação explícita `generate-project`, usando `$transaction`;
 - projeto criado a partir de orçamento aprovado recebe valor contratado igual ao valor final do orçamento;
 - progresso do projeto e calculado por etapas concluídas sobre total;
 - progresso não aceita valores negativos;
@@ -1729,9 +1734,9 @@ Cobertura atual:
 - montagem de filtros de busca, cliente, projeto, status e escopo de Orçamentos;
 - escopo composto de Orçamentos abertos por status e período de criação;
 - cálculo de totais de orçamento no backend.
-- validação de dados para aprovação/conversão de orçamento;
+- validação da aprovação comercial e validação separada da geração de projeto;
 - preparação dos dados de projeto a partir de orçamento aprovado;
-- bloqueios contra conversão de orçamento sem item, cancelado ou já convertido.
+- bloqueios contra geração de projeto por orçamento sem item, sem aprovação ou já convertido.
 - schema de parcelas e geração financeira;
 - parcelamento limitado a 1x, 2x ou 3x;
 - divisão de parcelas com centavos preservados;
@@ -1961,7 +1966,7 @@ Qualidade:
 
 ## Proximo passo recomendado
 
-Validar visualmente o fluxo completo da RN-P11 com dados reais de teste: criar cliente, criar orçamento, enviar, aprovar, gerar projeto, gerar parcelas e conferir Dashboard/Relatórios separando origem do projeto. Depois disso, bons candidatos para a próxima fatia são reforçar os relatórios comerciais com taxa de conversão por período e listar projetos manuais/exceção para auditoria.
+Validar visualmente o fluxo completo da RN-P11 com dados reais de teste: criar cliente, criar orçamento, enviar, aprovar, gerar projeto, gerar parcelas e conferir Dashboard/Relatórios separando origem do projeto. Depois disso, bons candidatos para a próxima fatia são reforçar os relatórios comerciais com taxa de conversão por período e auditar projetos legados/internos.
 
 ## Pontos de atencao para Clientes
 
@@ -1999,7 +2004,7 @@ Ao evoluir Orçamentos, lembrar:
 - orçamento enviado deve ter pelo menos um item;
 - total bruto, total final e total de item devem continuar calculados no backend;
 - desconto não pode ser negativo nem zerar o valor final;
-- conversão de orçamento aprovado em projeto deve usar `$transaction`;
+- geração de projeto a partir de orçamento aprovado deve usar `$transaction`;
 - orçamento já convertido não deve criar projeto duplicado;
 - projeto criado deve herdar cliente e valor final do orçamento;
 - valores financeiros não devem ser confiados apenas pelo frontend;
@@ -2137,11 +2142,12 @@ Foi implementada a regra de produto RN-P11 para preservar a rastreabilidade come
 Decisão funcional:
 
 - projeto contratado deve nascer de orçamento aprovado;
-- cadastro manual de projeto não foi removido, mas virou exceção controlada;
-- projeto manual exige origem e motivo obrigatórios;
-- projetos manuais devem ser usados apenas para legado, interno, ajuste administrativo, cortesia ou outro caso justificado;
+- cadastro manual de projeto não foi removido, mas ficou limitado a legado ou interno;
+- projeto manual exige origem e motivo compatíveis;
+- projeto legado exige data de início original e justificativa;
+- projeto interno exige descrição ou motivo;
 - projetos manuais não devem ser usados como fluxo comercial novo;
-- relatórios passam a separar projetos vindos de orçamento aprovado e projetos manuais/exceção.
+- relatórios passam a separar projetos vindos de orçamento aprovado, legados e internos.
 
 Banco e Prisma:
 
@@ -2149,8 +2155,9 @@ Banco e Prisma:
 - `Budget` passou a registrar `convertedProjectId`, `approvedAt` e `convertedAt`;
 - `Project.budgetId` identifica o orçamento aprovado que originou o projeto;
 - `Budget.convertedProjectId` identifica o projeto gerado;
-- foram criadas as migrations `20260520100000_project_origin_budget_rule` e `20260520101000_backfill_project_origin_budget_rule`;
+- foram criadas as migrations `20260520100000_project_origin_budget_rule`, `20260520101000_backfill_project_origin_budget_rule` e `20260523100000_restrict_manual_project_origins`;
 - o backfill marca projetos antigos sem orçamento como `LEGACY`/`LEGACY_PROJECT` e vincula histórico aprovado quando existe um único orçamento aprovado para o projeto;
+- a migration de restrição remove o default `MANUAL` e normaliza origens antigas para `LEGACY` ou `INTERNAL`;
 - Prisma Client foi regenerado após a migration.
 
 Backend:
@@ -2162,7 +2169,9 @@ Backend:
 - orçamento só pode ser aprovado quando estiver `SENT` ou `NEGOTIATION` e tiver pelo menos um item;
 - orçamento só pode gerar projeto quando estiver `APPROVED` e ainda não estiver convertido;
 - status `APPROVED` foi bloqueado no fluxo comum de criação/edição de orçamento;
-- cadastro manual de projeto bloqueia `origin = BUDGET_APPROVAL` e exige `manualReason`;
+- cadastro manual de projeto aceita somente `origin = LEGACY` com `manualReason = LEGACY_PROJECT` ou `origin = INTERNAL` com `manualReason = INTERNAL_PROJECT`;
+- backend bloqueia `origin = BUDGET_APPROVAL`, origem manual genérica e motivos antigos;
+- projeto legado exige `startsAt` e `notes`; projeto interno exige `description`;
 - metadados de Projetos agora expõem origens e motivos manuais.
 
 Frontend:
@@ -2170,8 +2179,8 @@ Frontend:
 - `/projects` passou a mostrar como ação principal `Criar por orçamento aprovado`;
 - a ação principal abre uma lista de orçamentos aprovados ainda não convertidos;
 - a geração usa o modal de dados iniciais do projeto e chama `/budgets/:id/generate-project`;
-- `Cadastro manual` ficou como ação secundária;
-- o formulário manual mostra aviso de exceção e exige origem/motivo;
+- `Legado/interno` ficou como ação secundária;
+- o formulário manual mostra aviso da RN-P11 e limita origem/motivo a legado ou interno;
 - a tabela de Projetos mostra a coluna `Origem`;
 - `/budgets` separa a ação `Aprovar` da ação `Gerar projeto`;
 - o formulário comum de orçamento não oferece o status `Aprovado`;
@@ -2180,14 +2189,14 @@ Frontend:
 Relatórios:
 
 - `GET /reports/overview` agora inclui `budgetOriginProjects`, `manualProjects` e `byOrigin`;
-- `/reports` exibe projetos vindos de orçamento e projetos manuais/exceção;
+- `/reports` exibe projetos vindos de orçamento, legados e internos;
 - exportação CSV inclui a quebra de projetos por origem;
 - filtros por projeto em Orçamentos consideram tanto `projectId` quanto `convertedProjectId`.
 
 Qualidade:
 
 - testes de Orçamentos cobrem aprovação, bloqueio de aprovação fora do fluxo, conversão apenas de orçamento aprovado e busca por projeto convertido;
-- testes de Projetos cobrem exigência de motivo manual e bloqueio de origem `BUDGET_APPROVAL` no cadastro manual;
+- testes de Projetos cobrem bloqueio de origem manual genérica, bloqueio de `BUDGET_APPROVAL`, motivos antigos e exigências específicas de legado/interno;
 - testes de Relatórios cobrem a separação por origem;
 - `corepack pnpm typecheck` passou;
 - `corepack pnpm test` passou.

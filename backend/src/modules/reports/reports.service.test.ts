@@ -78,7 +78,7 @@ describe("reports service", () => {
             createdAt: new Date(2026, 4, 8),
             id: "project-2",
             name: "Loja Bruno",
-            origin: "MANUAL",
+            origin: "INTERNAL",
             payments: [],
             status: "FINISHED",
             steps: [{ status: "COMPLETED" }],
@@ -210,9 +210,8 @@ describe("reports service", () => {
     expect(overview.projects.manualProjects).toBe(1);
     expect(overview.projects.byOrigin).toEqual([
       { count: 1, label: "Or\u00e7amento aprovado", percentage: 50, status: "BUDGET_APPROVAL" },
-      { count: 1, label: "Exce\u00e7\u00e3o manual", percentage: 50, status: "MANUAL" },
       { count: 0, label: "Projeto legado", percentage: 0, status: "LEGACY" },
-      { count: 0, label: "Projeto interno", percentage: 0, status: "INTERNAL" }
+      { count: 1, label: "Projeto interno", percentage: 50, status: "INTERNAL" }
     ]);
     expect(overview.projects.totalContractedAmount).toBe("1800.00");
     expect(overview.projects.topReceivableProjects).toEqual([

@@ -47,7 +47,7 @@ O módulo de Projetos já possui uma primeira fatia vertical:
 - Criação e edição de projeto com cliente obrigatório.
 - RN-P11 aplicada: o caminho principal para projeto contratado é nascer de orçamento aprovado.
 - Tela `/projects` prioriza `Criar por orçamento aprovado`, listando orçamentos aprovados ainda não convertidos.
-- Cadastro manual permanece como exceção controlada, com origem e motivo obrigatórios.
+- Cadastro manual permanece apenas para projetos legados ou internos, com motivo e justificativa conforme a origem.
 - Projetos guardam `budgetId`, `origin`, `manualReason`, `approvedAt` e `convertedAt` para rastreabilidade comercial.
 - Validação backend de cliente existente, datas e valores positivos.
 - Status oficial `Desenho 3D em desenvolvimento` logo após `Aguardando aprovação do cliente`.
@@ -65,7 +65,7 @@ O módulo de Etapas de Projeto já está integrado ao fluxo de Projetos:
 
 - API REST em `/project-steps`.
 - Geração de etapas padrão conforme o tipo do projeto.
-- Template padrão: Alinhamento inicial, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final.
+- Template padrão: Briefing, Levantamento, Anteprojeto, Projeto 3D, Projeto executivo e Entrega final.
 - Proteção contra duplicação de etapas já geradas.
 - Listagem de etapas ordenadas por projeto.
 - Conclusão e reabertura de etapas com `completedAt` controlado pelo backend.
@@ -148,7 +148,7 @@ O módulo de Relatórios foi escolhido como próxima fatia útil após a remoç�
 - Conversão comercial calculada por orçamentos aprovados versus recusados.
 - Valor aprovado, valor em aberto, valor contratado, recebíveis e atrasos calculados no backend conforme o período ativo.
 - Carteira de projetos por status, tipo, progresso médio e recebíveis por projeto.
-- Carteira de projetos separa origem por orçamento aprovado e exceções manuais.
+- Carteira de projetos separa origem por orçamento aprovado, legado e interno.
 - Operação consolidada com tarefas abertas, atrasadas, urgentes, vencendo em 7 dias e visitas agendadas.
 - Atalhos nos indicadores para abrir Orçamentos, Financeiro, Tarefas e Visitas já filtrados.
 - Atalhos preservam também o cliente e/ou projeto ativo quando o relatório está filtrado.
@@ -197,7 +197,7 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 ## Ponto de retomada
 
-RN-P11 foi aplicada ao fluxo comercial: projetos contratados devem nascer de orçamento aprovado, com cadastro manual mantido apenas como exceção justificada. A próxima etapa recomendada é validar visualmente o fluxo completo `Cliente -> Orçamento -> Aprovação -> Gerar projeto -> Financeiro`, criando um orçamento real de teste e confirmando que relatórios separam projetos por origem.
+RN-P11 foi aplicada ao fluxo comercial: projetos contratados devem nascer de orçamento aprovado, com cadastro manual limitado a legado ou interno. A próxima etapa recomendada é validar visualmente o fluxo completo `Cliente -> Orçamento -> Aprovação -> Gerar projeto -> Financeiro`, criando um orçamento real de teste e confirmando que relatórios separam projetos por origem.
 
 Registro completo do estado atual: `docs/registro-do-projeto.md`.
 

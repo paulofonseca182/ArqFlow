@@ -10,6 +10,7 @@ import type {
 } from "../../types/financial";
 import type { Project } from "../../types/project";
 import { parseCurrencyInput, parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
+import { toLocalDateInputValue } from "../../utils/date";
 
 export type PaymentFormFields = {
   projectId: string;
@@ -112,7 +113,7 @@ export function getGenerateInstallmentsDefaults(project?: Project | null): Gener
 export function getRegisterPaymentDefaults(payment?: Payment | null): RegisterPaymentFormFields {
   return {
     paidAmount: payment ? getRemainingAmount(payment) : "",
-    paidAt: new Date().toISOString().slice(0, 10)
+    paidAt: toLocalDateInputValue()
   };
 }
 

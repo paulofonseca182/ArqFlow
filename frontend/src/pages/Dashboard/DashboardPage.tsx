@@ -13,6 +13,7 @@ import { ApiError } from "../../services/api";
 import { getDashboardSummary } from "../../services/dashboard";
 import type { DashboardAlert, DashboardAlertSeverity, DashboardSummary } from "../../types/dashboard";
 import { formatCurrency } from "../../utils/currency";
+import { formatDateOnly } from "../../utils/date";
 
 const emptyDashboard: DashboardSummary = {
   alerts: [],
@@ -491,11 +492,7 @@ function formatMoney(value: string) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "Não informada";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return formatDateOnly(value, "Não informada");
 }
 
 function getErrorMessage(error: unknown) {

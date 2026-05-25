@@ -35,6 +35,7 @@ import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import type { Task, TaskOption, TaskPriority, TaskStatus, TaskWriteInput } from "../../types/task";
 import { taskPriorityValues, taskStatusValues } from "../../types/task";
+import { formatDateOnly } from "../../utils/date";
 import { getBooleanSearchParam, getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { TaskFormModal } from "./TaskFormModal";
 
@@ -646,11 +647,7 @@ function getTaskPriorityTone(priority: TaskPriority) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "Não informado";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return formatDateOnly(value, "Não informado");
 }
 
 function getErrorMessage(error: unknown) {

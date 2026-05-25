@@ -12,7 +12,7 @@ type StepTemplate = {
 };
 
 const coreProjectStepTemplate: StepTemplate[] = [
-  { name: "Alinhamento inicial" },
+  { name: "Briefing" },
   { name: "Levantamento" },
   { name: "Anteprojeto" },
   { name: "Projeto 3D" },

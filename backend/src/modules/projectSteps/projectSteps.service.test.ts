@@ -22,7 +22,7 @@ describe("project steps service", () => {
     const interiorsSteps = getDefaultStepsForType("INTERIORS");
 
     expect(interiorsSteps.map((step) => step.name)).toEqual([
-      "Alinhamento inicial",
+      "Briefing",
       "Levantamento",
       "Anteprojeto",
       "Projeto 3D",
@@ -36,7 +36,7 @@ describe("project steps service", () => {
 
     for (const template of meta.templates) {
       expect(template.steps.map((step) => step.name)).toEqual([
-        "Alinhamento inicial",
+        "Briefing",
         "Levantamento",
         "Anteprojeto",
         "Projeto 3D",

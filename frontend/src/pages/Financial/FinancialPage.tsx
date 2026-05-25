@@ -50,6 +50,7 @@ import type {
   RegisterPaymentInput
 } from "../../types/financial";
 import { paymentMethodValues, paymentStatusValues } from "../../types/financial";
+import { formatDateOnly } from "../../utils/date";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import type { Project } from "../../types/project";
 import { GenerateInstallmentsModal } from "./GenerateInstallmentsModal";
@@ -678,11 +679,7 @@ function formatMoney(value: string) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "Não informada";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return formatDateOnly(value, "Não informada");
 }
 
 function getErrorMessage(error: unknown) {

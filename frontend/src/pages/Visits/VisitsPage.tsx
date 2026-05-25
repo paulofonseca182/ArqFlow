@@ -46,6 +46,7 @@ import type { Client } from "../../types/client";
 import type { Project } from "../../types/project";
 import type { Visit, VisitOption, VisitStatus, VisitType, VisitWriteInput } from "../../types/visit";
 import { visitStatusValues, visitTypeValues } from "../../types/visit";
+import { formatDateOnly as formatDateOnlyValue } from "../../utils/date";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { VisitFormModal } from "./VisitFormModal";
 
@@ -623,13 +624,7 @@ function formatDateTime(dateValue: string, timeValue?: string | null) {
 }
 
 function formatDateOnly(value: string) {
-  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-
-  if (!year || !month || !day) {
-    return "Data inválida";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(year, month - 1, day));
+  return formatDateOnlyValue(value);
 }
 
 function formatMoney(value?: string | null) {

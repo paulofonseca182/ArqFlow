@@ -130,7 +130,7 @@ export async function getProjectById(id: string) {
 export async function createProject(input: CreateProjectInput) {
   await ensureClientExists(input.clientId);
   assertProjectDates(input.startsAt, input.expectedDeliveryDate);
-  assertManualProjectCreation(input.origin, input.manualReason);
+  assertManualProjectCreation(input);
 
   const project = await prisma.project.create({
     data: {
@@ -324,7 +324,19 @@ function assertProjectDates(startsAt?: Date | null, expectedDeliveryDate?: Date 
   }
 }
 
-function assertManualProjectCreation(origin: string, manualReason?: string | null) {
+function assertManualProjectCreation({
+  description,
+  manualReason,
+  notes,
+  origin,
+  startsAt
+}: {
+  description?: string;
+  manualReason?: string | null;
+  notes?: string;
+  origin: string;
+  startsAt?: Date;
+}) {
   if (origin === "BUDGET_APPROVAL") {
     throw new AppError(
       "PROJECT_MUST_BE_CREATED_FROM_APPROVED_BUDGET",
@@ -333,8 +345,40 @@ function assertManualProjectCreation(origin: string, manualReason?: string | nul
     );
   }
 
+  if (origin !== "LEGACY" && origin !== "INTERNAL") {
+    throw new AppError(
+      "PROJECT_MANUAL_ORIGIN_NOT_ALLOWED",
+      "Cadastro manual permite apenas projeto legado ou interno.",
+      422
+    );
+  }
+
   if (!manualReason) {
     throw new AppError("PROJECT_MANUAL_REASON_REQUIRED", "Projeto manual exige motivo.", 422);
+  }
+
+  if (origin === "LEGACY") {
+    if (manualReason !== "LEGACY_PROJECT") {
+      throw new AppError("PROJECT_MANUAL_REASON_INVALID", "Projeto legado exige motivo legado.", 422);
+    }
+
+    if (!startsAt) {
+      throw new AppError("PROJECT_LEGACY_START_REQUIRED", "Projeto legado exige data de inÃ­cio original.", 422);
+    }
+
+    if (!notes) {
+      throw new AppError("PROJECT_LEGACY_REASON_REQUIRED", "Projeto legado exige justificativa.", 422);
+    }
+  }
+
+  if (origin === "INTERNAL") {
+    if (manualReason !== "INTERNAL_PROJECT") {
+      throw new AppError("PROJECT_MANUAL_REASON_INVALID", "Projeto interno exige motivo interno.", 422);
+    }
+
+    if (!description) {
+      throw new AppError("PROJECT_INTERNAL_DESCRIPTION_REQUIRED", "Projeto interno exige descriÃ§Ã£o ou motivo.", 422);
+    }
   }
 }
 
