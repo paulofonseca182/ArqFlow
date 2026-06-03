@@ -29,6 +29,15 @@ describe("budgets schema", () => {
     expect(createBudgetSchema.safeParse({ ...validBudget, title: "" }).success).toBe(false);
   });
 
+  it("limita titulo e tipo de servico", () => {
+    expect(createBudgetSchema.safeParse({ ...validBudget, title: "A".repeat(30) }).success).toBe(true);
+    expect(createBudgetSchema.safeParse({ ...validBudget, title: "A".repeat(31) }).success).toBe(false);
+    expect(createBudgetSchema.safeParse({ ...validBudget, serviceType: "B".repeat(20) }).success).toBe(true);
+    expect(createBudgetSchema.safeParse({ ...validBudget, serviceType: "B".repeat(21) }).success).toBe(false);
+    expect(updateBudgetSchema.safeParse({ title: "A".repeat(31) }).success).toBe(false);
+    expect(updateBudgetSchema.safeParse({ serviceType: "B".repeat(21) }).success).toBe(false);
+  });
+
   it("orcamento enviado exige pelo menos 1 item", () => {
     expect(createBudgetSchema.safeParse({ ...validBudget, items: [] }).success).toBe(false);
   });

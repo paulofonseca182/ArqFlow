@@ -82,7 +82,7 @@ O módulo de Orçamentos já possui uma primeira fatia vertical:
 - Escopo composto `OPEN_BUDGETS` em `/budgets?scope=OPEN_BUDGETS`, com filtro opcional por `projectId`, `createdFrom` e `createdTo`.
 - Criação e edição de orçamento com cliente obrigatório e itens.
 - Cálculo de `totalAmount`, `finalAmount` e total de cada item sempre no backend.
-- Validação backend de valores positivos, desconto não negativo e pelo menos 1 item.
+- Validação backend de título até 30 caracteres, tipo de serviço até 20 caracteres, valores positivos, desconto não negativo, validade mínima na data de registro e pelo menos 1 item.
 - Envio de orçamento em rascunho ou negociação via `PATCH /budgets/:id/send`.
 - Aprovação comercial via `PATCH /budgets/:id/approve`, registrando status `Aprovado` e `approvedAt`.
 - Geração de projeto via `PATCH /budgets/:id/generate-project`, usando `$transaction`.
@@ -99,17 +99,21 @@ O módulo de Orçamentos já possui uma primeira fatia vertical:
 
 O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 
-- API REST em `/financial` com metadados, resumo, listagem, criação, edição, pagamento e cancelamento de parcelas.
-- Geração de parcelas a partir de projeto com `contractedAmount`, usando 1x, 2x ou 3x.
+- API REST em `/financial` com metadados, resumo, listagem, geração, edição operacional, pagamento e cancelamento controlado de parcelas.
+- Geração de parcelas a partir de projeto com `contractedAmount`, usando de 1x a 12x.
 - Cliente da parcela derivado do projeto no backend.
+- RN-F12: a soma das parcelas ativas de um projeto deve ser igual ao valor contratado do projeto.
+- Edição comum de parcela não altera o valor; vencimento, forma de pagamento, observações e dados operacionais continuam editáveis.
+- Mudanças de valor ficam reservadas para um fluxo futuro de replanejamento de parcelas.
 - Status atrasado calculado dinamicamente pelo backend.
 - Registro de pagamento total ou parcial via `PATCH /financial/payments/:id/pay`.
 - Data de pagamento preenchida automaticamente quando não informada.
 - Bloqueio de data de pagamento futura e de valor pago maior que a parcela.
+- Bloqueio de alteração do valor contratado do projeto quando já existem parcelas ativas.
 - Indicadores financeiros: receita do mês, receita do ano, valor a receber, recebido, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio.
 - Tela `/financial` conectada ao backend real.
-- Formulários com React Hook Form e Zod para parcela manual, geração de parcelas e registro de pagamento.
-- Alertas quando a soma das parcelas ultrapassa o valor contratado do projeto.
+- Formulários com React Hook Form e Zod para geração de parcelas, edição operacional e registro de pagamento.
+- API bloqueia operações que deixem a soma das parcelas ativas diferente do valor contratado.
 
 ## Padrão de Moeda
 
@@ -129,7 +133,7 @@ O Dashboard passou a consumir dados reais do backend:
 - Reaproveitamento do resumo financeiro de `/financial/summary`.
 - Próximas entregas calculadas a partir dos projetos ativos.
 - Progresso médio calculado a partir das etapas dos projetos.
-- Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e parcelas acima do contratado.
+- Alertas reais para pagamentos atrasados, vencimentos próximos, entregas próximas e divergências financeiras de parcelas.
 - Indicadores operacionais de tarefas abertas, tarefas atrasadas, visitas agendadas e orçamentos abertos.
 - Alertas também consideram tarefas atrasadas e visitas dos próximos 7 dias.
 - Detalhamento executivo dos principais pagamentos atrasados, pagamentos vencendo, tarefas críticas e visitas próximas.

@@ -528,7 +528,9 @@ Implementado no backend:
 - paginação;
 - status oficiais de orçamento centralizados;
 - validação Zod de cliente, título, tipo de serviço, status, desconto, validade e itens;
+- limite de 30 caracteres para título e 20 caracteres para tipo de serviço;
 - validação de valores financeiros positivos;
+- validação de validade do orçamento para impedir data anterior ao dia do registro;
 - exigência de pelo menos 1 item;
 - cálculo de `totalAmount`, `finalAmount` e `BudgetItem.totalAmount` no backend;
 - transação para criar orçamento com itens;
@@ -552,6 +554,8 @@ Implementado no frontend:
 - React Hook Form com validação Zod manual;
 - itens dinâmicos com adicionar/remover item;
 - validação de cliente obrigatório, título, tipo de serviço, desconto, validade e itens;
+- limite visual e validação de 30 caracteres para título e 20 para tipo de serviço;
+- bloqueio visual e validação de validade anterior à data de registro do orçamento;
 - exibição de valores calculados pela API;
 - ação para enviar orçamento;
 - ação para aprovar orçamento comercialmente;
@@ -568,6 +572,9 @@ Regras consideradas:
 - orçamento deve ter pelo menos 1 item;
 - quantidade e valor unitário devem ser maiores que zero;
 - desconto não pode ser negativo;
+- título do orçamento deve ter no máximo 30 caracteres;
+- tipo de serviço deve ter no máximo 20 caracteres;
+- validade do orçamento não pode ser anterior à data de registro;
 - valor final é calculado no backend;
 - frontend valida para UX, mas não substitui regras críticas;
 - orçamento aprovado não pode ser excluído nesta fatia.
@@ -632,12 +639,16 @@ Implementado no backend:
 - metadados de status e formas de pagamento;
 - listagem paginada de parcelas com busca por descrição, projeto e cliente;
 - filtros por status, projeto, cliente e vencimento;
-- criação manual de parcela sempre vinculada a projeto;
-- edição de dados operacionais da parcela;
+- criação individual de parcela mantida apenas como contrato técnico controlado;
+- edição de dados operacionais da parcela sem alteração de valor;
 - geração de parcelas a partir do `contractedAmount` do projeto;
-- parcelamento limitado a à vista, 2x ou 3x;
+- parcelamento limitado de 1x a 12x;
 - divisão do valor contratado sem perda de centavos;
 - bloqueio de geração quando o projeto ja possui parcelas ativas;
+- RN-F12: soma das parcelas ativas deve ser igual ao valor contratado do projeto;
+- bloqueio de operações que deixem parcelas ativas acima ou abaixo do valor contratado;
+- bloqueio de cancelamento quando isso quebrar a soma ativa do projeto;
+- bloqueio de alteração de `contractedAmount` em projeto com parcelas ativas;
 - registro de pagamento total ou parcial;
 - preenchimento automático de `paidAt` ao registrar pagamento;
 - bloqueio de data de pagamento futura;
@@ -645,7 +656,7 @@ Implementado no backend:
 - cancelamento de parcela ainda não paga;
 - status atrasado calculado dinamicamente pelo backend;
 - resumo financeiro com receita do mês, receita do ano, recebido, a receber, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio;
-- alerta quando a soma das parcelas ultrapassa o valor contratado do projeto;
+- alerta/erro quando a soma das parcelas ativas diverge do valor contratado do projeto;
 - testes de schema e service para regras financeiras.
 
 Implementado no frontend:
@@ -656,10 +667,10 @@ Implementado no frontend:
 - cards de indicadores financeiros no topo da tela;
 - listagem com busca e filtros por status, projeto e cliente;
 - tabela de parcelas com projeto, cliente, valor, valor pago, vencimento, status, forma de pagamento e ações;
-- modal para criação e edição de parcela;
+- modal para edição operacional de parcela, com valor bloqueado;
 - modal para gerar parcelas a partir de um projeto;
 - modal para registrar pagamento total ou parcial;
-- modal de cancelamento de parcela;
+- ação de cancelamento comum removida da tela para evitar quebra da RN-F12;
 - React Hook Form com validação Zod manual;
 - estados de carregamento, vazio, erro e sucesso;
 - badges de status financeiros;
@@ -679,13 +690,15 @@ Regras consideradas:
 - pagamento total recebe status `PAID`;
 - parcelas canceladas deixam de alimentar indicadores de recebimento e atraso;
 - geração padrão de parcelas usa o valor contratado do projeto convertido do orçamento;
+- alteração de valor de parcela fica reservada para fluxo futuro de replanejamento;
 - frontend valida para UX, mas backend continua sendo a fonte da verdade.
 
 Ainda falta:
 
-- testes de frontend para formulários e ações financeiras;
+- ampliar testes de frontend para ações financeiras completas;
 - refinamento visual contínuo após uso real;
 - geração automática opcional de parcelas imediatamente após gerar projeto a partir de orçamento aprovado;
+- fluxo de replanejamento de parcelas para redistribuir valores mantendo soma igual ao contratado;
 - relatório financeiro por projeto.
 
 ## Modulo Dashboard - estado atual
@@ -726,7 +739,7 @@ Implementado no backend:
 - cálculo de progresso médio com `calculateProjectProgress()`;
 - próximas entregas a partir de projetos ativos com data futura;
 - agrupamento de projetos por status oficial;
-- alertas para pagamentos atrasados, vencimentos próximos, entregas próximas, tarefas atrasadas, visitas próximas e parcelas acima do contratado;
+- alertas para pagamentos atrasados, vencimentos próximos, entregas próximas, tarefas atrasadas, visitas próximas e divergências financeiras de parcelas;
 - listas resumidas dos principais pagamentos atrasados, pagamentos vencendo, tarefas críticas e visitas próximas;
 - testes para progresso médio, próximas entregas e alertas.
 
@@ -1403,13 +1416,12 @@ Fluxo implementado:
 5. Usuário pode buscar por parcela, projeto ou cliente.
 6. Usuário pode filtrar por status, projeto e cliente.
 7. Usuário pode gerar parcelas de um projeto com valor contratado.
-8. O backend cria 1, 2 ou 3 parcelas a partir do `contractedAmount`.
-9. Usuário pode criar uma parcela manual.
-10. Usuário pode editar uma parcela ainda não cancelada.
-11. Usuário pode registrar pagamento total ou parcial.
-12. O backend define `paidAt` automaticamente quando a data não e informada.
-13. Usuário pode cancelar parcela ainda não paga.
-14. A tela recarrega indicadores e lista após cada mutação.
+8. O backend cria de 1 a 12 parcelas a partir do `contractedAmount`.
+9. Usuário edita dados operacionais de parcelas geradas sem alterar valor.
+10. Usuário pode registrar pagamento total ou parcial.
+11. O backend define `paidAt` automaticamente quando a data não e informada.
+12. Cancelamento de parcela só é permitido quando não quebra a soma ativa do projeto.
+13. A tela recarrega indicadores e lista após cada mutação.
 
 Campos principais:
 
@@ -1430,7 +1442,7 @@ Regras consideradas:
 - projeto deve existir;
 - cliente da parcela e derivado do projeto;
 - projeto precisa ter valor contratado para geração automática;
-- parcelamento permitido: à vista, 2x ou 3x;
+- parcelamento permitido: de 1x a 12x;
 - data de pagamento não pode ser futura;
 - valor pago deve ser maior que zero;
 - valor pago não pode ser maior que a parcela;
@@ -1665,8 +1677,8 @@ Regras:
 - pagamento parcial preenche `paidAt` e status `PARTIALLY_PAID`;
 - data de pagamento futura e bloqueada;
 - valor pago acima da parcela e bloqueado;
-- parcelamento automático usa `contractedAmount` do projeto em 1x, 2x ou 3x;
-- soma de parcelas acima do contratado gera alerta;
+- parcelamento automático usa `contractedAmount` do projeto de 1x a 12x;
+- soma de parcelas ativas diferente do contratado é bloqueada;
 - visita deve ter cliente obrigatório;
 - visita pode ter projeto opcional;
 - projeto de visita, quando informado, deve pertencer ao mesmo cliente;
@@ -1738,12 +1750,12 @@ Cobertura atual:
 - preparação dos dados de projeto a partir de orçamento aprovado;
 - bloqueios contra geração de projeto por orçamento sem item, sem aprovação ou já convertido.
 - schema de parcelas e geração financeira;
-- parcelamento limitado a 1x, 2x ou 3x;
+- parcelamento limitado a 1x até 12x;
 - divisão de parcelas com centavos preservados;
 - status atrasado calculado dinamicamente;
 - bloqueio de data de pagamento futura;
 - bloqueio de valor pago acima da parcela;
-- resumo financeiro por projeto e alerta acima do contratado.
+- resumo financeiro por projeto e validação de divergência entre parcelas ativas e contratado.
 - dashboard com progresso médio, próximas entregas, alertas reais e indicadores operacionais.
 - relatórios com consolidação real de clientes, comercial, projetos, financeiro, tarefas, visitas e detalhes críticos.
 - exportação CSV de Relatórios com teste de helper puro incluindo detalhes críticos.
@@ -2021,7 +2033,10 @@ Ao evoluir Financeiro, lembrar:
 - data de pagamento futura deve continuar bloqueada;
 - valor pago acima da parcela deve continuar bloqueado;
 - geração automática deve continuar usando valor contratado do projeto;
-- soma de parcelas acima do contratado deve gerar alerta;
+- soma de parcelas ativas deve fechar exatamente com o valor contratado do projeto;
+- edição comum de parcela não deve alterar `amount`;
+- alteração de valores deve acontecer apenas em fluxo futuro de replanejamento transacional;
+- valor contratado do projeto deve permanecer bloqueado quando houver parcelas ativas;
 - indicadores financeiros devem ser calculados no backend;
 - frontend deve melhorar UX, mas não substituir regras críticas.
 
@@ -2238,6 +2253,26 @@ Resumo sugerido:
 - Harden responsive filters, action groups, pagination and modal layouts
 - Update project registry and README
 ```
+
+## Ajuste RN-F12 - Parcelas Fecham Com Valor Contratado
+
+Implementado:
+
+- regra financeira `RN-F12`;
+- backend bloqueia operações que deixem a soma das parcelas ativas diferente de `Project.contractedAmount`;
+- geração de parcelas continua usando `contractedAmount` como fonte da verdade;
+- edição comum de parcela não aceita alteração de `amount`;
+- cancelamento de parcela valida a soma ativa dentro de `$transaction`;
+- alteração de `contractedAmount` do projeto é bloqueada quando já existem parcelas ativas;
+- frontend removeu a criação manual livre da tela financeira e prioriza `Gerar parcelas`;
+- modal de edição exibe o valor da parcela como informação bloqueada;
+- testes cobrem schema financeiro, diferença entre contratado/agendado, bloqueio de valor na edição e comparação de valor contratado.
+
+Decisão de produto:
+
+- alteração de valores entre parcelas não entra na edição comum;
+- quando necessário, deve existir um fluxo próprio de replanejamento de parcelas;
+- esse fluxo futuro deve salvar todas as parcelas juntas e só concluir se a soma ativa fechar exatamente com o valor contratado.
 
 ## Como retomar se algo der errado
 

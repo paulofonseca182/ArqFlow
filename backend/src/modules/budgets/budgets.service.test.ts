@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertBudgetCanBeApproved,
   assertBudgetCanBeConverted,
+  assertBudgetExpirationIsNotPast,
   buildBudgetWhere,
   buildConvertedProjectData,
   getBudgetsMeta,
@@ -160,5 +161,14 @@ describe("budgets service", () => {
     expect(() => assertBudgetCanBeApproved({ itemCount: 0, status: "SENT" })).toThrow("pelo menos 1 item");
     expect(() => assertBudgetCanBeApproved({ itemCount: 1, status: "DRAFT" })).toThrow("enviado ou em negocia");
     expect(() => assertBudgetCanBeApproved({ itemCount: 1, status: "APPROVED" })).toThrow("enviado ou em negocia");
+  });
+
+  it("bloqueia validade anterior a data minima do orcamento", () => {
+    const minimumDate = new Date(2026, 4, 26, 12);
+
+    expect(() => assertBudgetExpirationIsNotPast(undefined, minimumDate)).not.toThrow();
+    expect(() => assertBudgetExpirationIsNotPast(new Date("2026-05-26T00:00:00.000Z"), minimumDate)).not.toThrow();
+    expect(() => assertBudgetExpirationIsNotPast(new Date("2026-05-27T00:00:00.000Z"), minimumDate)).not.toThrow();
+    expect(() => assertBudgetExpirationIsNotPast(new Date("2026-05-25T00:00:00.000Z"), minimumDate)).toThrow("validade");
   });
 });

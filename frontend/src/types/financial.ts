@@ -52,7 +52,10 @@ export type ProjectFinancial = {
   receivedAmount: string;
   pendingAmount: string;
   overdueAmount: string;
+  contractDifferenceAmount: string;
   overContractedAmount: string;
+  underContractedAmount: string;
+  hasContractMismatchAlert: boolean;
   hasOverContractedAlert: boolean;
 };
 
@@ -103,7 +106,7 @@ export type PaymentWriteInput = {
   notes?: string;
 };
 
-export type PaymentUpdateInput = Omit<PaymentWriteInput, "projectId">;
+export type PaymentUpdateInput = Omit<PaymentWriteInput, "amount" | "projectId">;
 
 export type RegisterPaymentInput = {
   paidAmount?: number;

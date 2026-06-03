@@ -383,8 +383,7 @@ Use este papel quando a tarefa envolver:
 - Data de pagamento não pode ser futura.
 - Parcelas vencendo nos próximos 7 dias aparecem no dashboard.
 - À vista deve gerar uma parcela.
-- Parcelado em 2x deve gerar duas parcelas.
-- Parcelado em 3x deve gerar três parcelas.
+- Parcelado de 2x a 12x deve gerar a quantidade correspondente de parcelas.
 - Soma das parcelas acima do valor contratado deve gerar alerta.
 - Projeto deve mostrar contratado, recebido, pendente e atrasado.
 

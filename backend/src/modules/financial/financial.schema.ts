@@ -10,6 +10,7 @@ const optionalPositiveNumber = z.preprocess(
   parseOptionalNumberInput,
   z.number().positive("valor deve ser maior que zero").optional()
 );
+export const maxInstallmentCount = 12;
 
 export const paymentIdParamsSchema = z.object({
   id: z.string().cuid()
@@ -36,8 +37,9 @@ export const createPaymentSchema = z.object({
 });
 
 export const updatePaymentSchema = createPaymentSchema
-  .omit({ projectId: true })
+  .omit({ amount: true, projectId: true })
   .partial()
+  .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: "informe pelo menos um campo para atualizar"
   });
@@ -49,7 +51,7 @@ export const registerPaymentSchema = z.object({
 
 export const generateInstallmentsSchema = z.object({
   projectId: z.string().cuid("projeto inválido"),
-  installments: z.coerce.number().int().min(1).max(3),
+  installments: z.coerce.number().int().min(1).max(maxInstallmentCount),
   firstDueDate: requiredDate,
   paymentMethod: z.enum(paymentMethods).optional(),
   description: optionalText,

@@ -3,13 +3,11 @@ import type { FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
-  Banknote,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Pencil,
-  Plus,
   RefreshCw,
   Search,
   XCircle
@@ -21,15 +19,12 @@ import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Input } from "../../components/ui/Input";
 import { LoadingState } from "../../components/ui/LoadingState";
-import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
 import { StatCard } from "../../components/ui/StatCard";
 import { Table } from "../../components/ui/Table";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ApiError } from "../../services/api";
 import {
-  cancelPayment,
-  createPayment,
   generateInstallments,
   getFinancialMeta,
   getFinancialSummary,
@@ -113,7 +108,6 @@ export function FinancialPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -123,8 +117,6 @@ export function FinancialPage() {
   const [registerTarget, setRegisterTarget] = useState<Payment | null>(null);
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<Payment | null>(null);
-  const [cancelling, setCancelling] = useState(false);
 
   const clients = useMemo(() => {
     const clientById = new Map(projects.map((project) => [project.client.id, project.client]));
@@ -249,15 +241,7 @@ export function FinancialPage() {
     setSearchParams(toFinancialSearchParams(nextQuery), { replace: true });
   }
 
-  function handleOpenCreate() {
-    setFormMode("create");
-    setSelectedPayment(null);
-    setFormError(null);
-    setFormOpen(true);
-  }
-
   function handleOpenEdit(payment: Payment) {
-    setFormMode("edit");
     setSelectedPayment(payment);
     setFormError(null);
     setFormOpen(true);
@@ -269,17 +253,12 @@ export function FinancialPage() {
     setNotice(null);
 
     try {
-      const result =
-        formMode === "create"
-          ? await createPayment(payload as PaymentWriteInput)
-          : selectedPayment
-            ? await updatePayment(selectedPayment.id, payload as PaymentUpdateInput)
-            : null;
+      const result = selectedPayment ? await updatePayment(selectedPayment.id, payload as PaymentUpdateInput) : null;
 
       if (result?.alert) {
         setNotice(result.alert.message);
       } else {
-        setNotice(formMode === "create" ? "Parcela cadastrada." : "Parcela atualizada.");
+        setNotice("Parcela atualizada.");
       }
 
       setFormOpen(false);
@@ -330,28 +309,6 @@ export function FinancialPage() {
     }
   }
 
-  async function handleCancelPayment() {
-    if (!cancelTarget) {
-      return;
-    }
-
-    setCancelling(true);
-    setError(null);
-    setNotice(null);
-
-    try {
-      await cancelPayment(cancelTarget.id);
-      setNotice("Parcela cancelada.");
-      setCancelTarget(null);
-      await Promise.all([loadPayments(), loadSummary()]);
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-      setCancelTarget(null);
-    } finally {
-      setCancelling(false);
-    }
-  }
-
   const hasFilters = Boolean(query.search || query.status || query.projectId || query.clientId || query.dueFrom || query.dueTo);
 
   return (
@@ -361,10 +318,6 @@ export function FinancialPage() {
           <Button disabled={metaLoading || projects.length === 0} onClick={() => setInstallmentsOpen(true)} type="button" variant="secondary">
             <CalendarClock className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
             Gerar parcelas
-          </Button>
-          <Button disabled={metaLoading || projects.length === 0} onClick={handleOpenCreate} type="button">
-            <Plus className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
-            Nova parcela
           </Button>
         </div>
       }
@@ -507,16 +460,6 @@ export function FinancialPage() {
                         <CheckCircle2 className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                       </ActionIconButton>
                     ) : null}
-                    {canCancelPayment(payment) ? (
-                      <ActionIconButton
-                        ariaLabel={`Cancelar ${payment.description}`}
-                        destructive
-                        label="Cancelar parcela"
-                        onClick={() => setCancelTarget(payment)}
-                      >
-                        <XCircle className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
-                      </ActionIconButton>
-                    ) : null}
                   </div>
                 </td>
               </tr>
@@ -552,7 +495,7 @@ export function FinancialPage() {
       <PaymentFormModal
         apiError={formError}
         methods={meta.methods}
-        mode={formMode}
+        mode="edit"
         onClose={() => {
           if (!saving) {
             setFormOpen(false);
@@ -592,31 +535,6 @@ export function FinancialPage() {
         saving={registering}
       />
 
-      <Modal
-        footer={
-          <>
-            <Button disabled={cancelling} onClick={() => setCancelTarget(null)} type="button" variant="secondary">
-              Fechar
-            </Button>
-            <Button className="bg-status-danger hover:bg-status-danger/80" disabled={cancelling} onClick={() => void handleCancelPayment()} type="button">
-              {cancelling ? "Cancelando..." : "Cancelar parcela"}
-            </Button>
-          </>
-        }
-        onClose={() => setCancelTarget(null)}
-        open={Boolean(cancelTarget)}
-        title="Cancelar parcela"
-      >
-        <div className="flex gap-3">
-          <Banknote className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
-          <div className="space-y-2">
-            <p>
-              Confirme o cancelamento de <span className="font-medium text-text-primary">{cancelTarget?.description}</span>.
-            </p>
-            <p className="text-text-muted">Parcelas canceladas deixam de entrar nos indicadores de recebimento e atraso.</p>
-          </div>
-        </div>
-      </Modal>
     </PageWrapper>
   );
 }
@@ -648,10 +566,6 @@ function toFinancialSearchParams(query: FinancialQuery) {
 }
 
 function canRegisterPayment(payment: Payment) {
-  return payment.status !== "PAID" && payment.status !== "CANCELLED";
-}
-
-function canCancelPayment(payment: Payment) {
   return payment.status !== "PAID" && payment.status !== "CANCELLED";
 }
 

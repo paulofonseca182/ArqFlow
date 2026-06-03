@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createPaymentSchema, generateInstallmentsSchema, listPaymentsQuerySchema, registerPaymentSchema } from "./financial.schema.js";
+import {
+  createPaymentSchema,
+  generateInstallmentsSchema,
+  listPaymentsQuerySchema,
+  registerPaymentSchema,
+  updatePaymentSchema
+} from "./financial.schema.js";
 
 describe("financial schema", () => {
   it("valida criação de parcela com projeto obrigatório e valor positivo", () => {
@@ -41,11 +47,11 @@ describe("financial schema", () => {
     expect(invalid.success).toBe(false);
   });
 
-  it("aceita somente parcelamento à vista, 2x ou 3x", () => {
+  it("aceita parcelamento de 1 a 12x", () => {
     expect(
       generateInstallmentsSchema.safeParse({
         projectId: "clw0000000000000000000000",
-        installments: 3,
+        installments: 12,
         firstDueDate: "2026-06-10"
       }).success
     ).toBe(true);
@@ -53,7 +59,7 @@ describe("financial schema", () => {
     expect(
       generateInstallmentsSchema.safeParse({
         projectId: "clw0000000000000000000000",
-        installments: 4,
+        installments: 13,
         firstDueDate: "2026-06-10"
       }).success
     ).toBe(false);
@@ -66,5 +72,14 @@ describe("financial schema", () => {
     });
 
     expect(parsed.paidAmount).toBe(800.25);
+  });
+
+  it("bloqueia alteraÃ§Ã£o de valor na ediÃ§Ã£o comum de parcela", () => {
+    const result = updatePaymentSchema.safeParse({
+      amount: "900,00",
+      dueDate: "2026-06-10"
+    });
+
+    expect(result.success).toBe(false);
   });
 });

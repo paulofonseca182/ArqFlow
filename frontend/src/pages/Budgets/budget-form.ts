@@ -2,6 +2,10 @@ import { z } from "zod";
 import { budgetStatusValues } from "../../types/budget";
 import type { Budget, BudgetWriteInput } from "../../types/budget";
 import { parseCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
+import { toLocalDateInputValue } from "../../utils/date";
+
+export const budgetTitleMaxLength = 30;
+export const budgetServiceTypeMaxLength = 20;
 
 export type BudgetFormItemFields = {
   description: string;
@@ -45,10 +49,22 @@ const budgetItemSchema = z.object({
   unitAmount: currencyNumber
 });
 
+export function getBudgetFormSchema(minExpirationDate = toLocalDateInputValue()) {
+  return budgetFormSchema.superRefine((data, context) => {
+    if (data.expiresAt && data.expiresAt < minExpirationDate) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["expiresAt"],
+        message: "A validade do orçamento não pode ser anterior à data de registro."
+      });
+    }
+  });
+}
+
 export const budgetFormSchema = z.object({
   clientId: z.string().trim().min(1, "Selecione um cliente."),
-  title: z.string().trim().min(2, "Informe pelo menos 2 caracteres."),
-  serviceType: z.string().trim().min(2, "Informe o tipo de serviço."),
+  title: z.string().trim().min(2, "Informe pelo menos 2 caracteres.").max(budgetTitleMaxLength, "Informe no máximo 30 caracteres."),
+  serviceType: z.string().trim().min(2, "Informe o tipo de serviço.").max(budgetServiceTypeMaxLength, "Informe no máximo 20 caracteres."),
   description: optionalText,
   discount: discountNumber,
   paymentMethod: optionalText,

@@ -119,6 +119,22 @@ function endOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function toUtcDateKey(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getUTCDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export async function listBudgets(query: ListBudgetsQuery) {
   const { page, pageSize } = query;
   const where = buildBudgetWhere(query);
@@ -156,6 +172,7 @@ export async function getBudgetById(id: string) {
 export async function createBudget(input: CreateBudgetInput) {
   await ensureBudgetRelations(input.clientId, input.projectId ?? null);
   assertBudgetStatusCanBeWritten(input.status);
+  assertBudgetExpirationIsNotPast(input.expiresAt);
 
   const prepared = prepareBudgetAmounts(input.items, input.discount);
 
@@ -195,6 +212,7 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
       clientId: true,
       convertedProjectId: true,
       projectId: true,
+      createdAt: true,
       status: true,
       discount: true,
       items: {
@@ -217,6 +235,10 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
 
   if (input.status) {
     assertBudgetStatusCanBeWritten(input.status);
+  }
+
+  if ("expiresAt" in input) {
+    assertBudgetExpirationIsNotPast(input.expiresAt, currentBudget.createdAt);
   }
 
   const nextClientId = input.clientId ?? currentBudget.clientId;
@@ -533,6 +555,16 @@ export function assertBudgetCanBeApproved({ itemCount, status }: { itemCount: nu
 export function assertBudgetStatusCanBeWritten(status: string) {
   if (status === "APPROVED") {
     throw new AppError("BUDGET_APPROVAL_FLOW_REQUIRED", "Use a ação de aprovação para aprovar orçamento.", 409);
+  }
+}
+
+export function assertBudgetExpirationIsNotPast(expiresAt?: Date | null, minimumDate = new Date()) {
+  if (!expiresAt) {
+    return;
+  }
+
+  if (toUtcDateKey(expiresAt) < toLocalDateKey(minimumDate)) {
+    throw new AppError("BUDGET_EXPIRATION_DATE_IN_PAST", "A validade do orçamento não pode ser anterior à data de registro.", 422);
   }
 }
 

@@ -13,8 +13,8 @@ import {
 export const navigation = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Clientes", href: "/clients", icon: Users },
-  { label: "Projetos", href: "/projects", icon: FolderKanban },
   { label: "Orçamentos", href: "/budgets", icon: BriefcaseBusiness },
+  { label: "Projetos", href: "/projects", icon: FolderKanban },
   { label: "Financeiro", href: "/financial", icon: WalletCards },
   { label: "Tarefas", href: "/tasks", icon: ClipboardList },
   { label: "Visitas", href: "/visits", icon: CalendarDays },

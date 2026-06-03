@@ -10,6 +10,7 @@ import {
 } from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
 import { getPaginationMeta } from "../../shared/pagination.js";
+import { maxInstallmentCount } from "./financial.schema.js";
 import type {
   CreatePaymentInput,
   GenerateInstallmentsInput,
@@ -237,6 +238,7 @@ export async function createPayment(input: CreatePaymentInput) {
     });
 
     const projectFinancial = await getProjectFinancialOverview(project.id, transaction);
+    assertPaymentScheduleMatchesContract(projectFinancial);
 
     return {
       payment: mapPayment(payment),
@@ -253,8 +255,6 @@ export async function updatePayment(id: string, input: UpdatePaymentInput) {
       select: {
         id: true,
         projectId: true,
-        amount: true,
-        paidAmount: true,
         status: true
       }
     });
@@ -265,14 +265,6 @@ export async function updatePayment(id: string, input: UpdatePaymentInput) {
 
     if (currentPayment.status === "CANCELLED") {
       throw new AppError("PAYMENT_CANCELLED_UPDATE_BLOCKED", "Parcela cancelada não pode ser editada.", 409);
-    }
-
-    if (input.amount !== undefined) {
-      assertPositiveAmount(input.amount);
-
-      if (input.amount < toNumber(currentPayment.paidAmount)) {
-        throw new AppError("PAYMENT_AMOUNT_BELOW_PAID", "Valor da parcela não pode ser menor que o valor já pago.", 422);
-      }
     }
 
     const payment = await transaction.payment.update({
@@ -337,31 +329,37 @@ export async function registerPayment(id: string, input: RegisterPaymentInput) {
 }
 
 export async function cancelPayment(id: string) {
-  const payment = await prisma.payment.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      status: true
+  return prisma.$transaction(async (transaction) => {
+    const payment = await transaction.payment.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        projectId: true,
+        status: true
+      }
+    });
+
+    if (!payment) {
+      throw new AppError("PAYMENT_NOT_FOUND", "Parcela não encontrada.", 404);
     }
+
+    if (payment.status === "PAID") {
+      throw new AppError("PAYMENT_PAID_CANCEL_BLOCKED", "Parcela paga não pode ser cancelada.", 409);
+    }
+
+    const updatedPayment = await transaction.payment.update({
+      where: { id },
+      data: {
+        status: "CANCELLED"
+      },
+      select: paymentSelect
+    });
+
+    const projectFinancial = await getProjectFinancialOverview(payment.projectId, transaction);
+    assertPaymentScheduleMatchesContract(projectFinancial);
+
+    return mapPayment(updatedPayment);
   });
-
-  if (!payment) {
-    throw new AppError("PAYMENT_NOT_FOUND", "Parcela não encontrada.", 404);
-  }
-
-  if (payment.status === "PAID") {
-    throw new AppError("PAYMENT_PAID_CANCEL_BLOCKED", "Parcela paga não pode ser cancelada.", 409);
-  }
-
-  const updatedPayment = await prisma.payment.update({
-    where: { id },
-    data: {
-      status: "CANCELLED"
-    },
-    select: paymentSelect
-  });
-
-  return mapPayment(updatedPayment);
 }
 
 export async function generateProjectInstallments(input: GenerateInstallmentsInput) {
@@ -423,6 +421,7 @@ export async function generateProjectInstallments(input: GenerateInstallmentsInp
     }
 
     const projectFinancial = await getProjectFinancialOverview(project.id, transaction);
+    assertPaymentScheduleMatchesContract(projectFinancial);
 
     return {
       payments: payments.map(mapPayment),
@@ -490,8 +489,12 @@ export function getEffectivePaymentStatus(payment: { dueDate: Date; status: stri
 export function splitAmountIntoInstallments(totalAmount: number, installments: number) {
   assertPositiveAmount(totalAmount, "valor contratado");
 
-  if (![1, 2, 3].includes(installments)) {
-    throw new AppError("INVALID_INSTALLMENT_COUNT", "parcelamento deve ser à vista, 2x ou 3x.", 422);
+  if (!Number.isInteger(installments) || installments < 1 || installments > maxInstallmentCount) {
+    throw new AppError(
+      "INVALID_INSTALLMENT_COUNT",
+      `parcelamento deve ser de 1 a ${maxInstallmentCount} parcelas.`,
+      422
+    );
   }
 
   const totalCents = Math.round(totalAmount * 100);
@@ -555,7 +558,10 @@ export function buildProjectFinancialSummary(project: ProjectFinancialSnapshot, 
     }
   }
 
-  const overContractedAmount = Math.max(roundMoney(scheduledAmount - contractedAmount), 0);
+  const scheduleDifferenceAmount = getPaymentScheduleDifference(contractedAmount, scheduledAmount);
+  const overContractedAmount = Math.max(scheduleDifferenceAmount, 0);
+  const underContractedAmount = Math.max(roundMoney(-scheduleDifferenceAmount), 0);
+  const contractDifferenceAmount = roundMoney(Math.abs(scheduleDifferenceAmount));
 
   return {
     contractedAmount: roundMoney(contractedAmount),
@@ -563,9 +569,46 @@ export function buildProjectFinancialSummary(project: ProjectFinancialSnapshot, 
     receivedAmount: roundMoney(receivedAmount),
     pendingAmount: roundMoney(pendingAmount),
     overdueAmount: roundMoney(overdueAmount),
+    contractDifferenceAmount,
     overContractedAmount,
+    underContractedAmount,
+    hasContractMismatchAlert: contractedAmount > 0 && scheduledAmount > 0 && contractDifferenceAmount > 0,
     hasOverContractedAlert: contractedAmount > 0 && overContractedAmount > 0
   };
+}
+
+export function getPaymentScheduleDifference(
+  contractedAmount: { toString(): string } | number | string | null | undefined,
+  scheduledAmount: { toString(): string } | number | string | null | undefined
+) {
+  return roundMoney(toNumber(scheduledAmount) - toNumber(contractedAmount));
+}
+
+export function assertPaymentScheduleMatchesContract({
+  contractedAmount,
+  scheduledAmount
+}: {
+  contractedAmount: { toString(): string } | number | string | null | undefined;
+  scheduledAmount: { toString(): string } | number | string | null | undefined;
+}) {
+  const contracted = roundMoney(toNumber(contractedAmount));
+  const scheduled = roundMoney(toNumber(scheduledAmount));
+
+  if (contracted <= 0 && scheduled > 0) {
+    throw new AppError("PROJECT_CONTRACTED_AMOUNT_REQUIRED", "Projeto precisa ter valor contratado para registrar parcelas.", 422);
+  }
+
+  if (contracted > 0 && getPaymentScheduleDifference(contracted, scheduled) !== 0) {
+    throw new AppError(
+      "PROJECT_PAYMENTS_TOTAL_MISMATCH",
+      "A soma das parcelas ativas deve ser igual ao valor contratado do projeto.",
+      422,
+      {
+        contractedAmount: toMoneyString(contracted),
+        scheduledAmount: toMoneyString(scheduled)
+      }
+    );
+  }
 }
 
 async function getProjectForPayment(projectId: string, client: PrismaClientLike) {
@@ -633,20 +676,23 @@ function mapProjectFinancial(project: ProjectFinancialRecord) {
     receivedAmount: toMoneyString(summary.receivedAmount),
     pendingAmount: toMoneyString(summary.pendingAmount),
     overdueAmount: toMoneyString(summary.overdueAmount),
+    contractDifferenceAmount: toMoneyString(summary.contractDifferenceAmount),
     overContractedAmount: toMoneyString(summary.overContractedAmount),
+    underContractedAmount: toMoneyString(summary.underContractedAmount),
+    hasContractMismatchAlert: summary.hasContractMismatchAlert,
     hasOverContractedAlert: summary.hasOverContractedAlert
   };
 }
 
 function buildProjectFinancialAlert(projectFinancial: ReturnType<typeof mapProjectFinancial>) {
-  if (!projectFinancial.hasOverContractedAlert) {
+  if (!projectFinancial.hasContractMismatchAlert) {
     return null;
   }
 
   return {
-    code: "PROJECT_OVER_CONTRACTED",
-    message: "Soma das parcelas está acima do valor contratado do projeto.",
-    amount: projectFinancial.overContractedAmount
+    code: "PROJECT_PAYMENTS_TOTAL_MISMATCH",
+    message: "Soma das parcelas ativas deve ser igual ao valor contratado do projeto.",
+    amount: projectFinancial.contractDifferenceAmount
   };
 }
 

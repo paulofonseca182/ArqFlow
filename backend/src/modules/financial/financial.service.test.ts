@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertPaymentScheduleMatchesContract,
   buildPaymentWhere,
   buildProjectFinancialSummary,
   getEffectivePaymentStatus,
   getFinancialMeta,
+  getPaymentScheduleDifference,
   resolveRegisteredPaymentData,
   splitAmountIntoInstallments
 } from "./financial.service.js";
@@ -25,7 +27,8 @@ describe("financial service", () => {
   it("divide o valor contratado em parcelas sem perder centavos", () => {
     expect(splitAmountIntoInstallments(100, 3)).toEqual([33.34, 33.33, 33.33]);
     expect(splitAmountIntoInstallments(100, 2)).toEqual([50, 50]);
-    expect(() => splitAmountIntoInstallments(100, 4)).toThrow("parcelamento");
+    expect(splitAmountIntoInstallments(1200, 12)).toEqual(Array.from({ length: 12 }, () => 100));
+    expect(() => splitAmountIntoInstallments(100, 13)).toThrow("parcelamento");
   });
 
   it("calcula status atrasado dinamicamente", () => {
@@ -90,8 +93,22 @@ describe("financial service", () => {
       receivedAmount: 300,
       pendingAmount: 900,
       overdueAmount: 400,
+      contractDifferenceAmount: 200,
       overContractedAmount: 200,
+      underContractedAmount: 0,
+      hasContractMismatchAlert: true,
       hasOverContractedAlert: true
     });
+  });
+
+  it("detecta diferenÃ§a entre parcelas ativas e valor contratado", () => {
+    expect(getPaymentScheduleDifference("1000.00", "1000.00")).toBe(0);
+    expect(getPaymentScheduleDifference("1000.00", "900.00")).toBe(-100);
+    expect(getPaymentScheduleDifference("1000.00", "1200.00")).toBe(200);
+
+    expect(() => assertPaymentScheduleMatchesContract({ contractedAmount: "1000.00", scheduledAmount: "900.00" })).toThrow(
+      "igual ao valor contratado"
+    );
+    expect(() => assertPaymentScheduleMatchesContract({ contractedAmount: "1000.00", scheduledAmount: "1000.00" })).not.toThrow();
   });
 });

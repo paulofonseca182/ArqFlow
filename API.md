@@ -97,6 +97,7 @@ type ApiError = {
 - `PATCH /projects/:id`
   - Atualiza projeto parcialmente.
   - Mantém cliente obrigatório e valida datas considerando os dados atuais.
+  - Bloqueia alteração de `contractedAmount` quando o projeto já possui parcelas ativas.
 - `DELETE /projects/:id`
   - Exclui apenas projetos sem vínculos.
   - Retorna `PROJECT_HAS_RELATIONS` com detalhes de impacto quando houver registros vinculados.
@@ -114,10 +115,16 @@ type ApiError = {
   - Retorna orçamento com cliente, projeto vinculado, projeto convertido e itens.
 - `POST /budgets`
   - Cria orçamento com cliente obrigatório e pelo menos um item.
+  - `title` aceita no máximo 30 caracteres.
+  - `serviceType` aceita no máximo 20 caracteres.
   - O backend calcula `totalAmount`, `finalAmount` e `BudgetItem.totalAmount`.
+  - `expiresAt`, quando informado, não pode ser anterior à data de registro do orçamento.
   - Não permite gravar `status=APPROVED`; a aprovação usa rota própria.
 - `PATCH /budgets/:id`
   - Atualiza orçamento ainda não aprovado.
+  - `title`, quando informado, aceita no máximo 30 caracteres.
+  - `serviceType`, quando informado, aceita no máximo 20 caracteres.
+  - `expiresAt`, quando informado, não pode ser anterior ao `createdAt` original do orçamento.
   - Bloqueia edição quando o orçamento está `APPROVED` ou já possui `convertedProjectId`.
   - Esse bloqueio protege itens, desconto e valores finais depois da aprovação.
 - `PATCH /budgets/:id/send`
@@ -145,15 +152,18 @@ type ApiError = {
 - `GET /financial/payments`
   - Lista parcelas/pagamentos com filtros por status, projeto, cliente e vencimento.
 - `POST /financial/payments`
-  - Cria parcela manual vinculada a projeto.
+  - Cria parcela vinculada a projeto apenas quando a operação mantiver a soma das parcelas ativas igual ao valor contratado.
+  - No fluxo do MVP, a interface prioriza `POST /financial/installments`; criação individual fica como contrato técnico controlado.
 - `PATCH /financial/payments/:id`
   - Atualiza dados operacionais da parcela.
+  - Não aceita alteração de `amount`; valor só poderá mudar em fluxo futuro de replanejamento.
 - `PATCH /financial/payments/:id/pay`
   - Registra pagamento total ou parcial.
 - `PATCH /financial/payments/:id/cancel`
-  - Cancela parcela ainda não paga.
+  - Cancela parcela ainda não paga somente se a agenda financeira do projeto continuar fechando com o valor contratado.
 - `POST /financial/installments`
   - Gera parcelas a partir do valor contratado do projeto.
+  - Divide o `Project.contractedAmount` em 1x a 12x e valida a soma dentro da transação.
 
 ## Tarefas
 

@@ -10,7 +10,15 @@ import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import type { Budget, BudgetOption, BudgetStatus, BudgetWriteInput } from "../../types/budget";
 import type { Client } from "../../types/client";
-import { budgetFormSchema, getBudgetFormDefaults, getEmptyBudgetItem, normalizeBudgetPayload } from "./budget-form";
+import { toDateParamValue, toLocalDateInputValue } from "../../utils/date";
+import {
+  budgetServiceTypeMaxLength,
+  budgetTitleMaxLength,
+  getBudgetFormDefaults,
+  getBudgetFormSchema,
+  getEmptyBudgetItem,
+  normalizeBudgetPayload
+} from "./budget-form";
 import type { BudgetFormFields } from "./budget-form";
 
 type BudgetFormModalProps = {
@@ -62,7 +70,7 @@ export function BudgetFormModal({
     setFormError(null);
     form.clearErrors();
 
-    const result = budgetFormSchema.safeParse(values);
+    const result = getBudgetFormSchema(getMinExpirationDate(mode, budget)).safeParse(values);
 
     if (!result.success) {
       for (const issue of result.error.issues) {
@@ -84,6 +92,7 @@ export function BudgetFormModal({
   const errors = form.formState.errors;
   const title = mode === "create" ? "Novo orçamento" : "Editar orçamento";
   const editableStatuses = statuses.filter((status) => status.value !== "APPROVED");
+  const minExpirationDate = getMinExpirationDate(mode, budget);
 
   return (
     <Modal
@@ -111,7 +120,14 @@ export function BudgetFormModal({
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Input autoFocus error={errors.title?.message} label="Título" placeholder="Proposta de interiores" {...form.register("title")} />
+          <Input
+            autoFocus
+            error={errors.title?.message}
+            label="Título"
+            maxLength={budgetTitleMaxLength}
+            placeholder="Proposta de interiores"
+            {...form.register("title")}
+          />
           <Select error={errors.clientId?.message} label="Cliente" {...form.register("clientId")}>
             <option value="">Selecione</option>
             {clients.map((client) => (
@@ -120,7 +136,13 @@ export function BudgetFormModal({
               </option>
             ))}
           </Select>
-          <Input error={errors.serviceType?.message} label="Tipo de serviço" placeholder="Interiores" {...form.register("serviceType")} />
+          <Input
+            error={errors.serviceType?.message}
+            label="Tipo de serviço"
+            maxLength={budgetServiceTypeMaxLength}
+            placeholder="Interiores"
+            {...form.register("serviceType")}
+          />
           <Select error={errors.status?.message} label="Status" {...form.register("status")}>
             {editableStatuses.map((status) => (
               <option key={status.value} value={status.value}>
@@ -129,7 +151,7 @@ export function BudgetFormModal({
             ))}
           </Select>
           <CurrencyInput error={errors.discount?.message} label="Desconto" {...form.register("discount")} />
-          <Input error={errors.expiresAt?.message} label="Validade" type="date" {...form.register("expiresAt")} />
+          <Input error={errors.expiresAt?.message} label="Validade" min={minExpirationDate} type="date" {...form.register("expiresAt")} />
           <Input className="md:col-span-2" error={errors.paymentMethod?.message} label="Forma de pagamento" placeholder="Pix, transferência ou parcelado" {...form.register("paymentMethod")} />
         </div>
 
@@ -186,4 +208,12 @@ export function BudgetFormModal({
       </form>
     </Modal>
   );
+}
+
+function getMinExpirationDate(mode: "create" | "edit", budget?: Budget | null) {
+  if (mode === "edit" && budget?.createdAt) {
+    return toDateParamValue(budget.createdAt);
+  }
+
+  return toLocalDateInputValue();
 }

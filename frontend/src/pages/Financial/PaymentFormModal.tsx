@@ -9,11 +9,13 @@ import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import type { FinancialOption, Payment, PaymentMethod, PaymentUpdateInput, PaymentWriteInput } from "../../types/financial";
 import type { Project } from "../../types/project";
+import { formatCurrency } from "../../utils/currency";
 import {
   getPaymentFormDefaults,
   normalizePaymentPayload,
   normalizePaymentUpdatePayload,
   paymentFormSchema,
+  paymentUpdateFormSchema,
   type PaymentFormFields
 } from "./payment-form";
 
@@ -59,7 +61,7 @@ export function PaymentFormModal({
     setFormError(null);
     form.clearErrors();
 
-    const result = paymentFormSchema.safeParse(values);
+    const result = mode === "create" ? paymentFormSchema.safeParse(values) : paymentUpdateFormSchema.safeParse(values);
 
     if (!result.success) {
       for (const issue of result.error.issues) {
@@ -75,7 +77,14 @@ export function PaymentFormModal({
       return;
     }
 
-    await onSubmit(mode === "create" ? normalizePaymentPayload(result.data) : normalizePaymentUpdatePayload(result.data));
+    if (mode === "create") {
+      const createResult = paymentFormSchema.parse(values);
+      await onSubmit(normalizePaymentPayload(createResult));
+      return;
+    }
+
+    const updateResult = paymentUpdateFormSchema.parse(values);
+    await onSubmit(normalizePaymentUpdatePayload(updateResult));
   }
 
   const errors = form.formState.errors;
@@ -116,7 +125,17 @@ export function PaymentFormModal({
             ))}
           </Select>
           <Input error={errors.description?.message} label="Descrição" placeholder="Parcela 1/2" {...form.register("description")} />
-          <CurrencyInput error={errors.amount?.message} label="Valor" {...form.register("amount")} />
+          {mode === "create" ? (
+            <CurrencyInput error={errors.amount?.message} label="Valor" {...form.register("amount")} />
+          ) : (
+            <div className="block min-w-0 space-y-2">
+              <span className="text-sm font-medium text-text-secondary">Valor</span>
+              <div className="flex h-10 items-center rounded-ui border border-surface-500 bg-surface-950/40 px-3 text-sm text-text-muted">
+                {formatCurrency(payment?.amount ?? "0")}
+              </div>
+              <p className="text-xs text-text-muted">Alteração de valor somente por replanejamento de parcelas.</p>
+            </div>
+          )}
           <Input error={errors.installment?.message} label="Número da parcela" placeholder="1" {...form.register("installment")} />
           <Input error={errors.dueDate?.message} label="Vencimento" type="date" {...form.register("dueDate")} />
           <Select error={errors.paymentMethod?.message} label="Forma de pagamento" {...form.register("paymentMethod")}>

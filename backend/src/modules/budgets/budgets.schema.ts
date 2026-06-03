@@ -3,6 +3,8 @@ import { budgetStatuses, projectStatuses, projectTypes } from "../../shared/doma
 import { paginationQuerySchema } from "../../shared/pagination.js";
 
 const budgetScopeValues = ["OPEN_BUDGETS"] as const;
+const budgetTitleMaxLength = 30;
+const budgetServiceTypeMaxLength = 20;
 const optionalText = z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined));
 const optionalDate = z.coerce.date().optional().or(z.literal("").transform(() => undefined));
 const optionalProjectId = z
@@ -47,8 +49,16 @@ const budgetItemSchema = z.object({
 const budgetBaseSchema = z.object({
   clientId: z.string().cuid("cliente inválido"),
   projectId: optionalProjectId,
-  title: z.string().trim().min(2, "título deve ter pelo menos 2 caracteres"),
-  serviceType: z.string().trim().min(2, "tipo de serviço deve ter pelo menos 2 caracteres"),
+  title: z
+    .string()
+    .trim()
+    .min(2, "título deve ter pelo menos 2 caracteres")
+    .max(budgetTitleMaxLength, "título deve ter no máximo 30 caracteres"),
+  serviceType: z
+    .string()
+    .trim()
+    .min(2, "tipo de serviço deve ter pelo menos 2 caracteres")
+    .max(budgetServiceTypeMaxLength, "tipo de serviço deve ter no máximo 20 caracteres"),
   description: optionalText,
   discount: createDiscountNumber.default(0),
   paymentMethod: optionalText,

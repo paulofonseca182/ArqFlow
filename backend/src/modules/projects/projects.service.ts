@@ -151,8 +151,19 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
     select: {
       id: true,
       clientId: true,
+      contractedAmount: true,
       startsAt: true,
-      expectedDeliveryDate: true
+      expectedDeliveryDate: true,
+      payments: {
+        where: {
+          status: {
+            not: "CANCELLED"
+          }
+        },
+        select: {
+          id: true
+        }
+      }
     }
   });
 
@@ -162,6 +173,18 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
 
   if (input.clientId && input.clientId !== currentProject.clientId) {
     await ensureClientExists(input.clientId);
+  }
+
+  if (
+    input.contractedAmount !== undefined &&
+    hasContractedAmountChanged(input.contractedAmount, currentProject.contractedAmount) &&
+    currentProject.payments.length > 0
+  ) {
+    throw new AppError(
+      "PROJECT_CONTRACTED_AMOUNT_UPDATE_BLOCKED",
+      "Valor contratado não pode ser alterado enquanto o projeto possui parcelas ativas.",
+      409
+    );
   }
 
   const nextStartsAt = "startsAt" in input ? input.startsAt : currentProject.startsAt;
@@ -390,4 +413,23 @@ function emptyImpactCounts() {
     tasks: 0,
     visits: 0
   };
+}
+
+export function hasContractedAmountChanged(
+  nextAmount: { toString(): string } | number | string | null | undefined,
+  currentAmount: { toString(): string } | number | string | null | undefined
+) {
+  return roundMoney(toNumber(nextAmount)) !== roundMoney(toNumber(currentAmount));
+}
+
+function toNumber(value: { toString(): string } | number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return Number(value.toString());
+}
+
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }

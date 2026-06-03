@@ -11,6 +11,7 @@ import type { Project } from "../../types/project";
 import {
   generateInstallmentsFormSchema,
   getGenerateInstallmentsDefaults,
+  maxInstallmentCount,
   normalizeGenerateInstallmentsPayload,
   type GenerateInstallmentsFormFields
 } from "./payment-form";
@@ -80,7 +81,8 @@ export function GenerateInstallmentsModal({
 
   const errors = form.formState.errors;
   const contractAmount = selectedProject?.contractedAmount ? Number(selectedProject.contractedAmount) : 0;
-  const previewAmount = contractAmount > 0 ? contractAmount / Number(selectedInstallments) : 0;
+  const selectedInstallmentCount = Number(selectedInstallments || 1);
+  const previewAmount = contractAmount > 0 ? contractAmount / selectedInstallmentCount : 0;
 
   return (
     <Modal
@@ -122,9 +124,11 @@ export function GenerateInstallmentsModal({
             ))}
           </Select>
           <Select error={errors.installments?.message} label="Parcelamento" {...form.register("installments")}>
-            <option value="1">À vista</option>
-            <option value="2">2x</option>
-            <option value="3">3x</option>
+            {Array.from({ length: maxInstallmentCount }, (_value, index) => index + 1).map((installments) => (
+              <option key={installments} value={installments.toString()}>
+                {installments === 1 ? "À vista" : `${installments}x`}
+              </option>
+            ))}
           </Select>
           <Input error={errors.firstDueDate?.message} label="Primeiro vencimento" type="date" {...form.register("firstDueDate")} />
           <Select error={errors.paymentMethod?.message} label="Forma de pagamento" {...form.register("paymentMethod")}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProjectWhere, getProjectsMeta } from "./projects.service.js";
+import { buildProjectWhere, getProjectsMeta, hasContractedAmountChanged } from "./projects.service.js";
 
 describe("projects service", () => {
   it("retorna metadados de status e tipos de projeto", () => {
@@ -58,5 +58,10 @@ describe("projects service", () => {
         { client: { name: { contains: "vila" } } }
       ]
     });
+  });
+
+  it("detecta alteração real no valor contratado", () => {
+    expect(hasContractedAmountChanged(1200, "1200.00")).toBe(false);
+    expect(hasContractedAmountChanged(1200.01, "1200.00")).toBe(true);
   });
 });

@@ -17,6 +17,9 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 ## Orçamentos E Projetos
 
 - Em Orçamentos, a ação `Aprovar` faz apenas a aprovação comercial.
+- O título do orçamento deve ter no máximo 30 caracteres.
+- O tipo de serviço deve ter no máximo 20 caracteres.
+- A validade do orçamento não pode ser anterior à data em que ele está sendo registrado.
 - A aprovação muda o orçamento para `Aprovado` e registra a data de aprovação.
 - Aprovar um orçamento não cria projeto automaticamente.
 - Para criar o projeto, use a ação `Gerar projeto` em Orçamentos ou `Criar por orçamento aprovado` em Projetos.
@@ -26,6 +29,16 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 - Projeto legado exige data de início original e justificativa.
 - Projeto interno exige descrição ou motivo.
 - Projetos manuais não representam conversão comercial comum.
+
+## Financeiro E Parcelas
+
+- Gere parcelas a partir do projeto com valor contratado, usando a ação `Gerar parcelas`.
+- O backend divide o valor contratado em 1x a 12x e preserva centavos.
+- A soma das parcelas ativas deve ser sempre igual ao valor contratado do projeto.
+- Ao editar uma parcela, o valor fica bloqueado; ajuste apenas vencimento, forma de pagamento, observações e dados operacionais.
+- Para registrar recebimento total ou parcial, use a ação de pagamento da parcela.
+- Alteração de valores entre parcelas deve entrar em um fluxo futuro de replanejamento, para manter rastreabilidade.
+- O valor contratado do projeto não deve ser alterado quando já existem parcelas ativas.
 
 ## Relatórios
 

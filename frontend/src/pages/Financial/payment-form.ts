@@ -12,6 +12,8 @@ import type { Project } from "../../types/project";
 import { parseCurrencyInput, parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 import { toLocalDateInputValue } from "../../utils/date";
 
+export const maxInstallmentCount = 12;
+
 export type PaymentFormFields = {
   projectId: string;
   description: string;
@@ -24,7 +26,7 @@ export type PaymentFormFields = {
 
 export type GenerateInstallmentsFormFields = {
   projectId: string;
-  installments: "1" | "2" | "3";
+  installments: string;
   firstDueDate: string;
   paymentMethod: PaymentMethod | "";
   description: string;
@@ -69,9 +71,14 @@ export const paymentFormSchema = z.object({
   notes: optionalText
 });
 
+export const paymentUpdateFormSchema = paymentFormSchema.omit({
+  amount: true,
+  projectId: true
+});
+
 export const generateInstallmentsFormSchema = z.object({
   projectId: z.string().trim().min(1, "Selecione um projeto."),
-  installments: z.enum(["1", "2", "3"]),
+  installments: z.coerce.number().int().min(1, "Informe pelo menos 1 parcela.").max(maxInstallmentCount),
   firstDueDate: z.string().trim().min(1, "Informe o primeiro vencimento."),
   paymentMethod: optionalMethod,
   description: optionalText,
@@ -84,6 +91,7 @@ export const registerPaymentFormSchema = z.object({
 });
 
 export type PaymentFormPayload = z.infer<typeof paymentFormSchema>;
+export type PaymentUpdateFormPayload = z.infer<typeof paymentUpdateFormSchema>;
 export type GenerateInstallmentsFormPayload = z.infer<typeof generateInstallmentsFormSchema>;
 export type RegisterPaymentFormPayload = z.infer<typeof registerPaymentFormSchema>;
 
@@ -129,16 +137,20 @@ export function normalizePaymentPayload(data: PaymentFormPayload): PaymentWriteI
   };
 }
 
-export function normalizePaymentUpdatePayload(data: PaymentFormPayload): PaymentUpdateInput {
-  const { projectId: _projectId, ...payload } = normalizePaymentPayload(data);
-
-  return payload;
+export function normalizePaymentUpdatePayload(data: PaymentUpdateFormPayload): PaymentUpdateInput {
+  return {
+    description: data.description.trim(),
+    installment: data.installment,
+    dueDate: data.dueDate,
+    paymentMethod: data.paymentMethod,
+    notes: data.notes
+  };
 }
 
 export function normalizeGenerateInstallmentsPayload(data: GenerateInstallmentsFormPayload): GenerateInstallmentsInput {
   return {
     projectId: data.projectId,
-    installments: Number(data.installments),
+    installments: data.installments,
     firstDueDate: data.firstDueDate,
     paymentMethod: data.paymentMethod,
     description: data.description,
