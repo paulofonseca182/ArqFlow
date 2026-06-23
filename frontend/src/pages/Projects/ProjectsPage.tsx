@@ -545,26 +545,39 @@ export function ProjectsPage() {
 
       {projects.length > 0 ? (
         <div className="space-y-3">
-          <Table headers={["Projeto", "Cliente", "Tipo", "Origem", "Status", "Valor", "Progresso", "Entrega", "Ações"]}>
+          <Table
+            headers={["Projeto", "Cliente", "Tipo", "Origem", "Status", "Valor", "Progresso", "Entrega", "Ações"]}
+            tableClassName="table-fixed"
+          >
             {projects.map((project) => (
-              <tr className="min-w-[980px]" key={project.id}>
-                <td className="min-w-60 px-4 py-4 align-top">
-                  <div className="font-medium text-text-primary">{project.name}</div>
-                  <div className="mt-1 text-xs text-text-muted">{project.workAddress ?? "Endereço não informado"}</div>
+              <tr key={project.id}>
+                <td className="w-[20%] px-3 py-4 align-top">
+                  <div className="truncate font-medium text-text-primary" title={project.name}>
+                    {project.name}
+                  </div>
+                  <div className="mt-1 truncate text-xs text-text-muted" title={project.workAddress ?? "Endereço não informado"}>
+                    {project.workAddress ?? "Endereço não informado"}
+                  </div>
                 </td>
-                <td className="min-w-44 px-4 py-4 align-top text-text-secondary">{project.client.name}</td>
-                <td className="px-4 py-4 align-top text-text-secondary">{typeLabelByValue.get(project.type) ?? project.type}</td>
-                <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{originLabelByValue.get(project.origin) ?? project.origin}</td>
-                <td className="px-4 py-4 align-top">
+                <td className="w-[12%] truncate px-3 py-4 align-top text-text-secondary" title={project.client.name}>
+                  {project.client.name}
+                </td>
+                <td className="w-[9%] px-3 py-4 align-top text-text-secondary">{typeLabelByValue.get(project.type) ?? project.type}</td>
+                <td className="w-[10%] px-3 py-4 align-top text-text-secondary">
+                  <span className="block break-words">{originLabelByValue.get(project.origin) ?? project.origin}</span>
+                </td>
+                <td className="w-[11%] px-3 py-4 align-top">
                   <Badge tone={getProjectStatusTone(project.status)}>{statusLabelByValue.get(project.status) ?? project.status}</Badge>
                 </td>
-                <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatCurrency(project.contractedAmount)}</td>
-                <td className="min-w-40 px-4 py-4 align-top">
+                <td className="w-[10%] whitespace-nowrap px-3 py-4 align-top text-text-secondary">{formatCurrency(project.contractedAmount)}</td>
+                <td className="w-[13%] px-3 py-4 align-top">
                   <ProgressBar value={project.progress} />
                 </td>
-                <td className="min-w-36 px-4 py-4 align-top text-text-secondary">{formatDate(project.expectedDeliveryDate)}</td>
-                <td className="px-4 py-4 align-top">
-                  <div className="flex max-w-full flex-wrap items-center gap-2">
+                <td className="w-[9%] px-3 py-4 align-top text-text-secondary">
+                  <span className="block break-words">{formatDate(project.expectedDeliveryDate)}</span>
+                </td>
+                <td className="w-[6%] px-3 py-4 align-top">
+                  <div className="flex max-w-full flex-wrap items-center justify-end gap-1">
                     <ActionIconButton ariaLabel={`Editar ${project.name}`} label="Editar" onClick={() => handleOpenEdit(project)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>

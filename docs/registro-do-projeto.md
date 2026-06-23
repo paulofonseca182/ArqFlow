@@ -2274,6 +2274,16 @@ Decisão de produto:
 - quando necessário, deve existir um fluxo próprio de replanejamento de parcelas;
 - esse fluxo futuro deve salvar todas as parcelas juntas e só concluir se a soma ativa fechar exatamente com o valor contratado.
 
+## Ajuste UI - Projetos Sem Rolagem Horizontal
+
+Implementado:
+
+- removidas larguras mínimas que forçavam a tabela de Projetos a ultrapassar o card;
+- listagem de Projetos passou a usar tabela fixa apenas nessa tela;
+- nomes longos de projeto, cliente e endereço usam truncamento com `title`;
+- origem, entrega e ações quebram dentro dos limites da coluna;
+- objetivo visual: manter toda a listagem aparente na página sem barra de rolagem horizontal.
+
 ## Como retomar se algo der errado
 
 1. Ler `AGENTS.md`.

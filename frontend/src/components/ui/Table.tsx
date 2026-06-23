@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
+import { clsx } from "clsx";
 
 type TableProps = {
   headers: string[];
   children: ReactNode;
+  tableClassName?: string;
 };
 
-export function Table({ headers, children }: TableProps) {
+export function Table({ headers, children, tableClassName }: TableProps) {
   return (
     <div className="overflow-x-auto rounded-ui border border-surface-600 shadow-subtle">
-      <table className="w-full border-collapse text-left text-sm">
+      <table className={clsx("w-full border-collapse text-left text-sm", tableClassName)}>
         <thead className="bg-surface-elevated text-text-secondary">
           <tr>
             {headers.map((header) => (
