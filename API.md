@@ -156,7 +156,7 @@ type ApiError = {
   - No fluxo do MVP, a interface prioriza `POST /financial/installments`; criação individual fica como contrato técnico controlado.
 - `PATCH /financial/payments/:id`
   - Atualiza dados operacionais da parcela.
-  - Não aceita alteração de `amount`; valor só poderá mudar em fluxo futuro de replanejamento.
+  - Não aceita alteração de `amount`; valor pertence ao plano financeiro do projeto.
 - `PATCH /financial/payments/:id/pay`
   - Registra pagamento total ou parcial.
 - `PATCH /financial/payments/:id/cancel`

@@ -6,6 +6,7 @@ import {
   paymentMethods,
   paymentStatusLabels,
   paymentStatuses,
+  visitTypeLabels,
   type PaymentStatus
 } from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
@@ -23,6 +24,7 @@ type PaymentFinancialSnapshot = {
   amount: { toString(): string } | number | string;
   paidAmount: { toString(): string } | number | string;
   dueDate: Date;
+  source?: string | null;
   status: string;
 };
 
@@ -33,10 +35,28 @@ type ProjectFinancialSnapshot = {
 
 type PrismaClientLike = Prisma.TransactionClient | typeof prisma;
 
+type VisitPaymentSnapshot = {
+  amount: { toString(): string } | number | string | null | undefined;
+  clientId: string;
+  date: Date;
+  id: string;
+  projectId: string | null | undefined;
+  status: string;
+  type: string;
+};
+
+type PaymentListSortSnapshot = {
+  createdAt: Date;
+  dueDate: Date;
+  status: string;
+};
+
 const paymentSelect = {
   id: true,
   projectId: true,
   clientId: true,
+  visitId: true,
+  source: true,
   description: true,
   amount: true,
   paidAmount: true,
@@ -74,6 +94,9 @@ const projectFinancialSelect = {
   name: true,
   contractedAmount: true,
   payments: {
+    where: {
+      source: "PROJECT"
+    },
     select: {
       amount: true,
       paidAmount: true,
@@ -101,20 +124,21 @@ export function getFinancialMeta() {
 export async function listPayments(query: ListPaymentsQuery) {
   const { page, pageSize } = query;
   const where = buildPaymentWhere(query);
+  const today = new Date();
 
   const [payments, total] = await prisma.$transaction([
     prisma.payment.findMany({
       where,
       select: paymentSelect,
-      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }]
     }),
     prisma.payment.count({ where })
   ]);
+  const start = (page - 1) * pageSize;
+  const paginatedPayments = [...payments].sort((first, second) => comparePaymentsForFinancialList(first, second, today)).slice(start, start + pageSize);
 
   return {
-    data: payments.map(mapPayment),
+    data: paginatedPayments.map(mapPayment),
     meta: getPaginationMeta(page, pageSize, total)
   };
 }
@@ -226,6 +250,7 @@ export async function createPayment(input: CreatePaymentInput) {
       data: {
         projectId: project.id,
         clientId: project.clientId,
+        source: "PROJECT",
         description: input.description,
         amount: input.amount,
         installment: input.installment,
@@ -255,12 +280,22 @@ export async function updatePayment(id: string, input: UpdatePaymentInput) {
       select: {
         id: true,
         projectId: true,
+        visitId: true,
+        source: true,
         status: true
       }
     });
 
     if (!currentPayment) {
       throw new AppError("PAYMENT_NOT_FOUND", "Parcela não encontrada.", 404);
+    }
+
+    if (currentPayment.visitId || currentPayment.source === "VISIT") {
+      throw new AppError(
+        "VISIT_PAYMENT_UPDATE_BLOCKED",
+        "Lançamento gerado por visita técnica deve ser editado na própria visita.",
+        409
+      );
     }
 
     if (currentPayment.status === "CANCELLED") {
@@ -335,12 +370,22 @@ export async function cancelPayment(id: string) {
       select: {
         id: true,
         projectId: true,
+        visitId: true,
+        source: true,
         status: true
       }
     });
 
     if (!payment) {
       throw new AppError("PAYMENT_NOT_FOUND", "Parcela não encontrada.", 404);
+    }
+
+    if (payment.visitId || payment.source === "VISIT") {
+      throw new AppError(
+        "VISIT_PAYMENT_CANCEL_BLOCKED",
+        "Lançamento gerado por visita técnica deve ser cancelado pela própria visita.",
+        409
+      );
     }
 
     if (payment.status === "PAID") {
@@ -362,6 +407,103 @@ export async function cancelPayment(id: string) {
   });
 }
 
+export function assertChargedVisitHasProject(visit: Pick<VisitPaymentSnapshot, "amount" | "projectId">) {
+  if (toNumber(visit.amount) > 0 && !visit.projectId) {
+    throw new AppError(
+      "VISIT_PAYMENT_PROJECT_REQUIRED",
+      "Visita técnica com valor deve estar vinculada a um projeto para gerar lançamento financeiro.",
+      422
+    );
+  }
+}
+
+export async function syncVisitPaymentFromVisit(client: PrismaClientLike, visit: VisitPaymentSnapshot) {
+  const amount = toNumber(visit.amount);
+  assertChargedVisitHasProject(visit);
+
+  const currentPayment = await client.payment.findUnique({
+    where: { visitId: visit.id },
+    select: {
+      amount: true,
+      clientId: true,
+      dueDate: true,
+      id: true,
+      paidAmount: true,
+      projectId: true,
+      status: true
+    }
+  });
+
+  if (amount <= 0 || visit.status === "CANCELLED") {
+    if (!currentPayment) {
+      return null;
+    }
+
+    assertVisitPaymentCanBeChanged(currentPayment, visit);
+
+    return client.payment.update({
+      where: { id: currentPayment.id },
+      data: { status: "CANCELLED" },
+      select: paymentSelect
+    });
+  }
+
+  if (!visit.projectId) {
+    throw new AppError(
+      "VISIT_PAYMENT_PROJECT_REQUIRED",
+      "Visita técnica com valor deve estar vinculada a um projeto para gerar lançamento financeiro.",
+      422
+    );
+  }
+
+  if (!currentPayment) {
+    return client.payment.create({
+      data: {
+        amount,
+        clientId: visit.clientId,
+        description: buildVisitPaymentDescription(visit),
+        dueDate: visit.date,
+        projectId: visit.projectId,
+        source: "VISIT",
+        status: "RECEIVABLE",
+        visitId: visit.id
+      },
+      select: paymentSelect
+    });
+  }
+
+  assertVisitPaymentCanBeChanged(currentPayment, visit);
+
+  return client.payment.update({
+    where: { id: currentPayment.id },
+    data: {
+      amount,
+      clientId: visit.clientId,
+      description: buildVisitPaymentDescription(visit),
+      dueDate: visit.date,
+      projectId: visit.projectId,
+      source: "VISIT",
+      status: currentPayment.status === "CANCELLED" ? "RECEIVABLE" : currentPayment.status
+    },
+    select: paymentSelect
+  });
+}
+
+export async function assertVisitCanBeDeletedFromFinancial(client: PrismaClientLike, visitId: string) {
+  const payment = await client.payment.findUnique({
+    where: { visitId },
+    select: { id: true }
+  });
+
+  if (payment) {
+    throw new AppError(
+      "VISIT_PAYMENT_DELETE_BLOCKED",
+      "Visita técnica com lançamento financeiro não pode ser excluída. Cancele a visita para preservar o histórico financeiro.",
+      409
+    );
+  }
+}
+
 export async function generateProjectInstallments(input: GenerateInstallmentsInput) {
   return prisma.$transaction(async (transaction) => {
     const project = await transaction.project.findUnique({
@@ -373,6 +515,7 @@ export async function generateProjectInstallments(input: GenerateInstallmentsInp
         contractedAmount: true,
         payments: {
           where: {
+            source: "PROJECT",
             status: {
               not: "CANCELLED"
             }
@@ -406,6 +549,7 @@ export async function generateProjectInstallments(input: GenerateInstallmentsInp
         data: {
           projectId: project.id,
           clientId: project.clientId,
+          source: "PROJECT",
           description: input.description ?? `${project.name} - parcela ${index + 1}/${input.installments}`,
           amount,
           installment: index + 1,
@@ -486,6 +630,35 @@ export function getEffectivePaymentStatus(payment: { dueDate: Date; status: stri
   return payment.status as PaymentStatus;
 }
 
+export function comparePaymentsForFinancialList(first: PaymentListSortSnapshot, second: PaymentListSortSnapshot, today = new Date()) {
+  const firstStatusOrder = getFinancialListStatusOrder(getEffectivePaymentStatus(first, today));
+  const secondStatusOrder = getFinancialListStatusOrder(getEffectivePaymentStatus(second, today));
+
+  if (firstStatusOrder !== secondStatusOrder) {
+    return firstStatusOrder - secondStatusOrder;
+  }
+
+  const dueDateDifference = first.dueDate.getTime() - second.dueDate.getTime();
+
+  if (dueDateDifference !== 0) {
+    return dueDateDifference;
+  }
+
+  return second.createdAt.getTime() - first.createdAt.getTime();
+}
+
+function getFinancialListStatusOrder(status: PaymentStatus) {
+  const order: Record<PaymentStatus, number> = {
+    OVERDUE: 0,
+    RECEIVABLE: 1,
+    PARTIALLY_PAID: 2,
+    PAID: 3,
+    CANCELLED: 4
+  };
+
+  return order[status] ?? 5;
+}
+
 export function splitAmountIntoInstallments(totalAmount: number, installments: number) {
   assertPositiveAmount(totalAmount, "valor contratado");
 
@@ -546,7 +719,10 @@ export function buildProjectFinancialSummary(project: ProjectFinancialSnapshot, 
     const remainingAmount = roundMoney(Math.max(amount - paidAmount, 0));
     const effectiveStatus = getEffectivePaymentStatus(payment, today);
 
-    scheduledAmount += amount;
+    if (payment.source !== "VISIT") {
+      scheduledAmount += amount;
+    }
+
     receivedAmount += paidAmount;
 
     if (payment.status !== "PAID") {
@@ -611,6 +787,53 @@ export function assertPaymentScheduleMatchesContract({
   }
 }
 
+function assertVisitPaymentCanBeChanged(
+  payment: {
+    amount: { toString(): string } | number | string;
+    clientId: string;
+    dueDate: Date;
+    paidAmount: { toString(): string } | number | string;
+    projectId: string;
+    status: string;
+  },
+  visit: VisitPaymentSnapshot
+) {
+  const isSettled = toNumber(payment.paidAmount) > 0 || ["PAID", "PARTIALLY_PAID"].includes(payment.status);
+
+  if (!isSettled) {
+    return;
+  }
+
+  const hasFinancialChange =
+    toNumber(payment.amount) !== toNumber(visit.amount) ||
+    payment.clientId !== visit.clientId ||
+    payment.projectId !== visit.projectId ||
+    startOfDay(payment.dueDate).getTime() !== startOfDay(visit.date).getTime() ||
+    visit.status === "CANCELLED";
+
+  if (hasFinancialChange) {
+    throw new AppError(
+      "VISIT_PAYMENT_SETTLED_CHANGE_BLOCKED",
+      "Visita técnica com pagamento registrado não pode alterar valor, data, projeto, cliente ou ser cancelada sem fluxo de estorno.",
+      409
+    );
+  }
+}
+
+export function buildVisitPaymentDescription(visit: Pick<VisitPaymentSnapshot, "date" | "type">) {
+  const typeLabel = visitTypeLabels[visit.type as keyof typeof visitTypeLabels] ?? "Visita técnica";
+
+  return `${typeLabel} - ${formatDateOnlyPtBr(visit.date)}`;
+}
+
+function formatDateOnlyPtBr(date: Date) {
+  const day = `${date.getUTCDate()}`.padStart(2, "0");
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const year = date.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
 async function getProjectForPayment(projectId: string, client: PrismaClientLike) {
   const project = await client.project.findUnique({
     where: { id: projectId },
@@ -645,6 +868,8 @@ function mapPayment(payment: PaymentRecord) {
     id: payment.id,
     projectId: payment.projectId,
     clientId: payment.clientId,
+    visitId: payment.visitId,
+    source: payment.source,
     description: payment.description,
     amount: payment.amount.toString(),
     paidAmount: payment.paidAmount.toString(),

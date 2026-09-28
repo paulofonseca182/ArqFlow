@@ -39,6 +39,61 @@ export type Client = {
   _count?: ClientRelationCounts;
 };
 
+export type ClientProjectRelation = {
+  id: string;
+  name: string;
+  status: string;
+  type: string;
+  expectedDeliveryDate: string | null;
+  _count: {
+    budgets: number;
+    payments: number;
+    tasks: number;
+    visits: number;
+  };
+};
+
+export type ClientBudgetRelation = {
+  id: string;
+  title: string;
+  finalAmount: string;
+  status: string;
+  createdAt: string;
+};
+
+export type ClientPaymentRelation = {
+  id: string;
+  amount: string;
+  dueDate: string;
+  status: string;
+  description: string;
+  source: string;
+  project: {
+    id: string;
+    name: string;
+  };
+};
+
+export type ClientVisitRelation = {
+  id: string;
+  type: string;
+  status: string;
+  date: string;
+  time: string | null;
+  amount: string | null;
+  project: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+export type ClientDetail = Client & {
+  projects: ClientProjectRelation[];
+  budgets: ClientBudgetRelation[];
+  payments: ClientPaymentRelation[];
+  visits: ClientVisitRelation[];
+};
+
 export type ClientWriteInput = {
   name: string;
   status: ClientStatus;

@@ -8,7 +8,6 @@ import type {
   PaymentWriteInput,
   RegisterPaymentInput
 } from "../../types/financial";
-import type { Project } from "../../types/project";
 import { parseCurrencyInput, parseOptionalCurrencyInput, toCurrencyInputValue } from "../../utils/currency";
 import { toLocalDateInputValue } from "../../utils/date";
 
@@ -107,9 +106,9 @@ export function getPaymentFormDefaults(payment?: Payment | null): PaymentFormFie
   };
 }
 
-export function getGenerateInstallmentsDefaults(project?: Project | null): GenerateInstallmentsFormFields {
+export function getGenerateInstallmentsDefaults(): GenerateInstallmentsFormFields {
   return {
-    projectId: project?.id ?? "",
+    projectId: "",
     installments: "1",
     firstDueDate: "",
     paymentMethod: "",

@@ -3,6 +3,11 @@ import { prisma } from "../../database/prisma.js";
 import { visitStatusLabels, visitStatuses, visitTypeLabels, visitTypes } from "../../shared/domain.js";
 import { AppError } from "../../shared/errors.js";
 import { getPaginationMeta } from "../../shared/pagination.js";
+import {
+  assertChargedVisitHasProject,
+  assertVisitCanBeDeletedFromFinancial,
+  syncVisitPaymentFromVisit
+} from "../financial/financial.service.js";
 import type { CreateVisitInput, ListVisitsQuery, UpdateVisitInput } from "./visits.schema.js";
 
 const visitSelect = {
@@ -38,6 +43,7 @@ const visitSelect = {
 } satisfies Prisma.VisitSelect;
 
 type VisitRecord = Prisma.VisitGetPayload<{ select: typeof visitSelect }>;
+type PrismaClientLike = Prisma.TransactionClient | typeof prisma;
 
 export function getVisitsMeta() {
   return {
@@ -87,21 +93,34 @@ export async function getVisitById(id: string) {
 }
 
 export async function createVisit(input: CreateVisitInput) {
-  await ensureVisitRelations(input.clientId, input.projectId ?? null);
+  assertChargedVisitHasProject({
+    amount: input.amount,
+    projectId: input.projectId ?? null
+  });
 
-  const visit = await prisma.visit.create({
-    data: input,
-    select: visitSelect
+  const visit = await prisma.$transaction(async (transaction) => {
+    await ensureVisitRelations(input.clientId, input.projectId ?? null, transaction);
+
+    const createdVisit = await transaction.visit.create({
+      data: input,
+      select: visitSelect
+    });
+
+    await syncVisitPaymentFromVisit(transaction, createdVisit);
+
+    return createdVisit;
   });
 
   return mapVisit(visit);
 }
 
 export async function updateVisit(id: string, input: UpdateVisitInput) {
-  const currentVisit = await prisma.visit.findUnique({
+  const visit = await prisma.$transaction(async (transaction) => {
+  const currentVisit = await transaction.visit.findUnique({
     where: { id },
     select: {
       id: true,
+      amount: true,
       clientId: true,
       projectId: true
     }
@@ -111,28 +130,40 @@ export async function updateVisit(id: string, input: UpdateVisitInput) {
     throw new AppError("VISIT_NOT_FOUND", "Visita técnica não encontrada.", 404);
   }
 
+  const nextAmount = "amount" in input ? input.amount : currentVisit.amount;
   const nextClientId = input.clientId ?? currentVisit.clientId;
   const nextProjectId = "projectId" in input ? input.projectId ?? null : currentVisit.projectId;
 
-  await ensureVisitRelations(nextClientId, nextProjectId);
+  assertChargedVisitHasProject({
+    amount: nextAmount,
+    projectId: nextProjectId
+  });
 
-  const visit = await prisma.visit.update({
+  await ensureVisitRelations(nextClientId, nextProjectId, transaction);
+
+  const updatedVisit = await transaction.visit.update({
     where: { id },
     data: input,
     select: visitSelect
+  });
+
+  await syncVisitPaymentFromVisit(transaction, updatedVisit);
+
+  return updatedVisit;
   });
 
   return mapVisit(visit);
 }
 
 export async function completeVisit(id: string) {
-  const visit = await getVisitStatusSnapshot(id);
+  const updatedVisit = await prisma.$transaction(async (transaction) => {
+    const visit = await getVisitStatusSnapshot(id, transaction);
 
   if (visit.status === "CANCELLED") {
     throw new AppError("VISIT_CANCELLED_COMPLETE_BLOCKED", "Visita cancelada não pode ser concluída.", 409);
   }
 
-  const updatedVisit = await prisma.visit.update({
+  const completedVisit = await transaction.visit.update({
     where: { id },
     data: {
       status: "COMPLETED"
@@ -140,13 +171,19 @@ export async function completeVisit(id: string) {
     select: visitSelect
   });
 
+  await syncVisitPaymentFromVisit(transaction, completedVisit);
+
+  return completedVisit;
+  });
+
   return mapVisit(updatedVisit);
 }
 
 export async function reopenVisit(id: string) {
-  await getVisitStatusSnapshot(id);
+  const visit = await prisma.$transaction(async (transaction) => {
+    await getVisitStatusSnapshot(id, transaction);
 
-  const visit = await prisma.visit.update({
+    const reopenedVisit = await transaction.visit.update({
     where: { id },
     data: {
       status: "SCHEDULED"
@@ -154,17 +191,23 @@ export async function reopenVisit(id: string) {
     select: visitSelect
   });
 
+    await syncVisitPaymentFromVisit(transaction, reopenedVisit);
+
+    return reopenedVisit;
+  });
+
   return mapVisit(visit);
 }
 
 export async function cancelVisit(id: string) {
-  const visit = await getVisitStatusSnapshot(id);
+  const updatedVisit = await prisma.$transaction(async (transaction) => {
+    const visit = await getVisitStatusSnapshot(id, transaction);
 
   if (visit.status === "COMPLETED") {
     throw new AppError("VISIT_COMPLETED_CANCEL_BLOCKED", "Visita concluída não pode ser cancelada.", 409);
   }
 
-  const updatedVisit = await prisma.visit.update({
+  const cancelledVisit = await transaction.visit.update({
     where: { id },
     data: {
       status: "CANCELLED"
@@ -172,12 +215,29 @@ export async function cancelVisit(id: string) {
     select: visitSelect
   });
 
+  await syncVisitPaymentFromVisit(transaction, cancelledVisit);
+
+  return cancelledVisit;
+  });
+
   return mapVisit(updatedVisit);
 }
 
 export async function deleteVisit(id: string) {
-  await getVisitStatusSnapshot(id);
-  await prisma.visit.delete({ where: { id } });
+  await prisma.$transaction(async (transaction) => {
+    const visit = await getVisitStatusSnapshot(id, transaction);
+
+    if (toNumber(visit.amount) > 0) {
+      throw new AppError(
+        "VISIT_PAYMENT_DELETE_BLOCKED",
+        "Visita técnica com valor não pode ser excluída. Cancele a visita para preservar o histórico financeiro.",
+        409
+      );
+    }
+
+    await assertVisitCanBeDeletedFromFinancial(transaction, id);
+    await transaction.visit.delete({ where: { id } });
+  });
 
   return { deleted: true };
 }
@@ -284,8 +344,8 @@ function mapVisit(visit: VisitRecord) {
   };
 }
 
-async function ensureVisitRelations(clientId: string, projectId?: string | null) {
-  const client = await prisma.client.findUnique({
+async function ensureVisitRelations(clientId: string, projectId?: string | null, db: PrismaClientLike = prisma) {
+  const client = await db.client.findUnique({
     where: { id: clientId },
     select: { id: true }
   });
@@ -298,7 +358,7 @@ async function ensureVisitRelations(clientId: string, projectId?: string | null)
     return;
   }
 
-  const project = await prisma.project.findUnique({
+  const project = await db.project.findUnique({
     where: { id: projectId },
     select: {
       id: true,
@@ -313,11 +373,12 @@ async function ensureVisitRelations(clientId: string, projectId?: string | null)
   assertVisitProjectBelongsToClient(project, clientId);
 }
 
-async function getVisitStatusSnapshot(id: string) {
-  const visit = await prisma.visit.findUnique({
+async function getVisitStatusSnapshot(id: string, db: PrismaClientLike = prisma) {
+  const visit = await db.visit.findUnique({
     where: { id },
     select: {
       id: true,
+      amount: true,
       status: true
     }
   });
@@ -341,4 +402,12 @@ function addDays(date: Date, days: number) {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
   return nextDate;
+}
+
+function toNumber(value: { toString(): string } | number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return Number(value.toString());
 }

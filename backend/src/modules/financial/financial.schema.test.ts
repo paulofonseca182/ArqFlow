@@ -74,12 +74,21 @@ describe("financial schema", () => {
     expect(parsed.paidAmount).toBe(800.25);
   });
 
-  it("bloqueia alteraÃ§Ã£o de valor na ediÃ§Ã£o comum de parcela", () => {
+  it("bloqueia alteração de valor na edição comum de parcela", () => {
     const result = updatePaymentSchema.safeParse({
       amount: "900,00",
       dueDate: "2026-06-10"
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("aceita alteracao de numero na edicao comum de parcela", () => {
+    const result = updatePaymentSchema.safeParse({
+      dueDate: "2026-06-10",
+      installment: 2
+    });
+
+    expect(result.success).toBe(true);
   });
 });

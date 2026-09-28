@@ -24,17 +24,27 @@ const optionalTime = z
   .transform((value) => value || undefined)
   .refine((value) => !value || /^([01]\d|2[0-3]):[0-5]\d$/.test(value), "Horário deve estar no formato HH:mm.");
 
-export const visitFormSchema = z.object({
-  clientId: z.string().trim().min(1, "Selecione um cliente."),
-  projectId: optionalProjectId,
-  type: z.enum(visitTypeValues),
-  date: z.string().trim().min(1, "Informe a data."),
-  time: optionalTime,
-  address: optionalText,
-  amount: optionalMoney,
-  status: z.enum(visitStatusValues),
-  notes: optionalText
-});
+export const visitFormSchema = z
+  .object({
+    clientId: z.string().trim().min(1, "Selecione um cliente."),
+    projectId: optionalProjectId,
+    type: z.enum(visitTypeValues),
+    date: z.string().trim().min(1, "Informe a data."),
+    time: optionalTime,
+    address: optionalText,
+    amount: optionalMoney,
+    status: z.enum(visitStatusValues),
+    notes: optionalText
+  })
+  .superRefine((data, context) => {
+    if (data.amount && !data.projectId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Selecione um projeto para visitas com valor.",
+        path: ["projectId"]
+      });
+    }
+  });
 
 export type VisitFormPayload = z.infer<typeof visitFormSchema>;
 

@@ -135,7 +135,7 @@ export function VisitFormModal({
               </option>
             ))}
           </Select>
-          <Select error={errors.projectId?.message} label="Projeto" {...form.register("projectId")}>
+          <Select error={errors.projectId?.message} label="Projeto (obrigatório se houver valor)" {...form.register("projectId")}>
             <option value="">Sem projeto vinculado</option>
             {availableProjects.map((project) => (
               <option key={project.id} value={project.id}>

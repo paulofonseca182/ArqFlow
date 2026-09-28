@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { buildDashboardAlerts, buildProjectDashboard } from "./dashboard.service.js";
+import { buildDashboardAlerts, buildDashboardDateWindows, buildProjectDashboard } from "./dashboard.service.js";
 
 describe("dashboard service", () => {
+  it("monta janela de hoje sem incluir visitas do dia seguinte", () => {
+    const { todayEnd, todayStart } = buildDashboardDateWindows(new Date(2026, 6, 6, 9));
+    const tomorrowVisitDate = new Date("2026-07-07T00:00:00.000Z");
+
+    expect(todayStart).toEqual(new Date("2026-07-06T00:00:00.000Z"));
+    expect(todayEnd).toEqual(new Date("2026-07-06T23:59:59.999Z"));
+    expect(tomorrowVisitDate > todayEnd).toBe(true);
+  });
+
   it("calcula projetos ativos, progresso médio e próximas entregas", () => {
     const dashboard = buildProjectDashboard(
       [

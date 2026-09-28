@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateInstallmentsFormSchema, normalizePaymentUpdatePayload, paymentUpdateFormSchema } from "./payment-form";
+import {
+  generateInstallmentsFormSchema,
+  normalizePaymentUpdatePayload,
+  paymentUpdateFormSchema
+} from "./payment-form";
 
 describe("payment form", () => {
   it("nao envia valor na edicao comum de parcela", () => {
@@ -46,4 +50,5 @@ describe("payment form", () => {
       }).success
     ).toBe(false);
   });
+
 });

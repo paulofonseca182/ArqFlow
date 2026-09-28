@@ -34,8 +34,13 @@ O módulo de Clientes já possui backend e frontend iniciais:
 
 - API REST com listagem, busca, filtro por status, cadastro, edição e exclusão protegida.
 - Tela `/clients` conectada ao backend real.
+- Listagem em cards compactos e responsivos, substituindo a tabela para destacar nome, status, vínculos e ações rápidas.
+- Clientes são listados por criação do mais recente para o mais antigo.
+- Clique no card ou no link Detalhes abre modal com detalhes do cliente.
+- Chip de vínculos abre modal com projetos, orçamentos, financeiro e visitas relacionados.
 - Formulário com React Hook Form e Zod.
 - Validação de nome, e-mail, CPF/CNPJ e telefone ou WhatsApp.
+- Telefone e WhatsApp aceitam padrão brasileiro com DDD (`99 99999-9999` ou `99 9999-9999`) e números internacionais iniciados por `+`.
 - Consulta de impacto antes da exclusão.
 - Estados de carregamento, vazio, erro, sucesso e paginação simples.
 
@@ -103,8 +108,9 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - Geração de parcelas a partir de projeto com `contractedAmount`, usando de 1x a 12x.
 - Cliente da parcela derivado do projeto no backend.
 - RN-F12: a soma das parcelas ativas de um projeto deve ser igual ao valor contratado do projeto.
-- Edição comum de parcela não altera o valor; vencimento, forma de pagamento, observações e dados operacionais continuam editáveis.
-- Mudanças de valor ficam reservadas para um fluxo futuro de replanejamento de parcelas.
+- RN-VF01: visita técnica com valor gera lançamento financeiro vinculado à visita.
+- Cobranças de visita usam `Payment.source = VISIT` e não entram na soma contratual da RN-F12.
+- Edição comum de parcela não altera valor; número, vencimento, forma de pagamento, observações e dados operacionais continuam editáveis.
 - Status atrasado calculado dinamicamente pelo backend.
 - Registro de pagamento total ou parcial via `PATCH /financial/payments/:id/pay`.
 - Data de pagamento preenchida automaticamente quando não informada.
@@ -112,8 +118,9 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - Bloqueio de alteração do valor contratado do projeto quando já existem parcelas ativas.
 - Indicadores financeiros: receita do mês, receita do ano, valor a receber, recebido, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio.
 - Tela `/financial` conectada ao backend real.
-- Formulários com React Hook Form e Zod para geração de parcelas, edição operacional e registro de pagamento.
+- Formulários com React Hook Form e Zod para geração, edição operacional e registro de pagamento.
 - API bloqueia operações que deixem a soma das parcelas ativas diferente do valor contratado.
+- Lançamentos de visita podem receber pagamento no Financeiro, mas valor, data e projeto devem ser alterados pela própria visita.
 
 ## Padrão de Moeda
 
@@ -189,10 +196,12 @@ O módulo de Visitas Técnicas iniciou o controle de agenda externa e atendiment
 
 - API REST em `/visits` com metadados, listagem, busca, filtros, criação, edição, conclusão, reabertura, cancelamento e exclusão.
 - Cliente obrigatório e projeto opcional.
+- Projeto continua opcional para visitas sem cobrança; visitas com valor exigem projeto para alimentar o Financeiro.
 - Validação backend de cliente existente e, quando houver projeto, confirmação de que o projeto pertence ao mesmo cliente.
 - Tipos oficiais: Visita técnica, Levantamento, Vistoria, Reunião com cliente e Outra.
 - Status oficiais: Agendada, Concluída e Cancelada.
 - Data obrigatória, horário opcional no formato `HH:mm`, endereço, valor opcional positivo e observações.
+- Ao criar, editar, cancelar ou reabrir visita cobrada, o backend sincroniza o lançamento financeiro em `$transaction`.
 - Tela `/visits` conectada ao backend real.
 - Formulário com React Hook Form e Zod.
 - Filtros por busca, status, tipo, cliente e projeto.

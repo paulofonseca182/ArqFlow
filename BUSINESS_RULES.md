@@ -40,3 +40,5 @@
 - Ao marcar pagamento como pago, o backend preenche `paidAt`.
 - Data de pagamento nao pode ser futura.
 - Parcelas vencendo nos proximos 7 dias entram no dashboard.
+- RN-F12: parcelas ativas de projeto devem somar exatamente o valor contratado.
+- Edicao comum de parcela nao altera valor da parcela.

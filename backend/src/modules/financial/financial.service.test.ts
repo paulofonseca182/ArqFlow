@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   assertPaymentScheduleMatchesContract,
+  buildVisitPaymentDescription,
+  comparePaymentsForFinancialList,
   buildPaymentWhere,
   buildProjectFinancialSummary,
   getEffectivePaymentStatus,
@@ -38,6 +40,21 @@ describe("financial service", () => {
     expect(getEffectivePaymentStatus({ dueDate: new Date("2026-05-10"), status: "PAID" }, new Date("2026-05-13"))).toBe(
       "PAID"
     );
+  });
+
+  it("ordena parcelas por atrasadas, a receber e pagas", () => {
+    const today = new Date("2026-05-13T12:00:00.000Z");
+    const payments = [
+      { id: "paid", createdAt: new Date("2026-05-01"), dueDate: new Date("2026-05-01"), status: "PAID" },
+      { id: "receivable", createdAt: new Date("2026-05-01"), dueDate: new Date("2026-05-20"), status: "RECEIVABLE" },
+      { id: "overdue", createdAt: new Date("2026-05-01"), dueDate: new Date("2026-05-10"), status: "RECEIVABLE" }
+    ];
+
+    expect(payments.sort((first, second) => comparePaymentsForFinancialList(first, second, today)).map((payment) => payment.id)).toEqual([
+      "overdue",
+      "receivable",
+      "paid"
+    ]);
   });
 
   it("monta filtro de parcelas atrasadas", () => {
@@ -101,7 +118,42 @@ describe("financial service", () => {
     });
   });
 
-  it("detecta diferenÃ§a entre parcelas ativas e valor contratado", () => {
+  it("soma cobrança de visita no financeiro sem entrar na soma contratual", () => {
+    expect(
+      buildProjectFinancialSummary(
+        {
+          contractedAmount: "1000",
+          payments: [
+            { amount: "1000", paidAmount: "0", dueDate: new Date("2026-05-20"), source: "PROJECT", status: "RECEIVABLE" },
+            { amount: "250", paidAmount: "0", dueDate: new Date("2026-05-10"), source: "VISIT", status: "RECEIVABLE" }
+          ]
+        },
+        new Date("2026-05-13")
+      )
+    ).toEqual({
+      contractedAmount: 1000,
+      scheduledAmount: 1000,
+      receivedAmount: 0,
+      pendingAmount: 1250,
+      overdueAmount: 250,
+      contractDifferenceAmount: 0,
+      overContractedAmount: 0,
+      underContractedAmount: 0,
+      hasContractMismatchAlert: false,
+      hasOverContractedAlert: false
+    });
+  });
+
+  it("monta descricao de visita financeira com o dia correto da visita", () => {
+    expect(
+      buildVisitPaymentDescription({
+        date: new Date("2026-07-07T00:00:00.000Z"),
+        type: "TECHNICAL_VISIT"
+      })
+    ).toBe("Visita técnica - 07/07/2026");
+  });
+
+  it("detecta diferença entre parcelas ativas e valor contratado", () => {
     expect(getPaymentScheduleDifference("1000.00", "1000.00")).toBe(0);
     expect(getPaymentScheduleDifference("1000.00", "900.00")).toBe(-100);
     expect(getPaymentScheduleDifference("1000.00", "1200.00")).toBe(200);

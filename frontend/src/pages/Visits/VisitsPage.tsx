@@ -47,6 +47,7 @@ import type { Project } from "../../types/project";
 import type { Visit, VisitOption, VisitStatus, VisitType, VisitWriteInput } from "../../types/visit";
 import { visitStatusValues, visitTypeValues } from "../../types/visit";
 import { formatDateOnly as formatDateOnlyValue } from "../../utils/date";
+import { formatCellphone } from "../../utils/phone";
 import { getDateSearchParam, getEnumSearchParam, getStringSearchParam } from "../../utils/searchParams";
 import { VisitFormModal } from "./VisitFormModal";
 
@@ -459,7 +460,7 @@ export function VisitsPage() {
                   </td>
                   <td className="min-w-48 px-4 py-4 align-top">
                     <div className="text-text-primary">{visit.client.name}</div>
-                    <div className="mt-1 text-xs text-text-muted">{visit.client.whatsapp ?? visit.client.phone ?? visit.client.email ?? "Sem contato"}</div>
+                    <div className="mt-1 text-xs text-text-muted">{formatVisitClientContact(visit.client)}</div>
                   </td>
                   <td className="min-w-48 px-4 py-4 align-top text-text-secondary">{visit.project?.name ?? "Sem projeto vinculado"}</td>
                   <td className="min-w-32 px-4 py-4 align-top text-text-secondary">{formatDateTime(visit.date, visit.time)}</td>
@@ -611,6 +612,18 @@ function getVisitStatusTone(status: VisitStatus) {
   }
 
   return "neutral";
+}
+
+function formatVisitClientContact(client: { email: string | null; phone: string | null; whatsapp: string | null }) {
+  if (client.whatsapp) {
+    return `WhatsApp ${formatCellphone(client.whatsapp)}`;
+  }
+
+  if (client.phone) {
+    return `Tel. ${formatCellphone(client.phone)}`;
+  }
+
+  return client.email ?? "Sem contato";
 }
 
 function formatDateTime(dateValue: string, timeValue?: string | null) {

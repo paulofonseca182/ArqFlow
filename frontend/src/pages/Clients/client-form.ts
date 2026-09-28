@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { clientStatusValues } from "../../types/client";
 import type { Client, ClientWriteInput } from "../../types/client";
+import { formatContactPhone, isValidContactPhone, normalizeContactPhone, onlyDigits } from "../../utils/phone";
 
 export type ClientFormFields = {
   name: string;
@@ -39,10 +40,10 @@ export const clientFormSchema = z
     notes: optionalText
   })
   .superRefine((data, context) => {
-    const phoneDigits = data.phone ? onlyDigits(data.phone) : "";
-    const whatsappDigits = data.whatsapp ? onlyDigits(data.whatsapp) : "";
+    const phoneNormalized = normalizeContactPhone(data.phone);
+    const whatsappNormalized = normalizeContactPhone(data.whatsapp);
 
-    if (!phoneDigits && !whatsappDigits) {
+    if (!phoneNormalized && !whatsappNormalized) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["phone"],
@@ -50,19 +51,19 @@ export const clientFormSchema = z
       });
     }
 
-    if (data.phone && phoneDigits.length < 10) {
+    if (data.phone && !isValidContactPhone(data.phone)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["phone"],
-        message: "Telefone inválido."
+        message: "Informe um telefone com DDD ou internacional iniciado por +."
       });
     }
 
-    if (data.whatsapp && whatsappDigits.length < 10) {
+    if (data.whatsapp && !isValidContactPhone(data.whatsapp)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["whatsapp"],
-        message: "WhatsApp inválido."
+        message: "Informe um WhatsApp com DDD ou internacional iniciado por +."
       });
     }
   });
@@ -73,8 +74,8 @@ export function getClientFormDefaults(client?: Client | null): ClientFormFields 
   return {
     name: client?.name ?? "",
     status: client?.status ?? "NEW_CONTACT",
-    phone: client?.phone ?? "",
-    whatsapp: client?.whatsapp ?? "",
+    phone: formatContactPhone(client?.phone, ""),
+    whatsapp: formatContactPhone(client?.whatsapp, ""),
     email: client?.email ?? "",
     cpfCnpj: client?.cpfCnpj ?? "",
     address: client?.address ?? "",
@@ -89,8 +90,8 @@ export function normalizeClientPayload(data: ClientFormPayload): ClientWriteInpu
   return {
     name: data.name.trim(),
     status: data.status,
-    phone: data.phone ? onlyDigits(data.phone) : undefined,
-    whatsapp: data.whatsapp ? onlyDigits(data.whatsapp) : undefined,
+    phone: normalizeContactPhone(data.phone),
+    whatsapp: normalizeContactPhone(data.whatsapp),
     email: data.email,
     cpfCnpj: data.cpfCnpj ? onlyDigits(data.cpfCnpj) : undefined,
     address: data.address,
@@ -99,10 +100,6 @@ export function normalizeClientPayload(data: ClientFormPayload): ClientWriteInpu
     source: data.source,
     notes: data.notes
   };
-}
-
-export function onlyDigits(value: string) {
-  return value.replace(/\D/g, "");
 }
 
 function isValidCpfCnpj(value: string) {

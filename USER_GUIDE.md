@@ -35,9 +35,8 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 - Gere parcelas a partir do projeto com valor contratado, usando a ação `Gerar parcelas`.
 - O backend divide o valor contratado em 1x a 12x e preserva centavos.
 - A soma das parcelas ativas deve ser sempre igual ao valor contratado do projeto.
-- Ao editar uma parcela, o valor fica bloqueado; ajuste apenas vencimento, forma de pagamento, observações e dados operacionais.
+- Ao editar uma parcela, o valor fica bloqueado; ajuste apenas número, vencimento, forma de pagamento, observações e dados operacionais.
 - Para registrar recebimento total ou parcial, use a ação de pagamento da parcela.
-- Alteração de valores entre parcelas deve entrar em um fluxo futuro de replanejamento, para manter rastreabilidade.
 - O valor contratado do projeto não deve ser alterado quando já existem parcelas ativas.
 
 ## Relatórios

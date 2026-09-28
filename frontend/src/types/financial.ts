@@ -1,8 +1,10 @@
 export const paymentStatusValues = ["RECEIVABLE", "PAID", "PARTIALLY_PAID", "OVERDUE", "CANCELLED"] as const;
 export const paymentMethodValues = ["CASH", "PIX", "BANK_TRANSFER", "CREDIT_CARD", "DEBIT_CARD", "BOLETO", "OTHER"] as const;
+export const paymentSourceValues = ["PROJECT", "VISIT"] as const;
 
 export type PaymentStatus = (typeof paymentStatusValues)[number];
 export type PaymentMethod = (typeof paymentMethodValues)[number];
+export type PaymentSource = (typeof paymentSourceValues)[number];
 
 export type FinancialOption<T extends string> = {
   value: T;
@@ -28,6 +30,8 @@ export type Payment = {
   id: string;
   projectId: string;
   clientId: string;
+  visitId: string | null;
+  source: PaymentSource;
   description: string;
   amount: string;
   paidAmount: string;

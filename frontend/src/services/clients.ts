@@ -1,6 +1,6 @@
 import { api } from "./api";
 import type { ApiSuccess, PaginatedResponse } from "../types/api";
-import type { Client, ClientDeleteImpact, ClientStatus, ClientStatusOption, ClientWriteInput } from "../types/client";
+import type { Client, ClientDeleteImpact, ClientDetail, ClientStatus, ClientStatusOption, ClientWriteInput } from "../types/client";
 
 type ClientsMeta = {
   statuses: ClientStatusOption[];
@@ -28,6 +28,12 @@ export async function listClients(params: ListClientsParams) {
 
 export async function getClientsMeta() {
   const response = await api.get<ApiSuccess<ClientsMeta>>("/clients/meta");
+
+  return response.data.data;
+}
+
+export async function getClientById(id: string) {
+  const response = await api.get<ApiSuccess<ClientDetail>>(`/clients/${id}`);
 
   return response.data.data;
 }

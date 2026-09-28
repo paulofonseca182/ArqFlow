@@ -242,6 +242,11 @@ export function FinancialPage() {
   }
 
   function handleOpenEdit(payment: Payment) {
+    if (payment.source === "VISIT") {
+      setNotice("Lançamentos de visita técnica devem ser editados no módulo de Visitas.");
+      return;
+    }
+
     setSelectedPayment(payment);
     setFormError(null);
     setFormOpen(true);

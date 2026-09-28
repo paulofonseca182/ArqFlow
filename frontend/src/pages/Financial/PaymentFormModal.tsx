@@ -133,7 +133,7 @@ export function PaymentFormModal({
               <div className="flex h-10 items-center rounded-ui border border-surface-500 bg-surface-950/40 px-3 text-sm text-text-muted">
                 {formatCurrency(payment?.amount ?? "0")}
               </div>
-              <p className="text-xs text-text-muted">Alteração de valor somente por replanejamento de parcelas.</p>
+              <p className="text-xs text-text-muted">Alteração de valor não é permitida na edição comum.</p>
             </div>
           )}
           <Input error={errors.installment?.message} label="Número da parcela" placeholder="1" {...form.register("installment")} />

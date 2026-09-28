@@ -7,6 +7,7 @@ import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import type { Client, ClientStatusOption, ClientWriteInput } from "../../types/client";
+import { maskContactPhoneInput } from "../../utils/phone";
 import { clientFormSchema, getClientFormDefaults, normalizeClientPayload } from "./client-form";
 import type { ClientFormFields } from "./client-form";
 
@@ -71,6 +72,10 @@ export function ClientFormModal({
 
   const errors = form.formState.errors;
   const title = mode === "create" ? "Novo cliente" : "Editar cliente";
+  const phoneField = form.register("phone");
+  const whatsappField = form.register("whatsapp");
+  const phoneValue = form.watch("phone");
+  const whatsappValue = form.watch("whatsapp");
 
   return (
     <Modal
@@ -112,8 +117,30 @@ export function ClientFormModal({
               </option>
             ))}
           </Select>
-          <Input error={errors.phone?.message} label="Telefone" placeholder="(00) 0000-0000" {...form.register("phone")} />
-          <Input error={errors.whatsapp?.message} label="WhatsApp" placeholder="(00) 00000-0000" {...form.register("whatsapp")} />
+          <Input
+            error={errors.phone?.message}
+            inputMode="tel"
+            label="Telefone"
+            maxLength={18}
+            placeholder="99 99999-9999 ou +13055550199"
+            {...phoneField}
+            onChange={(event) => {
+              form.setValue("phone", maskContactPhoneInput(event.target.value), { shouldDirty: true, shouldTouch: true });
+            }}
+            value={phoneValue}
+          />
+          <Input
+            error={errors.whatsapp?.message}
+            inputMode="tel"
+            label="WhatsApp"
+            maxLength={18}
+            placeholder="99 99999-9999 ou +13055550199"
+            {...whatsappField}
+            onChange={(event) => {
+              form.setValue("whatsapp", maskContactPhoneInput(event.target.value), { shouldDirty: true, shouldTouch: true });
+            }}
+            value={whatsappValue}
+          />
           <Input error={errors.email?.message} label="E-mail" placeholder="cliente@email.com" type="email" {...form.register("email")} />
           <Input error={errors.cpfCnpj?.message} label="CPF/CNPJ" placeholder="Somente se houver" {...form.register("cpfCnpj")} />
           <Input error={errors.city?.message} label="Cidade" placeholder="Cidade" {...form.register("city")} />

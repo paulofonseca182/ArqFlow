@@ -30,6 +30,7 @@ export type DashboardProjectSnapshot = {
     amount: { toString(): string } | number | string;
     paidAmount: { toString(): string } | number | string;
     dueDate: Date;
+    source?: string | null;
     status: string;
   }>;
 };
@@ -64,6 +65,7 @@ const dashboardProjectSelect = {
       amount: true,
       paidAmount: true,
       dueDate: true,
+      source: true,
       status: true
     }
   }
@@ -77,6 +79,7 @@ const dashboardPaymentDetailSelect = {
   amount: true,
   paidAmount: true,
   dueDate: true,
+  source: true,
   status: true,
   clientId: true,
   projectId: true,
@@ -145,8 +148,8 @@ type DashboardVisitDetailRecord = Prisma.VisitGetPayload<{ select: typeof dashbo
 
 export async function getDashboardSummary() {
   const financial = await getFinancialSummary();
-  const today = startOfDay(new Date());
-  const sevenDaysFromToday = addDays(today, 7);
+  const dateWindows = buildDashboardDateWindows();
+  const { sevenDaysEnd, sevenDaysStart, todayEnd, todayStart } = dateWindows;
   const [
     clientsTotal,
     projects,
@@ -170,35 +173,35 @@ export async function getDashboardSummary() {
     }),
     prisma.task.count(),
     prisma.task.count({ where: { status: { in: ["PENDING", "IN_PROGRESS"] } } }),
-    prisma.task.count({ where: { dueDate: { lt: today }, status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
+    prisma.task.count({ where: { dueDate: { lt: todayStart }, status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
     prisma.task.count({
       where: {
         dueDate: {
-          gte: today,
-          lte: sevenDaysFromToday
+          gte: sevenDaysStart,
+          lte: sevenDaysEnd
         },
         status: { notIn: ["COMPLETED", "CANCELLED"] }
       }
     }),
     prisma.visit.count({ where: { status: "SCHEDULED" } }),
-    prisma.visit.count({ where: { date: { gte: today, lte: endOfDay(today) }, status: "SCHEDULED" } }),
-    prisma.visit.count({ where: { date: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: "SCHEDULED" } }),
+    prisma.visit.count({ where: { date: { gte: todayStart, lte: todayEnd }, status: "SCHEDULED" } }),
+    prisma.visit.count({ where: { date: { gte: sevenDaysStart, lte: sevenDaysEnd }, status: "SCHEDULED" } }),
     prisma.budget.count({ where: { status: { in: ["DRAFT", "SENT", "NEGOTIATION"] } } }),
     prisma.payment.findMany({
-      where: { dueDate: { lt: today }, status: { notIn: ["PAID", "CANCELLED"] } },
+      where: { dueDate: { lt: todayStart }, status: { notIn: ["PAID", "CANCELLED"] } },
       select: dashboardPaymentDetailSelect,
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       take: 5
     }),
     prisma.payment.findMany({
-      where: { dueDate: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: { notIn: ["PAID", "CANCELLED"] } },
+      where: { dueDate: { gte: sevenDaysStart, lte: sevenDaysEnd }, status: { notIn: ["PAID", "CANCELLED"] } },
       select: dashboardPaymentDetailSelect,
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       take: 5
     }),
     prisma.task.findMany({
       where: {
-        OR: [{ priority: "URGENT" }, { dueDate: { lt: today } }],
+        OR: [{ priority: "URGENT" }, { dueDate: { lt: todayStart } }],
         status: { notIn: ["COMPLETED", "CANCELLED"] }
       },
       select: dashboardTaskDetailSelect,
@@ -206,13 +209,13 @@ export async function getDashboardSummary() {
       take: 5
     }),
     prisma.visit.findMany({
-      where: { date: { gte: today, lte: endOfDay(sevenDaysFromToday) }, status: "SCHEDULED" },
+      where: { date: { gte: sevenDaysStart, lte: sevenDaysEnd }, status: "SCHEDULED" },
       select: dashboardVisitDetailSelect,
       orderBy: [{ date: "asc" }, { updatedAt: "desc" }],
       take: 5
     })
   ]);
-  const projectSummary = buildProjectDashboard(projects);
+  const projectSummary = buildProjectDashboard(projects, todayStart);
   const operations = {
     tasksTotal,
     openTasks,
@@ -227,7 +230,7 @@ export async function getDashboardSummary() {
     deliverySoonCount: projectSummary.nextDeliveries.filter((delivery) => {
       const dueDate = new Date(delivery.expectedDeliveryDate);
 
-      return dueDate <= addDays(startOfDay(new Date()), 14);
+      return startOfUtcDateOnly(dueDate) <= addUtcDateOnlyDays(todayStart, 14);
     }).length,
     financial,
     operations,
@@ -248,21 +251,22 @@ export async function getDashboardSummary() {
     operations,
     alerts,
     details: {
-      overduePayments: overduePaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, today)),
-      dueSoonPayments: dueSoonPaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, today)),
-      criticalTasks: criticalTaskDetails.map((task) => mapDashboardTaskDetail(task, today)),
+      overduePayments: overduePaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, todayStart)),
+      dueSoonPayments: dueSoonPaymentDetails.map((payment) => mapDashboardPaymentDetail(payment, todayStart)),
+      criticalTasks: criticalTaskDetails.map((task) => mapDashboardTaskDetail(task, todayStart)),
       upcomingVisits: upcomingVisitDetails.map(mapDashboardVisitDetail)
     }
   };
 }
 
 export function buildProjectDashboard(projects: DashboardProjectSnapshot[], today = new Date()) {
+  const todayStart = startOfUtcDateOnly(today);
   const activeProjects = projects.filter((project) => isActiveProjectStatus(project.status));
   const progresses = activeProjects.map(getProjectProgress);
   const averageProgress =
     progresses.length > 0 ? Math.round(progresses.reduce((total, progress) => total + progress, 0) / progresses.length) : 0;
   const nextDeliveries = activeProjects
-    .filter((project) => project.expectedDeliveryDate && startOfDay(project.expectedDeliveryDate) >= startOfDay(today))
+    .filter((project) => project.expectedDeliveryDate && startOfUtcDateOnly(project.expectedDeliveryDate) >= todayStart)
     .sort((first, second) => Number(first.expectedDeliveryDate) - Number(second.expectedDeliveryDate))
     .slice(0, 5)
     .map((project) => ({
@@ -433,7 +437,8 @@ function mapDashboardPaymentDetail(payment: DashboardPaymentDetailRecord, today:
 }
 
 function mapDashboardTaskDetail(task: DashboardTaskDetailRecord, today: Date) {
-  const criticalReason = task.dueDate && startOfDay(task.dueDate) < startOfDay(today) ? "Atrasada" : "Urgente";
+  const todayStart = startOfUtcDateOnly(today);
+  const criticalReason = task.dueDate && startOfUtcDateOnly(task.dueDate) < todayStart ? "Atrasada" : "Urgente";
 
   return {
     id: task.id,
@@ -489,16 +494,33 @@ function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+export function buildDashboardDateWindows(now = new Date()) {
+  const todayStart = startOfLocalDateAsUtc(now);
+  const sevenDaysStart = todayStart;
+  const sevenDaysEnd = endOfUtcDateOnly(addUtcDateOnlyDays(todayStart, 7));
+
+  return {
+    todayStart,
+    todayEnd: endOfUtcDateOnly(todayStart),
+    sevenDaysStart,
+    sevenDaysEnd
+  };
 }
 
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
+function startOfLocalDateAsUtc(date: Date) {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+}
+
+function startOfUtcDateOnly(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addUtcDateOnlyDays(date: Date, days: number) {
+  const nextDate = startOfUtcDateOnly(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
   return nextDate;
 }
 
-function endOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+function endOfUtcDateOnly(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 }

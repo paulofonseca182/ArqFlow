@@ -140,6 +140,8 @@ model Payment {
   id            String    @id @default(cuid())
   projectId     String
   clientId      String
+  visitId       String?   @unique
+  source        String    @default("PROJECT")
   description   String
   amount        Decimal
   paidAmount    Decimal   @default(0)
@@ -154,9 +156,12 @@ model Payment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  visit   Visit?  @relation(fields: [visitId], references: [id], onDelete: Restrict)
 
   @@index([projectId])
   @@index([clientId])
+  @@index([visitId])
+  @@index([source])
   @@index([status])
   @@index([dueDate])
 }
@@ -197,6 +202,7 @@ model Visit {
 
   client  Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  payment Payment?
 
   @@index([clientId])
   @@index([projectId])

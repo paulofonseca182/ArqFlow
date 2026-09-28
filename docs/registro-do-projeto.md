@@ -597,7 +597,8 @@ Banco:
 - o modelo `Payment` ja existia no Prisma;
 - cada parcela/pagamento exige `projectId` e `clientId`;
 - `Payment -> Project` e `Payment -> Client` usam `onDelete: Restrict`;
-- não foi necessário criar migration nesta fatia;
+- `Payment.visitId` e `Payment.source` vinculam lançamentos de visita técnica ao Financeiro;
+- `Payment -> Visit` usa `onDelete: Restrict`, evitando lançamento órfão;
 - o cliente da parcela e derivado do projeto no backend, evitando divergência enviada pelo frontend.
 
 Backend:
@@ -646,6 +647,9 @@ Implementado no backend:
 - divisão do valor contratado sem perda de centavos;
 - bloqueio de geração quando o projeto ja possui parcelas ativas;
 - RN-F12: soma das parcelas ativas deve ser igual ao valor contratado do projeto;
+- RN-VF01: visita técnica com valor gera lançamento financeiro com `source = VISIT`;
+- lançamentos `source = VISIT` alimentam recebido, a receber, vencido e vencendo, mas não entram na soma contratual da RN-F12;
+- edição e cancelamento diretos de lançamento financeiro originado de visita são bloqueados; alterações devem ocorrer pela visita;
 - bloqueio de operações que deixem parcelas ativas acima ou abaixo do valor contratado;
 - bloqueio de cancelamento quando isso quebrar a soma ativa do projeto;
 - bloqueio de alteração de `contractedAmount` em projeto com parcelas ativas;
@@ -690,7 +694,6 @@ Regras consideradas:
 - pagamento total recebe status `PAID`;
 - parcelas canceladas deixam de alimentar indicadores de recebimento e atraso;
 - geração padrão de parcelas usa o valor contratado do projeto convertido do orçamento;
-- alteração de valor de parcela fica reservada para fluxo futuro de replanejamento;
 - frontend valida para UX, mas backend continua sendo a fonte da verdade.
 
 Ainda falta:
@@ -698,7 +701,6 @@ Ainda falta:
 - ampliar testes de frontend para ações financeiras completas;
 - refinamento visual contínuo após uso real;
 - geração automática opcional de parcelas imediatamente após gerar projeto a partir de orçamento aprovado;
-- fluxo de replanejamento de parcelas para redistribuir valores mantendo soma igual ao contratado;
 - relatório financeiro por projeto.
 
 ## Modulo Dashboard - estado atual
@@ -974,8 +976,9 @@ Banco:
 - `projectId` e opcional;
 - `Visit -> Client` usa `onDelete: Restrict`;
 - `Visit -> Project` usa `onDelete: SetNull`;
+- `Visit -> Payment` existe quando a visita tem valor e gera lançamento financeiro;
 - existem índices por cliente, projeto, status e data;
-- não foi necessário criar migration nesta fatia.
+- a integração financeira exigiu migration para `Payment.visitId` e `Payment.source`.
 
 Backend:
 
@@ -1017,6 +1020,9 @@ Implementado no backend:
 - busca por tipo, endereço, observações, cliente e projeto;
 - filtros por cliente, projeto, tipo, status e período;
 - criação e edição de visita com cliente obrigatório e projeto opcional;
+- criação e edição de visita com valor exigem projeto vinculado;
+- criação, edição, cancelamento e reabertura de visita cobrada sincronizam o lançamento financeiro em `$transaction`;
+- exclusão de visita com valor ou lançamento financeiro vinculado é bloqueada para preservar histórico;
 - validação de cliente existente;
 - validação de projeto existente quando `projectId` e informado;
 - validação de que o projeto pertence ao mesmo cliente da visita;
@@ -1036,6 +1042,7 @@ Implementado no frontend:
 - tabela com visita, cliente, projeto, data/hora, valor, status e ações;
 - badges por status;
 - modal de criação/edição com React Hook Form e Zod;
+- validação frontend exige projeto quando a visita tem valor;
 - select de projeto filtrado pelo cliente selecionado;
 - ações rápidas para concluir, reabrir e cancelar;
 - exclusão com modal de confirmação;
@@ -1046,11 +1053,14 @@ Regras consideradas:
 
 - visita deve ter cliente;
 - projeto e opcional;
+- projeto é obrigatório quando a visita tem valor;
 - projeto vinculado, quando informado, precisa existir;
 - projeto vinculado precisa pertencer ao mesmo cliente da visita;
 - data e obrigatória;
 - horário e opcional, mas deve estar em `HH:mm` quando preenchido;
 - valor e opcional, mas deve ser positivo quando informado;
+- valor de visita gera lançamento financeiro com origem `VISIT`;
+- cobrança de visita não entra na soma contratual das parcelas do projeto;
 - status e tipo devem respeitar o domínio oficial;
 - frontend valida para UX, mas backend continua sendo a fonte da verdade.
 
@@ -1681,8 +1691,14 @@ Regras:
 - soma de parcelas ativas diferente do contratado é bloqueada;
 - visita deve ter cliente obrigatório;
 - visita pode ter projeto opcional;
+- visita com valor deve ter projeto vinculado;
 - projeto de visita, quando informado, deve pertencer ao mesmo cliente;
 - valor de visita deve ser positivo quando informado;
+- visita com valor gera lançamento financeiro vinculado por `Payment.visitId`;
+- lançamento financeiro de visita usa `Payment.source = VISIT`;
+- lançamento de visita alimenta indicadores financeiros gerais, mas não entra na soma contratual da RN-F12;
+- lançamento financeiro de visita deve ser alterado a partir da própria visita;
+- visita com lançamento financeiro não pode ser excluída;
 - visita cancelada não pode ser concluída;
 - visita concluída não pode ser cancelada.
 
@@ -2035,7 +2051,6 @@ Ao evoluir Financeiro, lembrar:
 - geração automática deve continuar usando valor contratado do projeto;
 - soma de parcelas ativas deve fechar exatamente com o valor contratado do projeto;
 - edição comum de parcela não deve alterar `amount`;
-- alteração de valores deve acontecer apenas em fluxo futuro de replanejamento transacional;
 - valor contratado do projeto deve permanecer bloqueado quando houver parcelas ativas;
 - indicadores financeiros devem ser calculados no backend;
 - frontend deve melhorar UX, mas não substituir regras críticas.
@@ -2270,9 +2285,8 @@ Implementado:
 
 Decisão de produto:
 
-- alteração de valores entre parcelas não entra na edição comum;
-- quando necessário, deve existir um fluxo próprio de replanejamento de parcelas;
-- esse fluxo futuro deve salvar todas as parcelas juntas e só concluir se a soma ativa fechar exatamente com o valor contratado.
+- alteração de valores não entra na edição comum;
+- a soma ativa deve fechar exatamente com o valor contratado.
 
 ## Ajuste UI - Projetos Sem Rolagem Horizontal
 
@@ -2283,6 +2297,33 @@ Implementado:
 - nomes longos de projeto, cliente e endereço usam truncamento com `title`;
 - origem, entrega e ações quebram dentro dos limites da coluna;
 - objetivo visual: manter toda a listagem aparente na página sem barra de rolagem horizontal.
+
+## Ajuste UI - Clientes em Cards
+
+Implementado:
+
+- a listagem de Clientes deixou de usar tabela e passou a usar uma grade de cards compactos e responsivos;
+- a listagem de Clientes passou a ser ordenada por criação, do mais recente para o mais antigo;
+- cada card exibe nome, status, chip de vínculos e ações rápidas;
+- WhatsApp, telefone, e-mail, cidade/UF e contadores detalhados ficam concentrados na modal de detalhes;
+- os cards têm altura mínima reduzida e permitem quebra de texto para evitar ocultar informações importantes;
+- clicar no card ou no link Detalhes abre modal com detalhes completos do cliente;
+- clicar no chip de vínculos abre modal específica com projetos, orçamentos, lançamentos financeiros e visitas vinculadas;
+- ações de editar e excluir foram preservadas no topo do card, com tooltip e sem acionar a abertura da modal;
+- `GET /clients/:id` foi ampliado para retornar detalhes dos vínculos sem alterar o schema do banco;
+- busca, filtro, estados vazios, paginação, exclusão protegida e formulário existente foram preservados.
+
+## Ajuste Clientes - Telefone e WhatsApp
+
+Implementado:
+
+- telefone e WhatsApp brasileiros passaram a ser exibidos no padrão `99 99999-9999` ou `99 9999-9999`;
+- o formulário de Clientes aplica máscara progressiva brasileira por padrão e permite números internacionais iniciados por `+`;
+- clientes já cadastrados são formatados na interface a partir dos dígitos existentes;
+- backend normaliza telefone/WhatsApp brasileiros para dígitos e internacionais para `+` seguido de dígitos;
+- backend bloqueia telefone/WhatsApp incompleto, exigindo DDD com 10 ou 11 dígitos no Brasil ou formato internacional válido iniciado por `+`;
+- busca de Clientes aceita telefone digitado com máscara e pesquisa também pelos dígitos armazenados;
+- a tela de Visitas também passou a exibir contato do cliente com telefone/WhatsApp formatado.
 
 ## Como retomar se algo der errado
 

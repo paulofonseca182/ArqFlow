@@ -31,6 +31,10 @@ const clientSelect = {
   updatedAt: true
 } satisfies Prisma.ClientSelect;
 
+export function getClientListOrderBy() {
+  return [{ createdAt: "desc" }, { id: "desc" }] satisfies Prisma.ClientOrderByWithRelationInput[];
+}
+
 export async function listClients(query: ListClientsQuery) {
   const { page, pageSize, search, status } = query;
   const where = buildClientWhere({ search, status });
@@ -49,7 +53,7 @@ export async function listClients(query: ListClientsQuery) {
           }
         }
       },
-      orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+      orderBy: getClientListOrderBy(),
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
@@ -73,9 +77,64 @@ export async function getClientById(id: string) {
           name: true,
           status: true,
           type: true,
-          expectedDeliveryDate: true
+          expectedDeliveryDate: true,
+          _count: {
+            select: {
+              budgets: true,
+              payments: true,
+              tasks: true,
+              visits: true
+            }
+          }
         },
         orderBy: { updatedAt: "desc" }
+      },
+      budgets: {
+        select: {
+          id: true,
+          title: true,
+          finalAmount: true,
+          status: true,
+          createdAt: true
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 12
+      },
+      payments: {
+        select: {
+          id: true,
+          amount: true,
+          dueDate: true,
+          status: true,
+          description: true,
+          source: true,
+          project: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { dueDate: "desc" },
+        take: 12
+      },
+      visits: {
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          date: true,
+          time: true,
+          amount: true,
+          project: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { date: "desc" },
+        take: 12
       },
       _count: {
         select: {
@@ -186,11 +245,15 @@ export function buildClientWhere({ search, status }: Pick<ListClientsQuery, "sea
   }
 
   if (search) {
+    const searchDigits = search.replace(/\D/g, "");
     where.OR = [
       { name: { contains: search } },
       { email: { contains: search } },
       { phone: { contains: search } },
-      { whatsapp: { contains: search } }
+      { whatsapp: { contains: search } },
+      ...(searchDigits && searchDigits !== search
+        ? [{ phone: { contains: searchDigits } }, { whatsapp: { contains: searchDigits } }]
+        : [])
     ];
   }
 

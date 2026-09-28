@@ -67,6 +67,7 @@ type ReportProjectSnapshot = {
     amount: { toString(): string } | number | string;
     paidAmount: { toString(): string } | number | string;
     dueDate: Date;
+    source?: string | null;
     status: string;
   }>;
 };
@@ -96,6 +97,7 @@ type ReportPaymentSnapshot = {
     name: string;
   };
   projectId: string;
+  source?: string | null;
   status: string;
 };
 
@@ -178,6 +180,7 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
               amount: true,
               paidAmount: true,
               dueDate: true,
+              source: true,
               status: true
             }
           }
@@ -200,6 +203,7 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
           paidAt: true,
           project: { select: { id: true, name: true } },
           projectId: true,
+          source: true,
           status: true
         }
       }),

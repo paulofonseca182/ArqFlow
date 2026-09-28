@@ -24,6 +24,45 @@ describe("clients schema", () => {
     expect(result.email).toBeUndefined();
   });
 
+  it("normaliza telefone brasileiro mascarado e bloqueia telefone incompleto", () => {
+    const valid = createClientSchema.parse({
+      name: "Ana Ribeiro",
+      phone: "11 99999-0000"
+    });
+
+    expect(valid.phone).toBe("11999990000");
+
+    const fixedLine = createClientSchema.parse({
+      name: "Ana Ribeiro",
+      phone: "11 3333-0000"
+    });
+
+    expect(fixedLine.phone).toBe("1133330000");
+
+    expect(
+      createClientSchema.safeParse({
+        name: "Ana Ribeiro",
+        phone: "11 999-0000"
+      }).success
+    ).toBe(false);
+  });
+
+  it("normaliza e valida telefone internacional iniciado por +", () => {
+    const result = createClientSchema.parse({
+      name: "Ana Ribeiro",
+      whatsapp: "+1 305 555 0199"
+    });
+
+    expect(result.whatsapp).toBe("+13055550199");
+
+    expect(
+      createClientSchema.safeParse({
+        name: "Ana Ribeiro",
+        whatsapp: "+123"
+      }).success
+    ).toBe(false);
+  });
+
   it("bloqueia e-mail inválido", () => {
     const result = createClientSchema.safeParse({
       name: "Ana Ribeiro",
