@@ -2325,6 +2325,34 @@ Implementado:
 - busca de Clientes aceita telefone digitado com máscara e pesquisa também pelos dígitos armazenados;
 - a tela de Visitas também passou a exibir contato do cliente com telefone/WhatsApp formatado.
 
+## Ajuste Financeiro - Reorganização De Parcelas
+
+Implementado:
+
+- nova rota `PATCH /financial/projects/:projectId/installments`;
+- reorganização de parcelas por projeto usando `$transaction`;
+- possibilidade de alterar quantidade, valores, vencimentos, descrições, número da parcela e forma de pagamento;
+- backend cancela parcelas abertas que forem removidas do novo plano;
+- backend cria novas parcelas abertas quando o plano reorganizado inclui parcelas sem `id`;
+- backend atualiza parcelas abertas existentes;
+- backend valida que a soma das parcelas válidas de origem `PROJECT` continua igual ao `Project.contractedAmount`;
+- parcelas totalmente pagas não podem ser removidas nem alteradas;
+- parcelas parcialmente pagas não podem ser removidas e não podem ficar com valor menor que o valor já recebido;
+- lançamentos de visita técnica continuam fora da soma contratual da RN-F12;
+- frontend adicionou ação `Reorganizar parcelas` na tabela financeira;
+- nova modal mostra valor contratado, valor planejado, diferença e linhas editáveis do plano;
+- linhas pagas ficam bloqueadas na interface;
+- linhas parcialmente pagas exibem o valor já recebido e impedem remoção;
+- modal de base passou a respeitar altura da tela com rolagem interna para comportar até 12 parcelas;
+- documentação atualizada em `README.md`, `API.md`, `USER_GUIDE.md` e `BUSINESS_RULES.md`;
+- testes atualizados para schema e regras financeiras puras.
+
+Decisão de produto:
+
+- edição comum de parcela continua sem alterar valor;
+- alteração de quantidade ou valor deve usar a ação separada de reorganização;
+- o backend continua sendo a fonte da verdade da RN-F12.
+
 ## Como retomar se algo der errado
 
 1. Ler `AGENTS.md`.

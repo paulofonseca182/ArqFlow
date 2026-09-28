@@ -164,6 +164,14 @@ type ApiError = {
 - `POST /financial/installments`
   - Gera parcelas a partir do valor contratado do projeto.
   - Divide o `Project.contractedAmount` em 1x a 12x e valida a soma dentro da transação.
+- `PATCH /financial/projects/:projectId/installments`
+  - Reorganiza o plano financeiro de parcelas do projeto dentro de uma transação.
+  - Permite alterar quantidade, valores, vencimentos, números, descrições e forma de pagamento das parcelas válidas.
+  - A soma das parcelas ativas de origem `PROJECT` precisa continuar igual ao `Project.contractedAmount`.
+  - Parcelas totalmente pagas não podem ser removidas nem alteradas.
+  - Parcelas parcialmente pagas não podem ser removidas e não podem ficar com valor menor que o valor já recebido.
+  - Parcelas abertas removidas do novo plano são canceladas pelo backend.
+  - Lançamentos de visita técnica (`source=VISIT`) não entram nesse replanejamento.
 
 ## Tarefas
 

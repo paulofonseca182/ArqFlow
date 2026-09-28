@@ -42,3 +42,8 @@
 - Parcelas vencendo nos proximos 7 dias entram no dashboard.
 - RN-F12: parcelas ativas de projeto devem somar exatamente o valor contratado.
 - Edicao comum de parcela nao altera valor da parcela.
+- Reorganizacao de parcelas deve ocorrer em acao propria e transacional.
+- Reorganizacao pode alterar quantidade, valores e vencimentos, desde que a soma das parcelas validas feche com o valor contratado do projeto.
+- Parcela paga nao pode ser alterada nem removida na reorganizacao.
+- Parcela parcialmente paga nao pode ser removida e seu novo valor nao pode ser menor que o valor ja recebido.
+- Lancamento financeiro de visita tecnica nao entra na soma contratual da RN-F12.

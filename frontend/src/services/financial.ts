@@ -11,6 +11,8 @@ import type {
   PaymentStatus,
   PaymentUpdateInput,
   PaymentWriteInput,
+  ReorganizeInstallmentsInput,
+  ReorganizeInstallmentsResult,
   RegisterPaymentInput
 } from "../types/financial";
 
@@ -80,6 +82,15 @@ export async function cancelPayment(id: string) {
 
 export async function generateInstallments(payload: GenerateInstallmentsInput) {
   const response = await api.post<ApiSuccess<GenerateInstallmentsResult>>("/financial/installments", payload);
+
+  return response.data.data;
+}
+
+export async function reorganizeInstallments(projectId: string, payload: ReorganizeInstallmentsInput) {
+  const response = await api.patch<ApiSuccess<ReorganizeInstallmentsResult>>(
+    `/financial/projects/${projectId}/installments`,
+    payload
+  );
 
   return response.data.data;
 }

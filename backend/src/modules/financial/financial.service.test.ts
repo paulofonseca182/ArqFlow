@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertInstallmentPlanMatchesContract,
   assertPaymentScheduleMatchesContract,
   buildVisitPaymentDescription,
   comparePaymentsForFinancialList,
@@ -8,6 +9,7 @@ import {
   getEffectivePaymentStatus,
   getFinancialMeta,
   getPaymentScheduleDifference,
+  resolvePartiallyPaidReorganizedStatus,
   resolveRegisteredPaymentData,
   splitAmountIntoInstallments
 } from "./financial.service.js";
@@ -162,5 +164,21 @@ describe("financial service", () => {
       "igual ao valor contratado"
     );
     expect(() => assertPaymentScheduleMatchesContract({ contractedAmount: "1000.00", scheduledAmount: "1000.00" })).not.toThrow();
+  });
+
+  it("valida plano reorganizado contra o valor contratado", () => {
+    expect(() =>
+      assertInstallmentPlanMatchesContract("2533.00", [{ amount: 1266.5 }, { amount: 1266.5 }])
+    ).not.toThrow();
+
+    expect(() =>
+      assertInstallmentPlanMatchesContract("2533.00", [{ amount: 1266.5 }, { amount: 1200 }])
+    ).toThrow("igual ao valor contratado");
+  });
+
+  it("protege o valor ja recebido ao reorganizar parcela parcialmente paga", () => {
+    expect(resolvePartiallyPaidReorganizedStatus(1266.5, 1266.5)).toBe("PAID");
+    expect(resolvePartiallyPaidReorganizedStatus(2533, 1266.5)).toBe("PARTIALLY_PAID");
+    expect(() => resolvePartiallyPaidReorganizedStatus(1000, 1266.5)).toThrow("menor que o valor já recebido");
   });
 });

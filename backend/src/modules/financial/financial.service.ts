@@ -16,6 +16,7 @@ import type {
   CreatePaymentInput,
   GenerateInstallmentsInput,
   ListPaymentsQuery,
+  ReorganizeInstallmentsInput,
   RegisterPaymentInput,
   UpdatePaymentInput
 } from "./financial.schema.js";
@@ -50,6 +51,8 @@ type PaymentListSortSnapshot = {
   dueDate: Date;
   status: string;
 };
+
+type ReorganizedInstallmentSnapshot = ReorganizeInstallmentsInput["installments"][number];
 
 const paymentSelect = {
   id: true,
@@ -575,6 +578,180 @@ export async function generateProjectInstallments(input: GenerateInstallmentsInp
   });
 }
 
+export async function reorganizeProjectInstallments(projectId: string, input: ReorganizeInstallmentsInput) {
+  return prisma.$transaction(async (transaction) => {
+    const project = await transaction.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        clientId: true,
+        contractedAmount: true,
+        payments: {
+          where: {
+            source: "PROJECT",
+            status: {
+              not: "CANCELLED"
+            }
+          },
+          select: {
+            id: true,
+            description: true,
+            amount: true,
+            paidAmount: true,
+            installment: true,
+            dueDate: true,
+            paidAt: true,
+            paymentMethod: true,
+            status: true,
+            notes: true
+          }
+        }
+      }
+    });
+
+    if (!project) {
+      throw new AppError("PROJECT_NOT_FOUND", "Projeto não encontrado.", 404);
+    }
+
+    const contractedAmount = toNumber(project.contractedAmount);
+
+    if (contractedAmount <= 0) {
+      throw new AppError("PROJECT_CONTRACTED_AMOUNT_REQUIRED", "Projeto precisa ter valor contratado para reorganizar parcelas.", 422);
+    }
+
+    assertInstallmentPlanMatchesContract(contractedAmount, input.installments);
+
+    const currentPaymentsById = new Map(project.payments.map((payment) => [payment.id, payment]));
+    const requestedExistingIds = new Set(input.installments.map((installment) => installment.id).filter(Boolean));
+
+    for (const installment of input.installments) {
+      if (installment.id && !currentPaymentsById.has(installment.id)) {
+        throw new AppError(
+          "PAYMENT_REORGANIZE_INVALID_INSTALLMENT",
+          "Uma das parcelas informadas não pertence ao projeto ou não está ativa.",
+          422
+        );
+      }
+    }
+
+    for (const payment of project.payments) {
+      if (isPaymentFullyPaid(payment)) {
+        const installment = input.installments.find((item) => item.id === payment.id);
+
+        if (!installment) {
+          throw new AppError(
+            "PAYMENT_PAID_REORGANIZE_BLOCKED",
+            "Parcela paga não pode ser removida do plano financeiro.",
+            409
+          );
+        }
+
+        assertFullyPaidInstallmentUnchanged(payment, installment);
+        continue;
+      }
+
+      if (isPaymentPartiallyPaid(payment) && !requestedExistingIds.has(payment.id)) {
+        throw new AppError(
+          "PAYMENT_PARTIALLY_PAID_REORGANIZE_BLOCKED",
+          "Parcela parcialmente paga não pode ser removida. Ajuste o valor preservando o que já foi recebido.",
+          409
+        );
+      }
+    }
+
+    for (const installment of input.installments) {
+      if (!installment.id) {
+        continue;
+      }
+
+      const currentPayment = currentPaymentsById.get(installment.id);
+
+      if (currentPayment && isPaymentPartiallyPaid(currentPayment)) {
+        assertPartiallyPaidInstallmentCanBeReorganized(currentPayment, installment);
+      }
+    }
+
+    for (const payment of project.payments) {
+      if (requestedExistingIds.has(payment.id) || isPaymentFullyPaid(payment) || isPaymentPartiallyPaid(payment)) {
+        continue;
+      }
+
+      await transaction.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: "CANCELLED"
+        }
+      });
+    }
+
+    for (const [index, installment] of input.installments.entries()) {
+      const installmentNumber = installment.installment ?? index + 1;
+
+      if (!installment.id) {
+        await transaction.payment.create({
+          data: {
+            projectId: project.id,
+            clientId: project.clientId,
+            source: "PROJECT",
+            description: installment.description,
+            amount: installment.amount,
+            installment: installmentNumber,
+            dueDate: installment.dueDate,
+            paymentMethod: installment.paymentMethod,
+            notes: installment.notes,
+            status: "RECEIVABLE"
+          }
+        });
+
+        continue;
+      }
+
+      const currentPayment = currentPaymentsById.get(installment.id);
+
+      if (!currentPayment || isPaymentFullyPaid(currentPayment)) {
+        continue;
+      }
+
+      const paidAmount = toNumber(currentPayment.paidAmount);
+      const status = paidAmount > 0 ? resolvePartiallyPaidReorganizedStatus(installment.amount, paidAmount) : "RECEIVABLE";
+
+      await transaction.payment.update({
+        where: { id: installment.id },
+        data: {
+          description: installment.description,
+          amount: installment.amount,
+          installment: installmentNumber,
+          dueDate: installment.dueDate,
+          paymentMethod: installment.paymentMethod,
+          notes: installment.notes,
+          status
+        }
+      });
+    }
+
+    const projectFinancial = await getProjectFinancialOverview(project.id, transaction);
+    assertPaymentScheduleMatchesContract(projectFinancial);
+
+    const payments = await transaction.payment.findMany({
+      where: {
+        projectId: project.id,
+        source: "PROJECT",
+        status: {
+          not: "CANCELLED"
+        }
+      },
+      orderBy: [{ installment: "asc" }, { dueDate: "asc" }, { createdAt: "asc" }],
+      select: paymentSelect
+    });
+
+    return {
+      payments: payments.map(mapPayment),
+      projectFinancial,
+      alert: buildProjectFinancialAlert(projectFinancial)
+    };
+  });
+}
+
 export function buildPaymentWhere(
   { clientId, dueFrom, dueTo, projectId, search, status }: Partial<ListPaymentsQuery>,
   today = new Date()
@@ -787,6 +964,98 @@ export function assertPaymentScheduleMatchesContract({
   }
 }
 
+export function assertInstallmentPlanMatchesContract(
+  contractedAmount: { toString(): string } | number | string | null | undefined,
+  installments: Array<{ amount: { toString(): string } | number | string }>
+) {
+  const scheduledAmount = installments.reduce((total, installment) => total + toNumber(installment.amount), 0);
+
+  assertPaymentScheduleMatchesContract({
+    contractedAmount,
+    scheduledAmount
+  });
+}
+
+export function resolvePartiallyPaidReorganizedStatus(amount: number, paidAmount: number): PaymentStatus {
+  const normalizedAmount = roundMoney(amount);
+  const normalizedPaidAmount = roundMoney(paidAmount);
+
+  if (normalizedAmount < normalizedPaidAmount) {
+    throw new AppError(
+      "PAYMENT_REORGANIZE_AMOUNT_BELOW_PAID",
+      "Valor da parcela não pode ser menor que o valor já recebido.",
+      422
+    );
+  }
+
+  return normalizedAmount === normalizedPaidAmount ? "PAID" : "PARTIALLY_PAID";
+}
+
+function isPaymentFullyPaid(payment: { amount: { toString(): string } | number | string; paidAmount: { toString(): string } | number | string; status: string }) {
+  const amount = roundMoney(toNumber(payment.amount));
+  const paidAmount = roundMoney(toNumber(payment.paidAmount));
+
+  return payment.status === "PAID" || (paidAmount > 0 && paidAmount >= amount);
+}
+
+function isPaymentPartiallyPaid(payment: {
+  amount: { toString(): string } | number | string;
+  paidAmount: { toString(): string } | number | string;
+  status: string;
+}) {
+  return !isPaymentFullyPaid(payment) && (payment.status === "PARTIALLY_PAID" || toNumber(payment.paidAmount) > 0);
+}
+
+function assertFullyPaidInstallmentUnchanged(
+  payment: {
+    amount: { toString(): string } | number | string;
+    description: string;
+    dueDate: Date;
+    installment: number | null;
+    paymentMethod: string | null;
+    notes: string | null;
+  },
+  installment: ReorganizedInstallmentSnapshot
+) {
+  const hasChanged =
+    payment.description !== installment.description ||
+    roundMoney(toNumber(payment.amount)) !== roundMoney(installment.amount) ||
+    payment.installment !== (installment.installment ?? null) ||
+    toDateKey(payment.dueDate) !== toDateKey(installment.dueDate) ||
+    normalizeNullableText(payment.paymentMethod) !== normalizeNullableText(installment.paymentMethod) ||
+    normalizeNullableText(payment.notes) !== normalizeNullableText(installment.notes);
+
+  if (hasChanged) {
+    throw new AppError(
+      "PAYMENT_PAID_REORGANIZE_BLOCKED",
+      "Parcela paga não pode ter valor, vencimento ou dados alterados na reorganização.",
+      409
+    );
+  }
+}
+
+function assertPartiallyPaidInstallmentCanBeReorganized(
+  payment: {
+    paidAmount: { toString(): string } | number | string;
+  },
+  installment: ReorganizedInstallmentSnapshot
+) {
+  const paidAmount = roundMoney(toNumber(payment.paidAmount));
+  const nextAmount = roundMoney(installment.amount);
+
+  if (nextAmount < paidAmount) {
+    throw new AppError(
+      "PAYMENT_REORGANIZE_AMOUNT_BELOW_PAID",
+      "Valor da parcela parcialmente paga não pode ser menor que o valor já recebido.",
+      422,
+      {
+        paidAmount: toMoneyString(paidAmount),
+        installmentAmount: toMoneyString(nextAmount)
+      }
+    );
+  }
+}
+
 function assertVisitPaymentCanBeChanged(
   payment: {
     amount: { toString(): string } | number | string;
@@ -943,6 +1212,14 @@ function startOfDay(date: Date) {
 
 function endOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function toDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeNullableText(value: string | null | undefined) {
+  return value || null;
 }
 
 function addDays(date: Date, days: number) {

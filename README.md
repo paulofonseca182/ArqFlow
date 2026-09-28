@@ -111,6 +111,9 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - RN-VF01: visita técnica com valor gera lançamento financeiro vinculado à visita.
 - Cobranças de visita usam `Payment.source = VISIT` e não entram na soma contratual da RN-F12.
 - Edição comum de parcela não altera valor; número, vencimento, forma de pagamento, observações e dados operacionais continuam editáveis.
+- Reorganização de parcelas em ação própria, permitindo alterar quantidade, valores, vencimentos, descrições e formas de pagamento sem quebrar a RN-F12.
+- Reorganização usa `$transaction`, cancela parcelas abertas removidas do novo plano e valida que a soma das parcelas válidas continua igual ao valor contratado.
+- Parcelas totalmente pagas ficam bloqueadas contra remoção ou alteração; parcelas parcialmente pagas preservam o valor já recebido.
 - Status atrasado calculado dinamicamente pelo backend.
 - Registro de pagamento total ou parcial via `PATCH /financial/payments/:id/pay`.
 - Data de pagamento preenchida automaticamente quando não informada.

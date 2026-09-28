@@ -9,6 +9,7 @@ import {
   getFinancialSummaryController,
   listPaymentsController,
   registerPaymentController,
+  reorganizeInstallmentsController,
   updatePaymentController
 } from "./financial.controller.js";
 import {
@@ -16,7 +17,9 @@ import {
   generateInstallmentsSchema,
   listPaymentsQuerySchema,
   paymentIdParamsSchema,
+  projectInstallmentsParamsSchema,
   registerPaymentSchema,
+  reorganizeInstallmentsSchema,
   updatePaymentSchema
 } from "./financial.schema.js";
 
@@ -45,4 +48,9 @@ financialRouter.post(
   "/installments",
   validateRequest({ body: generateInstallmentsSchema }),
   asyncHandler(generateInstallmentsController)
+);
+financialRouter.patch(
+  "/projects/:projectId/installments",
+  validateRequest({ params: projectInstallmentsParamsSchema, body: reorganizeInstallmentsSchema }),
+  asyncHandler(reorganizeInstallmentsController)
 );

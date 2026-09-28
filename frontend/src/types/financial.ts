@@ -81,6 +81,22 @@ export type GenerateInstallmentsResult = {
   alert: FinancialAlert;
 };
 
+export type ReorganizeInstallmentInput = {
+  id?: string;
+  description: string;
+  amount: number;
+  installment?: number;
+  dueDate: string;
+  paymentMethod?: PaymentMethod;
+  notes?: string;
+};
+
+export type ReorganizeInstallmentsInput = {
+  installments: ReorganizeInstallmentInput[];
+};
+
+export type ReorganizeInstallmentsResult = GenerateInstallmentsResult;
+
 export type FinancialSummary = {
   revenueMonth: string;
   revenueYear: string;

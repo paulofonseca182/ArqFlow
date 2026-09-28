@@ -10,6 +10,7 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  SlidersHorizontal,
   XCircle
 } from "lucide-react";
 import { ActionIconButton } from "../../components/ui/ActionIconButton";
@@ -30,6 +31,7 @@ import {
   getFinancialSummary,
   listPayments,
   registerPayment,
+  reorganizeInstallments,
   updatePayment
 } from "../../services/financial";
 import { listProjects } from "../../services/projects";
@@ -39,6 +41,7 @@ import type {
   GenerateInstallmentsInput,
   Payment,
   PaymentMethod,
+  ReorganizeInstallmentsInput,
   PaymentStatus,
   PaymentUpdateInput,
   PaymentWriteInput,
@@ -51,6 +54,7 @@ import type { Project } from "../../types/project";
 import { GenerateInstallmentsModal } from "./GenerateInstallmentsModal";
 import { PaymentFormModal } from "./PaymentFormModal";
 import { RegisterPaymentModal } from "./RegisterPaymentModal";
+import { ReorganizeInstallmentsModal } from "./ReorganizeInstallmentsModal";
 
 const pageSize = 20;
 const actionIconClassName = "h-4 w-4 shrink-0";
@@ -117,6 +121,12 @@ export function FinancialPage() {
   const [registerTarget, setRegisterTarget] = useState<Payment | null>(null);
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [reorganizeOpen, setReorganizeOpen] = useState(false);
+  const [reorganizeProject, setReorganizeProject] = useState<Pick<Project, "id" | "name" | "contractedAmount"> | null>(null);
+  const [reorganizePayments, setReorganizePayments] = useState<Payment[]>([]);
+  const [reorganizeLoading, setReorganizeLoading] = useState(false);
+  const [reorganizeSaving, setReorganizeSaving] = useState(false);
+  const [reorganizeError, setReorganizeError] = useState<string | null>(null);
 
   const clients = useMemo(() => {
     const clientById = new Map(projects.map((project) => [project.client.id, project.client]));
@@ -293,6 +303,63 @@ export function FinancialPage() {
     }
   }
 
+  async function handleOpenReorganize(payment: Payment) {
+    if (payment.source === "VISIT") {
+      setNotice("Lançamentos de visita técnica devem ser ajustados no módulo de Visitas.");
+      return;
+    }
+
+    setReorganizeProject({
+      id: payment.projectId,
+      name: payment.project.name,
+      contractedAmount: payment.project.contractedAmount
+    });
+    setReorganizePayments([]);
+    setReorganizeError(null);
+    setReorganizeOpen(true);
+    setReorganizeLoading(true);
+
+    try {
+      const result = await listPayments({
+        page: 1,
+        pageSize: 100,
+        projectId: payment.projectId
+      });
+
+      setReorganizePayments(result.data.filter((item) => item.source === "PROJECT" && item.storedStatus !== "CANCELLED"));
+    } catch (requestError) {
+      setReorganizeError(getErrorMessage(requestError));
+    } finally {
+      setReorganizeLoading(false);
+    }
+  }
+
+  async function handleReorganizeInstallments(payload: ReorganizeInstallmentsInput) {
+    if (!reorganizeProject) {
+      return;
+    }
+
+    setReorganizeSaving(true);
+    setReorganizeError(null);
+    setNotice(null);
+
+    try {
+      const result = await reorganizeInstallments(reorganizeProject.id, payload);
+      setNotice(
+        result.alert?.message ??
+          `Plano financeiro reorganizado com ${result.payments.length} parcela${result.payments.length === 1 ? "" : "s"}.`
+      );
+      setReorganizeOpen(false);
+      setReorganizeProject(null);
+      setReorganizePayments([]);
+      await Promise.all([loadPayments(), loadSummary()]);
+    } catch (requestError) {
+      setReorganizeError(getErrorMessage(requestError));
+    } finally {
+      setReorganizeSaving(false);
+    }
+  }
+
   async function handleRegisterPayment(payload: RegisterPaymentInput) {
     if (!registerTarget) {
       return;
@@ -453,6 +520,15 @@ export function FinancialPage() {
                     <ActionIconButton ariaLabel={`Editar ${payment.description}`} label="Editar" onClick={() => handleOpenEdit(payment)}>
                       <Pencil className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
                     </ActionIconButton>
+                    {payment.source === "PROJECT" ? (
+                      <ActionIconButton
+                        ariaLabel={`Reorganizar parcelas de ${payment.project.name}`}
+                        label="Reorganizar parcelas"
+                        onClick={() => void handleOpenReorganize(payment)}
+                      >
+                        <SlidersHorizontal className={actionIconClassName} strokeWidth={actionIconStrokeWidth} />
+                      </ActionIconButton>
+                    ) : null}
                     {canRegisterPayment(payment) ? (
                       <ActionIconButton
                         ariaLabel={`Registrar pagamento ${payment.description}`}
@@ -538,6 +614,22 @@ export function FinancialPage() {
         open={Boolean(registerTarget)}
         payment={registerTarget}
         saving={registering}
+      />
+
+      <ReorganizeInstallmentsModal
+        apiError={reorganizeError}
+        loading={reorganizeLoading}
+        methods={meta.methods}
+        onClose={() => {
+          if (!reorganizeSaving) {
+            setReorganizeOpen(false);
+          }
+        }}
+        onSubmit={handleReorganizeInstallments}
+        open={reorganizeOpen}
+        payments={reorganizePayments}
+        project={reorganizeProject}
+        saving={reorganizeSaving}
       />
 
     </PageWrapper>

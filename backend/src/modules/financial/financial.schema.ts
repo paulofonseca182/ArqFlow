@@ -16,6 +16,10 @@ export const paymentIdParamsSchema = z.object({
   id: z.string().cuid()
 });
 
+export const projectInstallmentsParamsSchema = z.object({
+  projectId: z.string().cuid()
+});
+
 export const listPaymentsQuerySchema = paginationQuerySchema
   .extend({
     clientId: z.string().cuid().optional(),
@@ -58,11 +62,31 @@ export const generateInstallmentsSchema = z.object({
   notes: optionalText
 });
 
+const reorganizeInstallmentSchema = z.object({
+  id: z.string().cuid().optional(),
+  description: z.string().trim().min(2, "descrição deve ter pelo menos 2 caracteres"),
+  amount: positiveNumber,
+  installment: z.coerce.number().int().positive("parcela deve ser maior que zero").optional(),
+  dueDate: requiredDate,
+  paymentMethod: z.enum(paymentMethods).optional(),
+  notes: optionalText
+});
+
+export const reorganizeInstallmentsSchema = z
+  .object({
+    installments: z
+      .array(reorganizeInstallmentSchema)
+      .min(1, "informe pelo menos uma parcela")
+      .max(maxInstallmentCount, `parcelamento deve ter no máximo ${maxInstallmentCount} parcelas`)
+  })
+  .superRefine(validateUniqueInstallmentIds);
+
 export type ListPaymentsQuery = z.infer<typeof listPaymentsQuerySchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
 export type RegisterPaymentInput = z.infer<typeof registerPaymentSchema>;
 export type GenerateInstallmentsInput = z.infer<typeof generateInstallmentsSchema>;
+export type ReorganizeInstallmentsInput = z.infer<typeof reorganizeInstallmentsSchema>;
 
 function parseNumberInput(value: unknown) {
   if (typeof value === "string") {
@@ -86,6 +110,19 @@ function validateDueDateRange(data: { dueFrom?: Date; dueTo?: Date }, context: z
       code: z.ZodIssueCode.custom,
       path: ["dueTo"],
       message: "data final não pode ser anterior à data inicial"
+    });
+  }
+}
+
+function validateUniqueInstallmentIds(data: { installments: Array<{ id?: string }> }, context: z.RefinementCtx) {
+  const ids = data.installments.map((installment) => installment.id).filter(Boolean);
+  const uniqueIds = new Set(ids);
+
+  if (ids.length !== uniqueIds.size) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["installments"],
+      message: "não repita a mesma parcela no replanejamento"
     });
   }
 }

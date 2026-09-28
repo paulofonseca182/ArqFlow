@@ -4,6 +4,7 @@ import {
   generateInstallmentsSchema,
   listPaymentsQuerySchema,
   registerPaymentSchema,
+  reorganizeInstallmentsSchema,
   updatePaymentSchema
 } from "./financial.schema.js";
 
@@ -90,5 +91,47 @@ describe("financial schema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("valida replanejamento de parcelas com valores e ids unicos", () => {
+    const valid = reorganizeInstallmentsSchema.safeParse({
+      installments: [
+        {
+          id: "clw0000000000000000000000",
+          description: "Parcela 1/2",
+          amount: "1.266,50",
+          installment: 1,
+          dueDate: "2026-06-10"
+        },
+        {
+          description: "Parcela 2/2",
+          amount: "1.266,50",
+          installment: 2,
+          dueDate: "2026-07-10"
+        }
+      ]
+    });
+
+    expect(valid.success).toBe(true);
+    expect(valid.success ? valid.data.installments[0].amount : null).toBe(1266.5);
+
+    const duplicated = reorganizeInstallmentsSchema.safeParse({
+      installments: [
+        {
+          id: "clw0000000000000000000000",
+          description: "Parcela 1/2",
+          amount: 100,
+          dueDate: "2026-06-10"
+        },
+        {
+          id: "clw0000000000000000000000",
+          description: "Parcela 1/2",
+          amount: 100,
+          dueDate: "2026-06-10"
+        }
+      ]
+    });
+
+    expect(duplicated.success).toBe(false);
   });
 });

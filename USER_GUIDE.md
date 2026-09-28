@@ -36,6 +36,10 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 - O backend divide o valor contratado em 1x a 12x e preserva centavos.
 - A soma das parcelas ativas deve ser sempre igual ao valor contratado do projeto.
 - Ao editar uma parcela, o valor fica bloqueado; ajuste apenas número, vencimento, forma de pagamento, observações e dados operacionais.
+- Para alterar quantidade ou valores de parcelas já criadas, use a ação `Reorganizar parcelas`.
+- Na reorganização, o novo plano só é salvo se a soma das parcelas válidas for igual ao valor contratado do projeto.
+- Parcelas pagas ficam bloqueadas e não podem ser alteradas ou removidas.
+- Parcelas parcialmente pagas preservam o valor já recebido e não podem ficar com valor menor do que já foi pago.
 - Para registrar recebimento total ou parcial, use a ação de pagamento da parcela.
 - O valor contratado do projeto não deve ser alterado quando já existem parcelas ativas.
 

@@ -8,12 +8,14 @@ import {
   getFinancialSummary,
   listPayments,
   registerPayment,
+  reorganizeProjectInstallments,
   updatePayment
 } from "./financial.service.js";
 import type {
   CreatePaymentInput,
   GenerateInstallmentsInput,
   ListPaymentsQuery,
+  ReorganizeInstallmentsInput,
   RegisterPaymentInput,
   UpdatePaymentInput
 } from "./financial.schema.js";
@@ -62,4 +64,10 @@ export const generateInstallmentsController: RequestHandler = async (request, re
   const result = await generateProjectInstallments(request.body as GenerateInstallmentsInput);
 
   response.status(201).json(ok(result));
+};
+
+export const reorganizeInstallmentsController: RequestHandler = async (request, response) => {
+  const result = await reorganizeProjectInstallments(request.params.projectId, request.body as ReorganizeInstallmentsInput);
+
+  response.json(ok(result));
 };
