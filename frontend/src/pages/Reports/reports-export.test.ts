@@ -35,11 +35,18 @@ const overview: ReportsOverview = {
     averageProjectTicket: "1000.00",
     dueSoonAmount: "200.00",
     dueSoonPayments: 1,
+    expectedBalance: "100.00",
+    expectedExpenseAmount: "400.00",
     overdueAmount: "300.00",
+    overdueExpenseAmount: "150.00",
+    overdueExpenses: 1,
     overduePayments: 1,
     paidPayments: 2,
+    paidExpenseAmount: "300.00",
+    payableExpenseAmount: "400.00",
     receivableAmount: "500.00",
     receivablePayments: 3,
+    realizedBalance: "400.00",
     receivedAmount: "700.00"
   },
   details: {

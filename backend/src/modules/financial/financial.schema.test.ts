@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   createPaymentSchema,
+  createExpenseSchema,
   generateInstallmentsSchema,
   listPaymentsQuerySchema,
+  payExpenseSchema,
   registerPaymentSchema,
   reorganizeInstallmentsSchema,
   updatePaymentSchema
@@ -133,5 +135,45 @@ describe("financial schema", () => {
     });
 
     expect(duplicated.success).toBe(false);
+  });
+
+  it("valida compra parcelada de despesa com soma exata", () => {
+    const valid = createExpenseSchema.safeParse({
+      description: "Ar-condicionado",
+      amount: "1.000,00",
+      purchaseDate: "2026-09-10",
+      classification: "ASSET_PURCHASE",
+      installments: [
+        { amount: "200,00", dueDate: "2026-09-10" },
+        { amount: "200,00", dueDate: "2026-10-10" },
+        { amount: "200,00", dueDate: "2026-11-10" },
+        { amount: "200,00", dueDate: "2026-12-10" },
+        { amount: "200,00", dueDate: "2027-01-10" }
+      ]
+    });
+
+    expect(valid.success).toBe(true);
+
+    const invalid = createExpenseSchema.safeParse({
+      description: "Compra com erro",
+      amount: "1.000,00",
+      purchaseDate: "2026-09-10",
+      installments: [
+        { amount: "500,00", dueDate: "2026-09-10" },
+        { amount: "400,00", dueDate: "2026-10-10" }
+      ]
+    });
+
+    expect(invalid.success).toBe(false);
+  });
+
+  it("normaliza baixa parcial de despesa", () => {
+    const parsed = payExpenseSchema.parse({
+      paidAmount: "80,00",
+      paidAt: "2026-09-10",
+      paymentMethod: "PIX"
+    });
+
+    expect(parsed.paidAmount).toBe(80);
   });
 });

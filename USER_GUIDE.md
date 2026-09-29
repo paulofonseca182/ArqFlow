@@ -30,8 +30,10 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 - Projeto interno exige descrição ou motivo.
 - Projetos manuais não representam conversão comercial comum.
 
-## Financeiro E Parcelas
+## Financeiro
 
+- Use a aba `Visão geral` para comparar receitas previstas, receitas recebidas, despesas previstas, despesas pagas, saldo previsto e caixa atual.
+- Use `Contas a receber` para parcelas de projeto e cobranças de visita técnica.
 - Gere parcelas a partir do projeto com valor contratado, usando a ação `Gerar parcelas`.
 - O backend divide o valor contratado em 1x a 12x e preserva centavos.
 - A soma das parcelas ativas deve ser sempre igual ao valor contratado do projeto.
@@ -41,7 +43,21 @@ O ArqFlow ainda está em evolução, mas o fluxo principal do MVP já segue a re
 - Parcelas pagas ficam bloqueadas e não podem ser alteradas ou removidas.
 - Parcelas parcialmente pagas preservam o valor já recebido e não podem ficar com valor menor do que já foi pago.
 - Para registrar recebimento total ou parcial, use a ação de pagamento da parcela.
+- Cada recebimento registrado gera entrada no `Caixa / Extrato`.
 - O valor contratado do projeto não deve ser alterado quando já existem parcelas ativas.
+- Use `Contas a pagar` para cadastrar despesas administrativas, fornecedores ou custos de projeto.
+- Em `Contas a pagar`, escolha `Pagamento único` para uma despesa simples ou `Compra parcelada` para cadastrar uma compra uma vez e gerar parcelas vinculadas.
+- Para compra parcelada, informe valor total, data da compra, quantidade de parcelas e primeiro vencimento; o ArqFlow distribui os valores e permite ajustar vencimentos/valores antes de salvar.
+- Exemplo: uma compra de R$ 1.000,00 em 5x gera cinco parcelas de R$ 200,00 vinculadas à compra principal.
+- A compra principal não gera saída no caixa ao ser cadastrada.
+- Ao pagar uma parcela, o ArqFlow registra uma baixa e uma saída real no caixa apenas pelo valor pago.
+- Pagamento parcial de parcela mantém saldo pendente e preserva cada baixa no histórico e no extrato.
+- Compra parcelada com parcela já paga ou parcialmente paga não deve ser reorganizada no MVP; isso evita alteração silenciosa do histórico financeiro.
+- Use `Excluir` apenas para remover uma despesa ou compra cadastrada por engano e ainda sem pagamento.
+- Despesas com pagamento ou movimentação de caixa ficam protegidas contra exclusão; nesses casos, use `Cancelar` ou um fluxo futuro de estorno.
+- Use `Fluxo de caixa` para comparar valores previstos por vencimento com valores realizados no caixa.
+- Use `Caixa / Extrato` para ver apenas dinheiro que entrou ou saiu de fato.
+- Use `Movimento manual` apenas para ajustes reais de caixa que não nasceram de recebível ou despesa.
 
 ## Relatórios
 

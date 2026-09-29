@@ -47,3 +47,22 @@
 - Parcela paga nao pode ser alterada nem removida na reorganizacao.
 - Parcela parcialmente paga nao pode ser removida e seu novo valor nao pode ser menor que o valor ja recebido.
 - Lancamento financeiro de visita tecnica nao entra na soma contratual da RN-F12.
+- RN-F20: caixa representa apenas dinheiro efetivamente recebido ou pago.
+- Recebivel pago ou parcialmente pago deve gerar movimentacao de caixa de entrada.
+- Despesa paga deve gerar movimentacao de caixa de saida.
+- Contas a receber e contas a pagar compoem previsao financeira por vencimento.
+- Caixa realizado usa `CashMovement`, nunca apenas data de vencimento.
+- Pagamento futuro e bloqueado para recebiveis e despesas.
+- Pagamento maior que o valor devido e bloqueado para recebiveis.
+- Despesa cancelada nao entra no fluxo previsto nem no caixa realizado.
+- Visita tecnica cobrada gera recebivel separado e nao altera o valor contratado do projeto.
+- RN-F21: compra parcelada deve ser cadastrada uma unica vez como obrigacao principal e gerar parcelas vinculadas.
+- A compra principal nao gera `CashMovement` ao ser cadastrada e nao deve ser somada junto das parcelas.
+- Parcelas de despesa representam os vencimentos previstos; o fluxo previsto usa apenas o saldo pendente das parcelas validas.
+- Cada baixa total ou parcial de parcela de despesa gera uma `ExpensePayment` e uma saida de caixa propria em `CashMovement`.
+- Pagamento parcial de despesa preserva saldo pendente e historico de baixas por data.
+- Pagamento maior que o saldo pendente da despesa e bloqueado.
+- Compra parcelada com parcela paga ou parcialmente paga nao pode ser reorganizada no MVP sem fluxo de estorno/ajuste auditavel.
+- Compra parcelada permite classificacao gerencial, como despesa operacional, aquisicao de bem/investimento, custo de projeto ou outra classificacao.
+- Exclusao definitiva de despesa so e permitida quando nao existe pagamento nem movimentacao de caixa vinculada.
+- Compra parcelada sem pagamento pode ser excluida junto com suas parcelas; compras com baixa registrada devem ser canceladas ou tratadas por estorno futuro.

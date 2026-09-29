@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   assertInstallmentPlanMatchesContract,
+  assertExpenseInstallmentsMatchTotal,
   assertPaymentScheduleMatchesContract,
   buildVisitPaymentDescription,
   comparePaymentsForFinancialList,
   buildPaymentWhere,
   buildProjectFinancialSummary,
   getEffectivePaymentStatus,
+  getEffectiveExpenseStatus,
   getFinancialMeta,
   getPaymentScheduleDifference,
   resolvePartiallyPaidReorganizedStatus,
@@ -15,8 +17,8 @@ import {
 } from "./financial.service.js";
 
 describe("financial service", () => {
-  it("retorna metadados financeiros oficiais", () => {
-    const meta = getFinancialMeta();
+  it("retorna metadados financeiros oficiais", async () => {
+    const meta = await getFinancialMeta();
 
     expect(meta.statuses).toContainEqual({
       value: "RECEIVABLE",
@@ -180,5 +182,39 @@ describe("financial service", () => {
     expect(resolvePartiallyPaidReorganizedStatus(1266.5, 1266.5)).toBe("PAID");
     expect(resolvePartiallyPaidReorganizedStatus(2533, 1266.5)).toBe("PARTIALLY_PAID");
     expect(() => resolvePartiallyPaidReorganizedStatus(1000, 1266.5)).toThrow("menor que o valor já recebido");
+  });
+
+  it("valida soma exata de parcelas de despesa em centavos", () => {
+    expect(() =>
+      assertExpenseInstallmentsMatchTotal(1000, [
+        { amount: 200 },
+        { amount: 200 },
+        { amount: 200 },
+        { amount: 200 },
+        { amount: 200 }
+      ])
+    ).not.toThrow();
+
+    expect(() =>
+      assertExpenseInstallmentsMatchTotal(1000, [
+        { amount: 333.34 },
+        { amount: 333.33 },
+        { amount: 333.32 }
+      ])
+    ).toThrow("soma das parcelas");
+  });
+
+  it("calcula status de despesa parcialmente paga e vencida", () => {
+    expect(
+      getEffectiveExpenseStatus(
+        {
+          amount: 200,
+          dueDate: new Date("2026-05-10"),
+          paidAmount: 80,
+          status: "PARTIALLY_PAID"
+        },
+        new Date("2026-05-13")
+      )
+    ).toBe("OVERDUE");
   });
 });

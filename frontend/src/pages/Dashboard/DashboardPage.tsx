@@ -28,10 +28,24 @@ const emptyDashboard: DashboardSummary = {
     averageProjectTicket: "0",
     dueSoonAmount: "0",
     dueSoonCount: 0,
+    dueSoonExpenseAmount: "0",
+    dueSoonExpenseCount: 0,
+    expectedBalanceMonth: "0",
+    expectedExpenseMonth: "0",
+    expectedExpenseYear: "0",
+    expectedRevenueMonth: "0",
+    expectedRevenueYear: "0",
     overdueAmount: "0",
     overdueCount: 0,
+    overdueExpenseAmount: "0",
+    overdueExpenseCount: 0,
+    paidExpenseMonth: "0",
+    paidExpenseYear: "0",
+    payableExpenseAmount: "0",
     receivableAmount: "0",
     receivedAmount: "0",
+    realizedBalanceMonth: "0",
+    cashBalance: "0",
     refusedBudgets: 0,
     revenueMonth: "0",
     revenueYear: "0"
@@ -128,8 +142,16 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard badge={<Badge tone="success">Mês</Badge>} label="Receita do mês" value={formatMoney(summary.financial.revenueMonth)} />
-        <StatCard badge={<Badge tone="neutral">Ano</Badge>} label="Receita do ano" value={formatMoney(summary.financial.revenueYear)} />
+        <StatCard badge={<Badge tone="warning">Previsto</Badge>} label="Receitas previstas no mês" value={formatMoney(summary.financial.expectedRevenueMonth)} />
+        <StatCard badge={<Badge tone="success">Realizado</Badge>} label="Receitas recebidas no mês" value={formatMoney(summary.financial.revenueMonth)} />
+        <StatCard badge={<Badge tone="warning">Previsto</Badge>} label="Despesas previstas no mês" value={formatMoney(summary.financial.expectedExpenseMonth)} />
+        <StatCard badge={<Badge tone="danger">Pago</Badge>} label="Despesas pagas no mês" value={formatMoney(summary.financial.paidExpenseMonth)} />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard badge={<Badge tone="neutral">Previsto</Badge>} label="Saldo previsto" value={formatMoney(summary.financial.expectedBalanceMonth)} />
+        <StatCard badge={<Badge tone="neutral">Realizado</Badge>} label="Saldo realizado" value={formatMoney(summary.financial.realizedBalanceMonth)} />
+        <StatCard badge={<Badge tone="success">Caixa</Badge>} label="Caixa atual" value={formatMoney(summary.financial.cashBalance)} />
         <StatCard
           badge={<Badge tone="warning">Aberto</Badge>}
           label="A receber"
@@ -137,7 +159,6 @@ export function DashboardPage() {
           to="/financial"
           value={formatMoney(summary.financial.receivableAmount)}
         />
-        <StatCard badge={<Badge tone="neutral">Médio</Badge>} label="Ticket por projeto" value={formatMoney(summary.financial.averageProjectTicket)} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -36,6 +36,13 @@ export type ReportsFinancialSummary = {
   receivableAmount: string;
   overdueAmount: string;
   dueSoonAmount: string;
+  expectedExpenseAmount: string;
+  paidExpenseAmount: string;
+  payableExpenseAmount: string;
+  overdueExpenseAmount: string;
+  overdueExpenses: number;
+  expectedBalance: string;
+  realizedBalance: string;
   paidPayments: number;
   receivablePayments: number;
   overduePayments: number;

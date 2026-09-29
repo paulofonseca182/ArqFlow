@@ -49,8 +49,16 @@ type PaginatedResponse<T> = {
 - `/budgets`
 - `/budgets?scope=OPEN_BUDGETS&createdFrom=YYYY-MM-DD&createdTo=YYYY-MM-DD`
 - `/financial/payments`
+- `/financial/receivables`
 - `/financial/installments`
 - `/financial/projects/:projectId/installments`
+- `/financial/expenses`
+- `/financial/cash-movements`
+- `/financial/cash-movements/manual`
+- `/financial/cash-summary`
+- `/financial/cash-flow`
+- `/financial/categories`
+- `/financial/cash-accounts`
 - `/tasks`
 - `/tasks?overdue=true`
 - `/tasks?scope=OVERDUE_TASKS|DUE_SOON_TASKS&dueFrom=YYYY-MM-DD&dueTo=YYYY-MM-DD`

@@ -292,6 +292,21 @@ export function ReportsPage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              badge={<Badge tone="warning">Previsto</Badge>}
+              label="Despesas previstas"
+              value={formatMoney(overview.financial.expectedExpenseAmount)}
+            />
+            <StatCard
+              badge={<Badge tone="danger">{overview.financial.overdueExpenses} atrasada(s)</Badge>}
+              label="Despesas atrasadas"
+              value={formatMoney(overview.financial.overdueExpenseAmount)}
+            />
+            <StatCard badge={<Badge tone="neutral">Previsto</Badge>} label="Saldo previsto" value={formatMoney(overview.financial.expectedBalance)} />
+            <StatCard badge={<Badge tone="success">Realizado</Badge>} label="Saldo realizado" value={formatMoney(overview.financial.realizedBalance)} />
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <DetailCard
               emptyMessage="Nenhuma parcela atrasada neste escopo."
               items={overview.details.overduePayments.map((payment) => ({

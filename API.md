@@ -51,7 +51,7 @@ type ApiError = {
   - Aceita `clientId` e `projectId` opcionais para escopar o relatório.
   - Quando `clientId` e `projectId` são enviados juntos, o projeto precisa pertencer ao cliente.
   - Retorna `filters` com cliente/projeto ativos para a UI e o CSV exibirem o escopo aplicado.
-  - Receita usa `paidAt`; recebíveis e atrasos usam `dueDate`; tarefas usam `dueDate`; visitas usam `date`.
+  - Realizado financeiro usa `CashMovement`; previsto usa recebíveis/despesas por vencimento; tarefas usam `dueDate`; visitas usam `date`.
   - Projetos são separados por origem: orçamento aprovado, legado ou interno.
 
 ## Clientes
@@ -146,9 +146,12 @@ type ApiError = {
 ## Financeiro
 
 - `GET /financial/meta`
-  - Retorna status e formas de pagamento oficiais.
+  - Retorna status, formas de pagamento, categorias financeiras e contas de caixa oficiais.
 - `GET /financial/summary`
-  - Retorna indicadores financeiros reais calculados no backend.
+  - Retorna indicadores financeiros calculados no backend, separando previsto e realizado.
+- `GET /financial/receivables`
+  - Alias conceitual de contas a receber.
+  - Lista parcelas contratuais, cobranças de visita e recebíveis com filtros por status, projeto, cliente e vencimento.
 - `GET /financial/payments`
   - Lista parcelas/pagamentos com filtros por status, projeto, cliente e vencimento.
 - `POST /financial/payments`
@@ -159,6 +162,8 @@ type ApiError = {
   - Não aceita alteração de `amount`; valor pertence ao plano financeiro do projeto.
 - `PATCH /financial/payments/:id/pay`
   - Registra pagamento total ou parcial.
+  - Gera ou atualiza uma movimentação real de caixa de entrada.
+  - Bloqueia data de pagamento futura e valor pago maior que o valor da parcela.
 - `PATCH /financial/payments/:id/cancel`
   - Cancela parcela ainda não paga somente se a agenda financeira do projeto continuar fechando com o valor contratado.
 - `POST /financial/installments`
@@ -172,6 +177,46 @@ type ApiError = {
   - Parcelas parcialmente pagas não podem ser removidas e não podem ficar com valor menor que o valor já recebido.
   - Parcelas abertas removidas do novo plano são canceladas pelo backend.
   - Lançamentos de visita técnica (`source=VISIT`) não entram nesse replanejamento.
+- `GET /financial/expenses`
+  - Lista contas a pagar com filtros por status, projeto, cliente, categoria, conta e vencimento.
+  - Compra parcelada aparece como lancamento principal com `installments` vinculadas.
+  - O valor previsto usa saldo pendente das parcelas, sem somar a compra principal em duplicidade.
+- `POST /financial/expenses`
+  - Cria despesa simples com descrição, valor maior que zero e vencimento.
+  - Também cria compra parcelada quando recebe `installments` com duas ou mais parcelas.
+  - Em compra parcelada, o backend valida que a soma das parcelas é exatamente igual ao valor total.
+  - A compra principal não gera saída de caixa no cadastro.
+  - Pode vincular projeto, categoria, conta, fornecedor, centro de custo e forma de pagamento.
+- `PATCH /financial/expenses/:id`
+  - Atualiza despesa ainda não paga/cancelada.
+  - Valor e vencimento de parcela com baixa registrada ficam bloqueados.
+- `PATCH /financial/expenses/:id/pay`
+  - Registra baixa total ou parcial de despesa/parcela.
+  - Cada baixa gera `ExpensePayment` e uma movimentação real de caixa de saída.
+  - Bloqueia data futura e valor pago maior que o saldo pendente.
+- `PATCH /financial/expenses/:id/installments`
+  - Reorganiza parcelas de uma compra parcelada.
+  - Só aceita compras sem parcelas pagas ou parcialmente pagas.
+  - Valida que a soma das parcelas reorganizadas fecha com o valor total da compra.
+- `PATCH /financial/expenses/:id/cancel`
+  - Cancela despesa ou compra ainda não paga.
+  - Compra parcelada cancela também as parcelas abertas vinculadas.
+- `DELETE /financial/expenses/:id`
+  - Exclui definitivamente apenas despesa simples ou compra parcelada sem pagamentos e sem movimentações de caixa.
+  - Compra parcelada excluída remove também suas parcelas vinculadas.
+  - Despesa/parcela com baixa registrada deve ser cancelada ou estornada em fluxo próprio, não excluída.
+- `GET /financial/cash-movements`
+  - Lista apenas movimentações reais de caixa.
+  - Aceita filtros por período, tipo, origem, conta, categoria, cliente e projeto.
+- `POST /financial/cash-movements/manual`
+  - Registra entrada ou saída manual de caixa.
+  - Não cria previsão; registra apenas caixa realizado.
+- `GET /financial/cash-summary`
+  - Retorna entradas, saídas e saldo do caixa para o período informado.
+- `GET /financial/cash-flow`
+  - Retorna fluxo previsto x realizado.
+  - Previsto usa recebíveis/despesas pendentes por vencimento.
+  - Realizado usa somente `CashMovement`.
 
 ## Tarefas
 

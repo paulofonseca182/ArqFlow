@@ -100,11 +100,21 @@ O módulo de Orçamentos já possui uma primeira fatia vertical:
 - Formulário com React Hook Form, Zod e itens dinâmicos.
 - Status oficiais de orçamento com badges visuais.
 
-## Financeiro e Parcelas
+## Financeiro
 
-O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
+O módulo Financeiro evoluiu de controle de parcelas para uma base financeira com separação entre previsão e caixa realizado:
 
-- API REST em `/financial` com metadados, resumo, listagem, geração, edição operacional, pagamento e cancelamento controlado de parcelas.
+- Tela `/financial` organizada em abas: Visão geral, Contas a receber, Contas a pagar, Fluxo de caixa e Caixa / Extrato.
+- API REST em `/financial` com metadados, resumo, recebíveis, despesas, fluxo, extrato, categorias e contas de caixa.
+- Contas a receber continuam usando `Payment`, preservando parcelas contratuais de projeto e cobranças de visita técnica.
+- Contas a pagar usam `Expense` para despesas administrativas, fornecedores, custos vinculados a projeto e compras parceladas.
+- Compra parcelada cria um lançamento principal e parcelas vinculadas, sem gerar saída de caixa no cadastro.
+- Cada baixa total ou parcial de parcela de despesa gera histórico em `ExpensePayment` e saída real em `CashMovement`.
+- Despesas sem pagamento podem ser excluídas com confirmação; despesas com baixa ou movimento de caixa ficam protegidas e devem ser canceladas/estornadas.
+- Fluxo previsto usa o saldo pendente das parcelas válidas, sem somar a compra principal em duplicidade.
+- Caixa realizado usa `CashMovement` e registra apenas dinheiro efetivamente recebido ou pago.
+- Fluxo de caixa compara entradas/saídas previstas por vencimento com entradas/saídas realizadas no caixa.
+- Categorias financeiras e conta `Caixa principal` foram adicionadas como base inicial.
 - Geração de parcelas a partir de projeto com `contractedAmount`, usando de 1x a 12x.
 - Cliente da parcela derivado do projeto no backend.
 - RN-F12: a soma das parcelas ativas de um projeto deve ser igual ao valor contratado do projeto.
@@ -116,11 +126,12 @@ O módulo Financeiro iniciou o fluxo de parcelas e pagamentos:
 - Parcelas totalmente pagas ficam bloqueadas contra remoção ou alteração; parcelas parcialmente pagas preservam o valor já recebido.
 - Status atrasado calculado dinamicamente pelo backend.
 - Registro de pagamento total ou parcial via `PATCH /financial/payments/:id/pay`.
+- Pagamento de recebível gera movimentação real de caixa de entrada.
+- Pagamento de despesa gera baixa histórica e movimentação real de caixa de saída apenas pelo valor pago.
 - Data de pagamento preenchida automaticamente quando não informada.
 - Bloqueio de data de pagamento futura e de valor pago maior que a parcela.
 - Bloqueio de alteração do valor contratado do projeto quando já existem parcelas ativas.
-- Indicadores financeiros: receita do mês, receita do ano, valor a receber, recebido, atrasado, vencendo em 7 dias, orçamentos aprovados/recusados e ticket médio.
-- Tela `/financial` conectada ao backend real.
+- Indicadores financeiros: receitas previstas/realizadas, despesas previstas/pagas, saldo previsto, saldo realizado, caixa atual, a receber, a pagar, atrasados e vencendo em 7 dias.
 - Formulários com React Hook Form e Zod para geração, edição operacional e registro de pagamento.
 - API bloqueia operações que deixem a soma das parcelas ativas diferente do valor contratado.
 - Lançamentos de visita podem receber pagamento no Financeiro, mas valor, data e projeto devem ser alterados pela própria visita.

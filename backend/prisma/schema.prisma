@@ -23,10 +23,12 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects  Project[]
-  budgets   Budget[]
-  payments  Payment[]
-  visits    Visit[]
+  projects      Project[]
+  budgets       Budget[]
+  payments      Payment[]
+  visits        Visit[]
+  expenses      Expense[]
+  cashMovements CashMovement[]
 
   @@index([name])
   @@index([status])
@@ -55,14 +57,16 @@ model Project {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  client          Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  budget          Budget?       @relation("ProjectOriginBudget", fields: [budgetId], references: [id], onDelete: SetNull)
-  convertedBudget Budget?       @relation("BudgetConvertedProject")
+  client          Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  budget          Budget?        @relation("ProjectOriginBudget", fields: [budgetId], references: [id], onDelete: SetNull)
+  convertedBudget Budget?        @relation("BudgetConvertedProject")
   steps           ProjectStep[]
-  budgets         Budget[]      @relation("ProjectBudgets")
+  budgets         Budget[]       @relation("ProjectBudgets")
   payments        Payment[]
   tasks           Task[]
   visits          Visit[]
+  expenses        Expense[]
+  cashMovements   CashMovement[]
 
   @@index([clientId])
   @@index([budgetId])
@@ -87,35 +91,35 @@ model ProjectStep {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([projectId, sortOrder])
   @@index([projectId])
   @@index([status])
-  @@unique([projectId, sortOrder])
 }
 
 model Budget {
-  id            String    @id @default(cuid())
-  clientId      String
-  projectId     String?
-  convertedProjectId String? @unique
-  title         String
-  serviceType   String
-  description   String?
-  totalAmount   Decimal   @default(0)
-  discount      Decimal   @default(0)
-  finalAmount   Decimal   @default(0)
-  paymentMethod String?
-  expiresAt     DateTime?
-  status        String    @default("DRAFT")
-  approvedAt    DateTime?
-  convertedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  clientId           String
+  projectId          String?
+  convertedProjectId String?   @unique
+  title              String
+  serviceType        String
+  description        String?
+  totalAmount        Decimal   @default(0)
+  discount           Decimal   @default(0)
+  finalAmount        Decimal   @default(0)
+  paymentMethod      String?
+  expiresAt          DateTime?
+  status             String    @default("DRAFT")
+  approvedAt         DateTime?
+  convertedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  client           Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  project          Project?     @relation("ProjectBudgets", fields: [projectId], references: [id], onDelete: SetNull)
-  convertedProject Project?     @relation("BudgetConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
-  originatedProject Project?    @relation("ProjectOriginBudget")
-  items            BudgetItem[]
+  client            Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project           Project?     @relation("ProjectBudgets", fields: [projectId], references: [id], onDelete: SetNull)
+  convertedProject  Project?     @relation("BudgetConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
+  originatedProject Project?     @relation("ProjectOriginBudget")
+  items             BudgetItem[]
 
   @@index([clientId])
   @@index([projectId])
@@ -141,6 +145,8 @@ model Payment {
   projectId     String
   clientId      String
   visitId       String?   @unique
+  categoryId    String?
+  cashAccountId String?
   source        String    @default("PROJECT")
   description   String
   amount        Decimal
@@ -154,16 +160,164 @@ model Payment {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  client  Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  visit   Visit?  @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  client       Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  visit        Visit?             @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  category     FinancialCategory? @relation("PaymentCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  cashAccount  CashAccount?       @relation("PaymentCashAccount", fields: [cashAccountId], references: [id], onDelete: SetNull)
+  cashMovement CashMovement?
 
   @@index([projectId])
   @@index([clientId])
   @@index([visitId])
+  @@index([categoryId])
+  @@index([cashAccountId])
   @@index([source])
   @@index([status])
   @@index([dueDate])
+}
+
+model Expense {
+  id                String    @id @default(cuid())
+  parentExpenseId   String?
+  projectId         String?
+  clientId          String?
+  categoryId        String?
+  cashAccountId     String?
+  entryType         String    @default("SINGLE")
+  classification    String    @default("OPERATIONAL_EXPENSE")
+  description       String
+  supplier          String?
+  costCenter        String?
+  amount            Decimal
+  dueDate           DateTime?
+  purchaseDate      DateTime?
+  paidAmount        Decimal   @default(0)
+  paidAt            DateTime?
+  paymentMethod     String?
+  status            String    @default("PENDING")
+  installmentNumber Int?
+  installmentCount  Int?
+  recurring         Boolean   @default(false)
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parent        Expense?           @relation("ExpenseInstallments", fields: [parentExpenseId], references: [id], onDelete: SetNull)
+  installments  Expense[]          @relation("ExpenseInstallments")
+  project       Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client        Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  category      FinancialCategory? @relation("ExpenseCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  cashAccount   CashAccount?       @relation("ExpenseCashAccount", fields: [cashAccountId], references: [id], onDelete: SetNull)
+  payments      ExpensePayment[]
+  cashMovements CashMovement[]
+
+  @@index([parentExpenseId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([categoryId])
+  @@index([cashAccountId])
+  @@index([entryType])
+  @@index([classification])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model ExpensePayment {
+  id            String   @id @default(cuid())
+  expenseId     String
+  cashAccountId String?
+  amount        Decimal
+  paidAt        DateTime
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  expense      Expense       @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+  cashMovement CashMovement?
+  cashAccount  CashAccount?  @relation(fields: [cashAccountId], references: [id], onDelete: SetNull)
+
+  @@index([expenseId])
+  @@index([cashAccountId])
+  @@index([paidAt])
+}
+
+model CashMovement {
+  id               String   @id @default(cuid())
+  paymentId        String?  @unique
+  expenseId        String?
+  expensePaymentId String?  @unique
+  visitId          String?
+  clientId         String?
+  projectId        String?
+  categoryId       String?
+  cashAccountId    String?
+  type             String
+  date             DateTime
+  description      String
+  amount           Decimal
+  paymentMethod    String?
+  origin           String
+  referenceId      String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  payment        Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  expense        Expense?           @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  expensePayment ExpensePayment?    @relation(fields: [expensePaymentId], references: [id], onDelete: SetNull)
+  visit          Visit?             @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  client         Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project        Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  category       FinancialCategory? @relation("CashMovementCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  cashAccount    CashAccount?       @relation(fields: [cashAccountId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([date])
+  @@index([origin])
+  @@index([referenceId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([categoryId])
+  @@index([cashAccountId])
+  @@index([expenseId])
+}
+
+model FinancialCategory {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  costCenter String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  payments      Payment[]      @relation("PaymentCategory")
+  expenses      Expense[]      @relation("ExpenseCategory")
+  cashMovements CashMovement[] @relation("CashMovementCategory")
+
+  @@unique([name, type])
+  @@index([type])
+  @@index([active])
+}
+
+model CashAccount {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  type           String   @default("CASH")
+  openingBalance Decimal  @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  payments        Payment[]        @relation("PaymentCashAccount")
+  expenses        Expense[]        @relation("ExpenseCashAccount")
+  expensePayments ExpensePayment[]
+  cashMovements   CashMovement[]
+
+  @@index([type])
+  @@index([active])
 }
 
 model Task {
@@ -200,9 +354,10 @@ model Visit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  client  Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  payment Payment?
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  payment       Payment?
+  cashMovements CashMovement[]
 
   @@index([clientId])
   @@index([projectId])

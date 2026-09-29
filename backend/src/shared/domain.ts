@@ -18,6 +18,13 @@ export const stepStatuses = ["PENDING", "IN_PROGRESS", "WAITING_CLIENT", "IN_REV
 export const budgetStatuses = ["DRAFT", "SENT", "NEGOTIATION", "APPROVED", "REFUSED", "EXPIRED", "CANCELLED"] as const;
 export const paymentStatuses = ["RECEIVABLE", "PAID", "PARTIALLY_PAID", "OVERDUE", "CANCELLED"] as const;
 export const paymentMethods = ["CASH", "PIX", "BANK_TRANSFER", "CREDIT_CARD", "DEBIT_CARD", "BOLETO", "OTHER"] as const;
+export const expenseStatuses = ["PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE", "CANCELLED"] as const;
+export const expenseEntryTypes = ["SINGLE", "PURCHASE", "INSTALLMENT"] as const;
+export const expenseClassifications = ["OPERATIONAL_EXPENSE", "ASSET_PURCHASE", "PROJECT_COST", "OTHER"] as const;
+export const financialCategoryTypes = ["REVENUE", "EXPENSE"] as const;
+export const cashMovementTypes = ["INCOME", "EXPENSE"] as const;
+export const cashMovementOrigins = ["RECEIVABLE_PAYMENT", "EXPENSE_PAYMENT", "VISIT_PAYMENT", "MANUAL_ENTRY", "MANUAL_EXIT"] as const;
+export const cashAccountTypes = ["CASH", "BANK", "PIX", "OTHER"] as const;
 export const taskStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 export const visitTypes = ["TECHNICAL_VISIT", "MEASUREMENT", "SITE_INSPECTION", "CLIENT_MEETING", "OTHER"] as const;
@@ -32,6 +39,13 @@ export type StepStatus = (typeof stepStatuses)[number];
 export type BudgetStatus = (typeof budgetStatuses)[number];
 export type PaymentStatus = (typeof paymentStatuses)[number];
 export type PaymentMethod = (typeof paymentMethods)[number];
+export type ExpenseStatus = (typeof expenseStatuses)[number];
+export type ExpenseEntryType = (typeof expenseEntryTypes)[number];
+export type ExpenseClassification = (typeof expenseClassifications)[number];
+export type FinancialCategoryType = (typeof financialCategoryTypes)[number];
+export type CashMovementType = (typeof cashMovementTypes)[number];
+export type CashMovementOrigin = (typeof cashMovementOrigins)[number];
+export type CashAccountType = (typeof cashAccountTypes)[number];
 export type TaskStatus = (typeof taskStatuses)[number];
 export type TaskPriority = (typeof taskPriorities)[number];
 export type VisitType = (typeof visitTypes)[number];
@@ -113,6 +127,52 @@ export const paymentMethodLabels: Record<PaymentMethod, string> = {
   DEBIT_CARD: "Cartão de débito",
   BOLETO: "Boleto",
   OTHER: "Outro"
+};
+
+export const expenseStatusLabels: Record<ExpenseStatus, string> = {
+  PENDING: "Pendente",
+  PARTIALLY_PAID: "Parcialmente pago",
+  PAID: "Pago",
+  OVERDUE: "Atrasado",
+  CANCELLED: "Cancelado"
+};
+
+export const expenseEntryTypeLabels: Record<ExpenseEntryType, string> = {
+  SINGLE: "Pagamento único",
+  PURCHASE: "Compra parcelada",
+  INSTALLMENT: "Parcela"
+};
+
+export const expenseClassificationLabels: Record<ExpenseClassification, string> = {
+  OPERATIONAL_EXPENSE: "Despesa operacional",
+  ASSET_PURCHASE: "Aquisição de bem / investimento",
+  PROJECT_COST: "Custo de projeto",
+  OTHER: "Outra classificação"
+};
+
+export const financialCategoryTypeLabels: Record<FinancialCategoryType, string> = {
+  REVENUE: "Receita",
+  EXPENSE: "Despesa"
+};
+
+export const cashMovementTypeLabels: Record<CashMovementType, string> = {
+  INCOME: "Entrada",
+  EXPENSE: "Saída"
+};
+
+export const cashMovementOriginLabels: Record<CashMovementOrigin, string> = {
+  RECEIVABLE_PAYMENT: "Recebimento",
+  EXPENSE_PAYMENT: "Pagamento de despesa",
+  VISIT_PAYMENT: "Recebimento de visita",
+  MANUAL_ENTRY: "Entrada manual",
+  MANUAL_EXIT: "Saída manual"
+};
+
+export const cashAccountTypeLabels: Record<CashAccountType, string> = {
+  CASH: "Caixa",
+  BANK: "Banco",
+  PIX: "Pix",
+  OTHER: "Outra"
 };
 
 export const taskStatusLabels: Record<TaskStatus, string> = {

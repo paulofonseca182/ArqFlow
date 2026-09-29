@@ -14,6 +14,11 @@
 - `Budget`
 - `BudgetItem`
 - `Payment`
+- `Expense`
+- `ExpensePayment`
+- `CashMovement`
+- `FinancialCategory`
+- `CashAccount`
 - `Task`
 - `Visit`
 
@@ -22,8 +27,22 @@
 - `Project` sempre exige `clientId`.
 - `Budget` sempre exige `clientId` e pode ter `projectId` nulo.
 - `Payment` sempre exige `projectId` e `clientId`.
+- `Payment` representa contas a receber e preserva compatibilidade com parcelas de projeto e cobranças de visita.
+- `Expense` representa contas a pagar e pode ter `projectId` e `clientId` opcionais.
+- `Expense.entryType` diferencia `SINGLE`, `PURCHASE` e `INSTALLMENT`.
+- `Expense.parentExpenseId` vincula parcelas (`INSTALLMENT`) a uma compra principal (`PURCHASE`).
+- `Expense.classification` diferencia despesa operacional, aquisição de bem/investimento, custo de projeto e outros usos gerenciais.
+- `Expense.paidAmount` armazena o total já baixado naquela parcela.
+- `ExpensePayment` preserva cada baixa individual de despesa ou parcela, com valor, data, conta e forma de pagamento.
+- `CashMovement` representa somente caixa realizado, com entradas e saídas efetivas.
+- `FinancialCategory` classifica receitas e despesas.
+- `CashAccount` representa contas de caixa/banco usadas em movimentações.
 - `Task` e `Visit` podem se vincular a projeto conforme o fluxo.
 - `BudgetItem` pertence a `Budget`.
+- Pagamento de recebível gera `CashMovement` de entrada.
+- Pagamento de despesa gera `ExpensePayment` e `CashMovement` de saída.
+- Valores previstos não entram no caixa até existir pagamento efetivo.
+- Compra parcelada não entra duplicada no fluxo: a compra principal guarda a obrigação total e as parcelas guardam vencimentos e saldos.
 
 ## Exclusoes
 

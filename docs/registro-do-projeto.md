@@ -2353,6 +2353,112 @@ Decisão de produto:
 - alteração de quantidade ou valor deve usar a ação separada de reorganização;
 - o backend continua sendo a fonte da verdade da RN-F12.
 
+## Financeiro 2.0 - Recebíveis, Despesas, Fluxo e Caixa
+
+Implementado nesta etapa:
+
+- nova branch `feature/financeiro-2-caixa-fluxo`;
+- migration `20260928100000_financial_cash_flow`;
+- novos modelos Prisma:
+  - `Expense`, para contas a pagar;
+  - `CashMovement`, para caixa/extrato realizado;
+  - `FinancialCategory`, para categorias de receitas e despesas;
+  - `CashAccount`, para contas de caixa/banco;
+- `Payment` preservado como base de contas a receber;
+- `Payment` recebeu vínculo opcional com categoria e conta de caixa;
+- categorias iniciais e conta `Caixa principal` criadas na migration;
+- backfill de pagamentos já recebidos para `CashMovement`;
+- pagamento de parcela/recebível gera entrada real de caixa;
+- pagamento de despesa gera saída real de caixa;
+- fluxo de caixa separa previsto por vencimento e realizado por movimentação de caixa;
+- nova estrutura visual em `/financial`:
+  - Visão geral;
+  - Contas a receber;
+  - Contas a pagar;
+  - Fluxo de caixa;
+  - Caixa / Extrato;
+- Dashboard passou a mostrar receitas previstas, receitas recebidas, despesas previstas, despesas pagas, saldo previsto, saldo realizado e caixa atual;
+- Relatórios passaram a expor despesas previstas, despesas atrasadas, saldo previsto e saldo realizado;
+- documentação atualizada em `README.md`, `API.md`, `USER_GUIDE.md`, `BUSINESS_RULES.md` e `DATABASE.md`.
+
+Rotas novas:
+
+```txt
+GET /financial/receivables
+PATCH /financial/receivables/:id/pay
+PATCH /financial/receivables/:id/cancel
+GET /financial/expenses
+POST /financial/expenses
+PATCH /financial/expenses/:id
+PATCH /financial/expenses/:id/pay
+PATCH /financial/expenses/:id/cancel
+GET /financial/cash-movements
+POST /financial/cash-movements/manual
+GET /financial/cash-summary
+GET /financial/cash-flow
+GET /financial/categories
+GET /financial/cash-accounts
+```
+
+Regras reforçadas:
+
+- caixa não mostra previsão como realizado;
+- recebíveis e despesas alimentam o fluxo previsto por vencimento;
+- somente pagamentos efetivos alimentam `CashMovement`;
+- visitas cobradas continuam separadas da soma contratual do projeto;
+- parcelas de projeto continuam respeitando `Project.contractedAmount`.
+
+## Financeiro 2.1 - Compras/Despesas Parceladas
+
+Implementado nesta etapa:
+
+- migration `20260929120000_expense_purchases_installments`;
+- `Expense` passou a suportar:
+  - `entryType` (`SINGLE`, `PURCHASE`, `INSTALLMENT`);
+  - `parentExpenseId` para vincular parcelas à compra principal;
+  - `classification` para separar despesa operacional, aquisição de bem/investimento, custo de projeto e outras classificações;
+  - `paidAmount`, `purchaseDate`, `installmentNumber` e `installmentCount`;
+- novo modelo `ExpensePayment` para preservar cada baixa individual de despesa;
+- `CashMovement.expensePaymentId` passou a vincular a saída de caixa à baixa específica;
+- despesas antigas foram preservadas como lançamentos simples (`SINGLE`);
+- movimentos antigos de despesa foram convertidos para baixas históricas em `ExpensePayment`;
+- cadastro de despesa agora permite:
+  - pagamento único;
+  - compra parcelada com duas a doze parcelas;
+  - distribuição automática de centavos;
+  - ajuste manual de valores e vencimentos antes de salvar;
+- compra parcelada cria uma obrigação principal e parcelas vinculadas, sem gerar caixa no cadastro;
+- pagamento de parcela de despesa pode ser total ou parcial;
+- cada baixa de despesa gera uma saída de caixa própria na data efetiva;
+- fluxo previsto usa saldo pendente das parcelas válidas;
+- caixa/extrato usa apenas `CashMovement`;
+- relatórios e resumo financeiro ignoram a compra principal para não duplicar valores;
+- interface de `Contas a pagar` passou a expandir compras parceladas para exibir parcelas, vencimentos, status, pago e saldo;
+- despesas sem pagamento podem ser excluídas definitivamente pela interface com confirmação;
+- despesas com pagamento ou movimentação de caixa ficam protegidas contra exclusão para preservar o histórico financeiro.
+
+Rotas novas ou ajustadas:
+
+```txt
+POST /financial/expenses
+PATCH /financial/expenses/:id
+PATCH /financial/expenses/:id/pay
+PATCH /financial/expenses/:id/installments
+PATCH /financial/expenses/:id/cancel
+DELETE /financial/expenses/:id
+```
+
+Regras reforçadas:
+
+- compra principal não gera saída de caixa ao ser cadastrada;
+- soma das parcelas deve fechar exatamente com o valor total da compra;
+- pagamento maior que o saldo pendente da parcela é bloqueado;
+- pagamento futuro de despesa é bloqueado;
+- parcela com baixa registrada não altera valor ou vencimento na edição comum;
+- compra parcelada com parcela paga ou parcialmente paga não pode ser reorganizada no MVP sem fluxo de estorno/ajuste auditável;
+- despesas canceladas não entram no fluxo previsto nem no caixa realizado;
+- exclusão definitiva de despesa só é permitida quando não houver pagamentos ou movimentos de caixa vinculados.
+
 ## Como retomar se algo der errado
 
 1. Ler `AGENTS.md`.

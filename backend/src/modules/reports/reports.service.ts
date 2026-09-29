@@ -140,6 +140,25 @@ type ReportVisitSnapshot = {
   type: string;
 };
 
+type ReportExpenseSnapshot = {
+  amount: { toString(): string } | number | string;
+  clientId: string | null;
+  dueDate: Date | null;
+  entryType?: string | null;
+  paidAmount: { toString(): string } | number | string;
+  paidAt: Date | null;
+  projectId: string | null;
+  status: string;
+};
+
+type ReportCashMovementSnapshot = {
+  amount: { toString(): string } | number | string;
+  clientId: string | null;
+  date: Date;
+  projectId: string | null;
+  type: string;
+};
+
 type ReportAppliedFilters = {
   clientId: string | null;
   clientName: string | null;
@@ -151,7 +170,7 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
   const today = new Date();
   const period = resolveReportPeriod(query, today);
   const filters = await resolveReportFilters(query);
-  const [clients, projects, budgets, payments, tasks, visits] = await prisma.$transaction([
+  const [clients, projects, budgets, payments, tasks, visits, expenses, cashMovements] = await prisma.$transaction([
       prisma.client.findMany({ where: buildReportClientWhere(query), select: { createdAt: true, id: true, name: true, status: true } }),
       prisma.project.findMany({
         where: buildReportProjectWhere(query),
@@ -236,6 +255,29 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
           time: true,
           type: true
         }
+      }),
+      prisma.expense.findMany({
+        where: buildReportExpenseWhere(query),
+        select: {
+          amount: true,
+          clientId: true,
+          dueDate: true,
+          entryType: true,
+          paidAmount: true,
+          paidAt: true,
+          projectId: true,
+          status: true
+        }
+      }),
+      prisma.cashMovement.findMany({
+        where: buildReportCashMovementWhere(query),
+        select: {
+          amount: true,
+          clientId: true,
+          date: true,
+          projectId: true,
+          type: true
+        }
       })
   ]);
 
@@ -243,6 +285,8 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
     {
       budgets,
       clients,
+      cashMovements,
+      expenses,
       filters,
       payments,
       period,
@@ -257,7 +301,9 @@ export async function getReportsOverview(query: ReportsOverviewQuery) {
 export function buildReportsOverview(
   {
     budgets,
+    cashMovements = [],
     clients,
+    expenses = [],
     filters,
     payments,
     period,
@@ -266,7 +312,9 @@ export function buildReportsOverview(
     visits
   }: {
     budgets: ReportBudgetSnapshot[];
+    cashMovements?: ReportCashMovementSnapshot[];
     clients: ReportClientSnapshot[];
+    expenses?: ReportExpenseSnapshot[];
     filters?: ReportAppliedFilters;
     payments: ReportPaymentSnapshot[];
     period: ReportPeriodSnapshot;
@@ -315,7 +363,7 @@ export function buildReportsOverview(
     (visit) => startOfDay(visit.date) >= startOfDay(today) && startOfDay(visit.date) <= addDays(startOfDay(today), 7)
   );
   const decidedBudgets = approvedBudgets.length + refusedBudgets.length;
-  const financial = buildPeriodFinancialSummary(payments, projectsInPeriod, period, today);
+  const financial = buildPeriodFinancialSummary(payments, projectsInPeriod, expenses, cashMovements, period, today);
   const details = buildReportDetails({ payments, tasks: tasksInPeriod, visits: visitsInPeriod, period }, today);
 
   return {
@@ -383,6 +431,8 @@ export function buildReportsOverview(
 function buildPeriodFinancialSummary(
   payments: ReportPaymentSnapshot[],
   projects: ReportProjectSnapshot[],
+  expenses: ReportExpenseSnapshot[],
+  cashMovements: ReportCashMovementSnapshot[],
   period: ReportPeriodSnapshot,
   today: Date
 ) {
@@ -394,6 +444,13 @@ function buildPeriodFinancialSummary(
   let overduePayments = 0;
   let dueSoonAmount = 0;
   let dueSoonPayments = 0;
+  let expectedExpenseAmount = 0;
+  let paidExpenseAmount = 0;
+  let payableExpenseAmount = 0;
+  let overdueExpenseAmount = 0;
+  let overdueExpenses = 0;
+  let realizedIncomeAmount = 0;
+  let realizedExpenseAmount = 0;
   const todayStart = startOfDay(today);
   const dueSoonLimit = addDays(todayStart, 7);
 
@@ -402,11 +459,6 @@ function buildPeriodFinancialSummary(
     const paidAmount = toNumber(payment.paidAmount);
     const remainingAmount = roundMoney(Math.max(amount - paidAmount, 0));
     const effectiveStatus = getEffectivePaymentStatus(payment, today);
-
-    if (payment.status !== "CANCELLED" && payment.paidAt && isInPeriod(payment.paidAt, period)) {
-      receivedAmount += paidAmount;
-      paidPayments += 1;
-    }
 
     if (!["PAID", "CANCELLED"].includes(payment.status) && isInPeriod(payment.dueDate, period)) {
       receivableAmount += remainingAmount;
@@ -429,6 +481,58 @@ function buildPeriodFinancialSummary(
     }
   }
 
+  if (cashMovements.length === 0) {
+    for (const payment of payments) {
+      if (payment.status !== "CANCELLED" && payment.paidAt && isInPeriod(payment.paidAt, period)) {
+        receivedAmount += toNumber(payment.paidAmount);
+        paidPayments += 1;
+      }
+    }
+  }
+
+  for (const expense of expenses) {
+    if (expense.entryType === "PURCHASE") {
+      continue;
+    }
+
+    const remainingAmount = roundMoney(Math.max(toNumber(expense.amount) - toNumber(expense.paidAmount), 0));
+    const effectiveStatus =
+      ["PENDING", "PARTIALLY_PAID"].includes(expense.status) && expense.dueDate && startOfDay(expense.dueDate) < startOfDay(today)
+        ? "OVERDUE"
+        : expense.status;
+
+    if (expense.status !== "CANCELLED" && expense.dueDate && isInPeriod(expense.dueDate, period)) {
+      expectedExpenseAmount += remainingAmount;
+    }
+
+    if (!["PAID", "CANCELLED"].includes(expense.status) && expense.dueDate && isInPeriod(expense.dueDate, period)) {
+      payableExpenseAmount += remainingAmount;
+    }
+
+    if (effectiveStatus === "OVERDUE" && expense.dueDate && isInPeriod(expense.dueDate, period)) {
+      overdueExpenseAmount += remainingAmount;
+      overdueExpenses += 1;
+    }
+  }
+
+  for (const movement of cashMovements) {
+    if (!isInPeriod(movement.date, period)) {
+      continue;
+    }
+
+    const amount = toNumber(movement.amount);
+
+    if (movement.type === "INCOME") {
+      receivedAmount += amount;
+      realizedIncomeAmount += amount;
+      paidPayments += 1;
+      continue;
+    }
+
+    paidExpenseAmount += amount;
+    realizedExpenseAmount += amount;
+  }
+
   const ticketAmounts = projects.map((project) => toNumber(project.contractedAmount)).filter((value) => value > 0);
   const averageProjectTicket =
     ticketAmounts.length > 0 ? ticketAmounts.reduce((total, amount) => total + amount, 0) / ticketAmounts.length : 0;
@@ -438,6 +542,13 @@ function buildPeriodFinancialSummary(
     receivableAmount: toMoneyString(receivableAmount),
     overdueAmount: toMoneyString(overdueAmount),
     dueSoonAmount: toMoneyString(dueSoonAmount),
+    expectedExpenseAmount: toMoneyString(expectedExpenseAmount),
+    paidExpenseAmount: toMoneyString(paidExpenseAmount),
+    payableExpenseAmount: toMoneyString(payableExpenseAmount),
+    overdueExpenseAmount: toMoneyString(overdueExpenseAmount),
+    overdueExpenses,
+    expectedBalance: toMoneyString(receivableAmount - expectedExpenseAmount),
+    realizedBalance: toMoneyString(realizedIncomeAmount - realizedExpenseAmount),
     paidPayments,
     receivablePayments,
     overduePayments,
@@ -682,6 +793,26 @@ function buildReportTaskWhere({ clientId, projectId }: Pick<ReportsOverviewQuery
 }
 
 function buildReportVisitWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.VisitWhereInput {
+  return {
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { projectId } : {})
+  };
+}
+
+function buildReportExpenseWhere({ clientId, projectId }: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.ExpenseWhereInput {
+  return {
+    entryType: {
+      not: "PURCHASE"
+    },
+    ...(clientId ? { clientId } : {}),
+    ...(projectId ? { projectId } : {})
+  };
+}
+
+function buildReportCashMovementWhere({
+  clientId,
+  projectId
+}: Pick<ReportsOverviewQuery, "clientId" | "projectId">): Prisma.CashMovementWhereInput {
   return {
     ...(clientId ? { clientId } : {}),
     ...(projectId ? { projectId } : {})
